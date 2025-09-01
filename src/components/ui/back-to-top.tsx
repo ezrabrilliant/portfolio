@@ -129,19 +129,6 @@ export default function BackToTop({ onPrivacyToggle }: BackToTopProps) {
         )}
       </AnimatePresence>
 
-      {/* Secret Key Hint (only show if partially typed) */}
-      <AnimatePresence>
-        {keySequence.length > 0 && keySequence.length < 4 && (
-          <motion.div
-            className="fixed top-4 right-4 z-50 p-2 bg-black/80 text-white text-xs rounded-lg"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-          >
-            Type "ezra" for dev mode...
-          </motion.div>
-        )}
-      </AnimatePresence>
     </>
   )
 }

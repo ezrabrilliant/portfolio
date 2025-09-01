@@ -1,7 +1,7 @@
 "use client"
 
 import { motion } from "framer-motion"
-import { ArrowUp } from "lucide-react"
+import { ArrowUp, Heart, Code2, Sparkles, Github, Linkedin, Instagram } from "lucide-react"
 import { portfolioConfig } from "@/config/portfolio"
 
 export default function Footer() {
@@ -11,147 +11,236 @@ export default function Footer() {
     window.scrollTo({ top: 0, behavior: "smooth" })
   }
 
-  return (
-    <footer className="relative bg-card/30 backdrop-blur-sm border-t border-border/50 py-12">
-      {/* Background decoration */}
-      <motion.div 
-        className="absolute top-0 left-1/2 transform -translate-x-1/2 w-96 h-32 bg-gradient-to-r from-primary/5 to-primary/10 blur-3xl"
-        animate={{
-          scale: [1, 1.1, 1],
-          opacity: [0.3, 0.6, 0.3],
-        }}
-        transition={{
-          duration: 4,
-          repeat: Infinity,
-          ease: "easeInOut",
-        }}
-      />
+  const getSocialIcon = (platform: string) => {
+    switch (platform.toLowerCase()) {
+      case 'github':
+        return Github
+      case 'linkedin':
+        return Linkedin
+      case 'instagram':
+        return Instagram
+      default:
+        return Code2
+    }
+  }
 
-      <div className="container mx-auto px-4 relative">
-        <div className="max-w-6xl mx-auto">
-          {/* Main footer content */}
-          <div className="grid md:grid-cols-3 gap-8 mb-8">
-            {/* Left section - Name and description */}
+  const getSocialColor = (platform: string) => {
+    switch (platform.toLowerCase()) {
+      case 'github':
+        return 'hover:text-gray-700 dark:hover:text-gray-300'
+      case 'linkedin':
+        return 'hover:text-blue-600'
+      case 'instagram':
+        return 'hover:text-pink-600'
+      default:
+        return 'hover:text-primary'
+    }
+  }
+
+  return (
+    <footer className="relative overflow-hidden">
+      {/* Animated gradient background */}
+      <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-background to-secondary/5">
+        <motion.div 
+          className="absolute inset-0 opacity-30"
+          style={{
+            background: "radial-gradient(circle at 20% 80%, rgba(59, 130, 246, 0.1) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(147, 51, 234, 0.1) 0%, transparent 50%)"
+          }}
+          animate={{
+            scale: [1, 1.2, 1],
+            opacity: [0.3, 0.5, 0.3],
+          }}
+          transition={{
+            duration: 8,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+        />
+      </div>
+
+      {/* Glass border top */}
+      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
+
+      <div className="container mx-auto px-4 py-8 relative">
+        <div className="max-w-4xl mx-auto">
+          {/* Compact footer content */}
+          <div className="flex flex-col md:flex-row items-center justify-between gap-6 mb-6">
+            {/* Left section - Branding with animation */}
             <motion.div 
-              className="space-y-4"
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
+              className="flex items-center gap-3"
+              initial={{ opacity: 0, x: -20 }}
+              whileInView={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.6 }}
               viewport={{ once: true }}
             >
-              <motion.h3 
-                className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent"
-                whileHover={{ scale: 1.05 }}
+              <motion.div 
+                className="relative"
+                whileHover={{ rotate: 360 }}
+                transition={{ duration: 0.8, ease: "easeInOut" }}
               >
-                {portfolioConfig.personal.name}
-              </motion.h3>
-              <p className="text-muted-foreground text-sm leading-relaxed">
-                Building exceptional digital experiences with modern technologies and creative design.
-              </p>
+                <div className="w-10 h-10 bg-gradient-to-br from-primary to-secondary rounded-xl flex items-center justify-center shadow-lg">
+                  <Code2 className="h-5 w-5 text-white" />
+                </div>
+                <motion.div 
+                  className="absolute inset-0 bg-gradient-to-br from-primary to-secondary rounded-xl blur opacity-50"
+                  animate={{ scale: [1, 1.2, 1] }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                />
+              </motion.div>
+              <div>
+                <motion.h3 
+                  className="text-lg font-bold bg-gradient-to-r from-primary via-secondary to-primary bg-clip-text text-transparent"
+                  whileHover={{ scale: 1.05 }}
+                >
+                  {portfolioConfig.personal.name}
+                </motion.h3>
+                <p className="text-xs text-muted-foreground">Full Stack Developer</p>
+              </div>
             </motion.div>
 
-            {/* Center section - Quick links */}
+            {/* Center section - Quick navigation pills */}
             <motion.div 
-              className="space-y-4"
+              className="flex flex-wrap items-center gap-2"
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.1 }}
               viewport={{ once: true }}
             >
-              <h4 className="font-semibold">Quick Links</h4>
-              <div className="grid grid-cols-2 gap-2">
-                {[
-                  { name: "About", href: "#about" },
-                  { name: "Projects", href: "#projects" },
-                  { name: "Experience", href: "#experience" },
-                  { name: "Skills", href: "#skills" },
-                  { name: "Contact", href: "#contact" },
-                ].map((link) => (
-                  <motion.a
-                    key={link.name}
-                    href={link.href}
-                    className="text-sm text-muted-foreground hover:text-primary transition-colors duration-300"
-                    whileHover={{ x: 5 }}
-                    onClick={(e) => {
-                      e.preventDefault()
-                      const element = document.querySelector(link.href)
-                      element?.scrollIntoView({ behavior: "smooth" })
-                    }}
-                  >
-                    {link.name}
-                  </motion.a>
-                ))}
-              </div>
+              {[
+                { name: "About", href: "#about" },
+                { name: "Projects", href: "#projects" },
+                { name: "Experience", href: "#experience" },
+                { name: "Contact", href: "#contact" },
+              ].map((link, index) => (
+                <motion.a
+                  key={link.name}
+                  href={link.href}
+                  className="px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-primary bg-card/50 hover:bg-primary/10 rounded-full border border-border/30 hover:border-primary/30 transition-all duration-300 backdrop-blur-sm"
+                  whileHover={{ scale: 1.05, y: -1 }}
+                  whileTap={{ scale: 0.95 }}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.1 + index * 0.05 }}
+                  onClick={(e) => {
+                    e.preventDefault()
+                    const element = document.querySelector(link.href)
+                    element?.scrollIntoView({ behavior: "smooth" })
+                  }}
+                >
+                  {link.name}
+                </motion.a>
+              ))}
             </motion.div>
 
-            {/* Right section - Social links */}
+            {/* Right section - Social links and back to top */}
             <motion.div 
-              className="space-y-4"
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
+              className="flex items-center gap-3"
+              initial={{ opacity: 0, x: 20 }}
+              whileInView={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.6, delay: 0.2 }}
               viewport={{ once: true }}
             >
-              <h4 className="font-semibold">Connect</h4>
-              <div className="flex flex-wrap gap-3">
-                {Object.entries(portfolioConfig.social).map(([platform, url]) => (
-                  <motion.a
-                    key={platform}
-                    href={url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="px-3 py-2 bg-primary/10 hover:bg-primary/20 text-primary rounded-lg text-sm font-medium transition-colors duration-300"
-                    whileHover={{ scale: 1.05, y: -2 }}
-                    whileTap={{ scale: 0.95 }}
-                  >
-                    {platform.charAt(0).toUpperCase() + platform.slice(1)}
-                  </motion.a>
-                ))}
+              {/* Social links with proper icons */}
+              <div className="flex items-center gap-2">
+                {Object.entries(portfolioConfig.social).map(([platform, url], index) => {
+                  const IconComponent = getSocialIcon(platform)
+                  const colorClass = getSocialColor(platform)
+                  
+                  return (
+                    <motion.a
+                      key={platform}
+                      href={url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={`w-8 h-8 bg-card/50 hover:bg-primary/20 border border-border/30 hover:border-primary/50 rounded-lg flex items-center justify-center text-muted-foreground ${colorClass} transition-all duration-300 backdrop-blur-sm`}
+                      whileHover={{ scale: 1.1, y: -2 }}
+                      whileTap={{ scale: 0.95 }}
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: 0.2 + index * 0.05 }}
+                      title={platform.charAt(0).toUpperCase() + platform.slice(1)}
+                    >
+                      <IconComponent className="h-4 w-4" />
+                    </motion.a>
+                  )
+                })}
               </div>
+
+              {/* Separator */}
+              <div className="w-px h-6 bg-border/50" />
+
+              {/* Back to top button - more compact */}
+              <motion.button
+                onClick={scrollToTop}
+                className="flex items-center gap-2 px-3 py-1.5 bg-primary/10 hover:bg-primary/20 text-primary rounded-lg text-xs font-medium transition-all duration-300 group backdrop-blur-sm border border-primary/20"
+                whileHover={{ scale: 1.05, y: -2 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <span className="hidden sm:inline">Top</span>
+                <motion.div
+                  className="group-hover:-translate-y-0.5 transition-transform"
+                  whileHover={{ rotate: 360 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <ArrowUp className="h-3 w-3" />
+                </motion.div>
+              </motion.button>
             </motion.div>
           </div>
 
-          {/* Divider */}
+          {/* Elegant divider with sparkle effect */}
           <motion.div 
-            className="h-px bg-gradient-to-r from-transparent via-border to-transparent mb-8"
+            className="relative mb-4"
             initial={{ opacity: 0, scaleX: 0 }}
             whileInView={{ opacity: 1, scaleX: 1 }}
             transition={{ duration: 1, delay: 0.3 }}
             viewport={{ once: true }}
-          />
+          >
+            <div className="h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
+            <motion.div 
+              className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 w-1 h-1 bg-primary rounded-full"
+              animate={{ scale: [1, 1.5, 1], opacity: [1, 0.5, 1] }}
+              transition={{ duration: 2, repeat: Infinity }}
+            />
+          </motion.div>
 
-          {/* Bottom section */}
+          {/* Compact bottom section */}
           <motion.div 
-            className="flex flex-col md:flex-row items-center justify-between gap-4"
-            initial={{ opacity: 0, y: 20 }}
+            className="flex flex-col sm:flex-row items-center justify-between gap-3 text-xs"
+            initial={{ opacity: 0, y: 10 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.4 }}
             viewport={{ once: true }}
           >
-            {/* Copyright */}
-            <motion.p 
-              className="text-sm text-muted-foreground"
+            {/* Copyright with heart */}
+            <motion.div 
+              className="flex items-center gap-2 text-muted-foreground"
               whileHover={{ scale: 1.02 }}
             >
-              © {currentYear} {portfolioConfig.personal.name}. All rights reserved.
-            </motion.p>
+              <span>© {currentYear}</span>
+              <span className="text-primary font-semibold">{portfolioConfig.personal.name}</span>
+              <span>•</span>
+              <span className="flex items-center gap-1">
+                Built with
+                <motion.div
+                  animate={{ scale: [1, 1.2, 1] }}
+                  transition={{ duration: 1, repeat: Infinity }}
+                >
+                  <Heart className="h-3 w-3 text-red-500 fill-current" />
+                </motion.div>
+                & passion
+              </span>
+            </motion.div>
 
-            {/* Back to top button */}
-            <motion.button
-              onClick={scrollToTop}
-              className="flex items-center gap-2 px-4 py-2 bg-primary/10 hover:bg-primary/20 text-primary rounded-lg text-sm font-medium transition-all duration-300 group"
-              whileHover={{ scale: 1.05, y: -2 }}
-              whileTap={{ scale: 0.95 }}
+            {/* Fun tagline */}
+            <motion.div 
+              className="flex items-center gap-1 text-muted-foreground"
+              whileHover={{ scale: 1.02 }}
             >
-              <span>Back to top</span>
-              <motion.div
-                className="group-hover:-translate-y-1 transition-transform"
-                whileHover={{ rotate: 360 }}
-                transition={{ duration: 0.3 }}
-              >
-                <ArrowUp className="h-4 w-4" />
-              </motion.div>
-            </motion.button>
+              <Sparkles className="h-3 w-3 text-primary" />
+              <span>Building tomorrow's web</span>
+              <Sparkles className="h-3 w-3 text-secondary" />
+            </motion.div>
           </motion.div>
         </div>
       </div>
