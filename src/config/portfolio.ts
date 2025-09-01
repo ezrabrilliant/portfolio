@@ -142,7 +142,7 @@ export const portfolioConfig = {
       description: "An intelligent Android application designed to assist lawyers and law students in navigating complex Indonesian legal statutes by quickly identifying relevant articles and legal provisions for specific cases.",
       longDescription: "PeduliPasal is a comprehensive legal assistance platform developed as part of Bangkit 2024 Capstone Project by Team C242-PS139. The application addresses the challenge faced by legal professionals in navigating complex legal statutes and identifying relevant articles for various cases. By utilizing advanced AI technology including TensorFlow and Gemini API, users can input case descriptions and receive accurate legal provisions. For example, inputting 'pelanggaran UU ITE terkait pornografi' returns specific violations like 'melanggar Pasal 45 Ayat 1. Pasal 27 Ayat 1 UU RI No. 1 Tahun 2024' with detailed penalty information. The app serves dual purposes: helping legal professionals develop effective strategies and educating law students about practical legal applications.",
       image: "/projects/PeduliPasal.png",
-      technologies: ["Android", "Kotlin", "XML", "Gradle", "Node.js", "Express", "Flask", "Firebase", "TensorFlow", "Gemini API"],
+      technologies: ["Android", "Kotlin", "TensorFlow", "Gemini API", "Firebase", "XML", "Gradle", "Node.js", "Express.js", "Flask"],
       features: [
         "Case Analysis - Input case descriptions to receive relevant legal provisions and articles",
         "Legal Statute Navigation - Quick identification of applicable Indonesian laws and regulations",
