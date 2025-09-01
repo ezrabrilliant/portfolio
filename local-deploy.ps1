@@ -43,7 +43,9 @@ Write-Host "`n📋 Next Steps:" -ForegroundColor Cyan
 Write-Host "1. SSH to your Ubuntu server:" -ForegroundColor White
 Write-Host "   ssh root@31.57.241.234" -ForegroundColor Gray
 Write-Host "`n2. Run the deployment script:" -ForegroundColor White
-Write-Host "   cd /var/www/portfolio && chmod +x deploy.sh && ./deploy.sh" -ForegroundColor Gray
+Write-Host "   cd /var/www/portfolio" -ForegroundColor Gray
+Write-Host "   chmod +x deploy.sh" -ForegroundColor Gray
+Write-Host "   ./deploy.sh" -ForegroundColor Gray
 Write-Host "`n3. Or use this one-liner:" -ForegroundColor White
 Write-Host "   ssh root@31.57.241.234 'cd /var/www/portfolio && git pull origin main && npm install && npm run build && cp -r dist/* /var/www/html/ && systemctl reload nginx'" -ForegroundColor Gray
 
