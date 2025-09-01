@@ -8,6 +8,7 @@
     "build": "tsc -b && vite build",
     "build:deploy": "tsc -b && vite build && powershell -ExecutionPolicy Bypass -File local-deploy.ps1 -SkipBuild",
     "deploy": "powershell -ExecutionPolicy Bypass -File local-deploy.ps1",
+    "deploy:auto": "npm run build:deploy && ssh root@31.57.241.234 'cd /var/www/portfolio && ./deploy.sh'",
     "lint": "eslint .",
     "preview": "vite preview"
   },
