@@ -228,6 +228,53 @@ export const portfolioConfig = {
       startDate: "2024-06",
       endDate: "2024-08"
     },
+    {
+      id: 5,
+      title: "Pay2Win - Game Top-Up Website",
+      description: "A comprehensive game top-up website featuring user authentication, balance management, and payment processing for game item purchases, built as a foundational web development project.",
+      longDescription: "Pay2Win is a game top-up website developed as a final project for the Web Technology course in 3rd semester. The platform provides essential e-commerce functionalities including user login system, balance top-up mechanisms, and secure payment processing for game item purchases. Built using fundamental web technologies without frameworks, this project demonstrates core web development skills and database integration challenges. The development process involved managing complex PHP file structures and implementing AJAX-based data transfer between JavaScript and PHP for seamless database operations.",
+      image: "/projects/Pay2Win.png",
+      technologies: ["PHP", "JavaScript", "CSS", "Bootstrap", "MySQL", "AJAX", "HTML"],
+      features: [
+        "User Authentication - Secure login and registration system",
+        "Balance Management - Top-up and balance tracking functionality",
+        "Payment Processing - Secure payment system for game item purchases",
+        "Game Item Catalog - Comprehensive listing of available game items",
+        "Transaction History - Complete purchase and payment records",
+        "AJAX Integration - Seamless data transfer between frontend and backend",
+        "Database Operations - MySQL integration for data persistence",
+        "Responsive Design - Bootstrap-based responsive user interface"
+      ],
+      github: "https://github.com/ezrabrilliant/project-tekweb",
+      demo: "https://pay2win.ezrabrilliant.tech",
+      status: "completed",
+      startDate: "2023-10",
+      endDate: "2023-12"
+    },
+    {
+      id: 6,
+      title: "PawCare - Pet Shop Management System",
+      description: "A comprehensive pet shop management system built with Laravel, featuring service ordering, delivery tracking, and employee dashboards. Developed through complete SDLC from system analysis to deployment.",
+      longDescription: "PawCare is an advanced pet shop management system developed during the Analysis and Design of Information Systems (ADSI) course. This project showcases the complete Software Development Life Cycle (SDLC) from initial system analysis, flowchart design, use case diagrams, to full implementation and deployment. Built with Laravel framework, the system streamlines pet shop operations by managing grooming services, day care, delivery services with Google Maps integration, and comprehensive order tracking. The platform includes multiple user roles with dedicated dashboards for customers, employees, and delivery personnel.",
+      image: "/projects/PawCare.png",
+      technologies: ["Laravel", "PHP", "JavaScript", "CSS", "MySQL", "Google Maps API", "Composer", "Node.js", "NPM"],
+      features: [
+        "Complete SDLC Implementation - From system analysis and design to deployment",
+        "Service Management - Grooming, day care, and delivery service ordering",
+        "Google Maps Integration - Distance calculation and delivery tracking via Distance Matrix API",
+        "Multi-Role Dashboard - Customer, employee, and delivery personnel interfaces",
+        "Order Tracking System - Real-time status updates for all services",
+        "User Authentication - Secure login and registration system",
+        "Order History - Complete transaction and service history tracking",
+        "Responsive Design - Mobile-friendly interface for all user types"
+      ],
+      github: "https://github.com/ezrabrilliant/pawcare-laravel",
+      demo: "https://pawcare.ezrabrilliant.tech",
+      status: "completed",
+      startDate: "2024-02",
+      endDate: "2024-05"
+    },
+    
   ],
 
   // Skills
