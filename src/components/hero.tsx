@@ -5,6 +5,7 @@ import { motion } from "framer-motion"
 import { ArrowDown, Download, Github, Linkedin, Mail, Phone, ExternalLink } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { portfolioConfig } from "@/config/portfolio"
+import { parseHighlightedText } from '@/components/ui/highlighted-text'
 
 export default function Hero() {
   const [typedText, setTypedText] = useState("")
@@ -187,7 +188,7 @@ export default function Hero() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 1.2, duration: 0.8 }}
           >
-            {portfolioConfig.personal.description}
+            {parseHighlightedText(portfolioConfig.personal.description)}
           </motion.p>
 
           {/* Action buttons */}

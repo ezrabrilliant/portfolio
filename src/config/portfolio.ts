@@ -1,6 +1,6 @@
 // Portfolio Configuration
 export const portfolioConfig = {
-  // Privacy Settings
+  // Privacy S    
   privacy: {
     hideContact: true, // Set to true to blur/hide contact information
     showPublicInfoOnly: true, // Set to true to show only public info (GitHub, LinkedIn)
@@ -10,10 +10,11 @@ export const portfolioConfig = {
   // Personal Information
   personal: {
     name: "Ezra",
+    lastName: "Brilliant",
     fullName: "Ezra Brilliant",
-    title: "Information Systems Student | Mobile & Web Developer",
-    subtitle: "Bangkit Academy Mobile Development Program Graduate",
-    description: "Creating impactful digital solutions through mobile and web development",
+    title: "Business Information Systems Student | Business Intelligence Specialist",
+    subtitle: "Mobile Development & Business Intelligence Expert",
+    description: "Bridging **technology** and **business** through **data-driven solutions** and **intelligent systems**",
     location: "Indonesia",
     email: "ezrakonterliem@gmail.com",
     phone: "+62-8788-456-7890",
@@ -39,10 +40,10 @@ export const portfolioConfig = {
 
   // About Section
   about: {
-    introduction: "Information Systems student at Petra Christian University specializing in Mobile Development and Data Analytics. Experienced with Flutter, React, and modern web technologies.",
+    introduction: "**Business Information Systems** student at Petra Christian University specializing in **Business Intelligence** and **Mobile Development**. Experienced with data analytics, business process optimization, and modern development technologies.",
     highlights: [
-      "Enhanced technical and leadership skills through the Bangkit Academy 2024 Mobile Development Path, completing industry-aligned training and certifications.",
-      "Seeking to drive innovation through mobile applications and data-driven solutions."
+      "Enhanced analytical and technical skills through the **Bangkit Academy 2024 Mobile Development Path**, completing industry-aligned training and certifications.",
+      "Seeking to drive digital transformation through **business intelligence solutions** and **data-driven mobile applications**."
     ],
     stats: [
       { label: "Projects Completed", value: "15+" },
@@ -91,23 +92,6 @@ export const portfolioConfig = {
         "Led team projects using agile methodologies",
         "Recognized for outstanding mobile app projects"
       ]
-    },
-    {
-      id: 3,
-      title: "Freelance Full Stack Developer",
-      company: "Independent",
-      type: "Freelance",
-      location: "Remote",
-      startDate: "2023-01",
-      endDate: null,
-      description: "Developing custom web applications and providing technical solutions for various clients and personal projects.",
-      technologies: ["React", "Next.js", "Node.js", "TypeScript", "PostgreSQL", "MongoDB"],
-      achievements: [
-        "Built 15+ web applications from scratch",
-        "Maintained 99% client satisfaction rate",
-        "Implemented modern development practices and clean architecture",
-        "Delivered projects on time and within budget"
-      ]
     }
   ],
 
@@ -115,19 +99,19 @@ export const portfolioConfig = {
   education: [
     {
       id: 1,
-      institution: "Telkom University",
-      degree: "Bachelor of Information Systems",
-      field: "Data Analytics",
+      institution: "Petra Christian University",
+      degree: "Bachelor of Business Information Systems",
+      field: "Business Intelligence",
       startDate: "2022-09",
       endDate: "2026-06",
-      gpa: "3.6/4.0",
-      description: "Focused on information systems, data analytics, system design, and technology integration for modern digital solutions.",
+      gpa: "3.14/4.0",
+      description: "Focused on business information systems, business intelligence, data analytics, and digital business transformation for modern enterprise solutions.",
       achievements: [
-        "Maintained GPA of 3.6/4.0",
-        "Specializing in Data Analytics and Information Systems",
-        "Active in case competitions and technology projects",
-        "Completed coursework in Data Mining, System Analysis, and Database Management",
-        "Participated in various technology and innovation communities"
+        "Maintained GPA of 3.14/4.0",
+        "Specializing in Business Intelligence and Information Systems",
+        "Active in business case competitions and technology innovation projects",
+        "Completed coursework in Business Analytics, Enterprise Systems, and Data Warehousing",
+        "Participated in various business intelligence and technology communities"
       ]
     },
     {
@@ -151,13 +135,83 @@ export const portfolioConfig = {
 
   // Projects
   projects: [
+    
     {
       id: 1,
+      title: "PeduliPasal - AI-Powered Legal Awareness App",
+      description: "An intelligent Android application designed to assist lawyers and law students in navigating complex Indonesian legal statutes by quickly identifying relevant articles and legal provisions for specific cases.",
+      longDescription: "PeduliPasal is a comprehensive legal assistance platform developed as part of Bangkit 2024 Capstone Project by Team C242-PS139. The application addresses the challenge faced by legal professionals in navigating complex legal statutes and identifying relevant articles for various cases. By utilizing advanced AI technology including TensorFlow and Gemini API, users can input case descriptions and receive accurate legal provisions. For example, inputting 'pelanggaran UU ITE terkait pornografi' returns specific violations like 'melanggar Pasal 45 Ayat 1. Pasal 27 Ayat 1 UU RI No. 1 Tahun 2024' with detailed penalty information. The app serves dual purposes: helping legal professionals develop effective strategies and educating law students about practical legal applications.",
+      image: "/projects/PeduliPasal.png",
+      technologies: ["Android", "Kotlin", "XML", "Gradle", "Node.js", "Express", "Flask", "Firebase", "TensorFlow", "Gemini API"],
+      features: [
+        "Case Analysis - Input case descriptions to receive relevant legal provisions and articles",
+        "Legal Statute Navigation - Quick identification of applicable Indonesian laws and regulations",
+        "Penalty Information - Detailed punishment and fine details for legal violations",
+        "Professional Legal Aid - Assists lawyers in developing effective legal strategies",
+        "Educational Resource - Helps law students understand practical legal applications",
+        "Comprehensive Database - Access to extensive Indonesian legal statute collection",
+        "AI-Powered Search - Advanced TensorFlow and Gemini API integration for accurate results",
+        "User-Friendly Interface - Intuitive design for seamless legal research experience"
+      ],
+      github: "https://github.com/aliefauzan/Bangkit-Project-PeduliPasal",
+      demo: "https://github.com/aliefauzan/Bangkit-Project-PeduliPasal/releases/tag/1.5.3",
+      status: "completed",
+      startDate: "2024-09",
+      endDate: "2025-01"
+    },
+    {
+      id: 2,
+      title: "Bee Furniture - Customer Relationship Management (CRM)",
+      description: "A comprehensive web-based CRM application specifically developed for a wooden furniture manufacturing company to manage customers, wood products, transactions, and business operations efficiently.",
+      longDescription: "Bee Furniture is a specialized Customer Relationship Management (CRM) system designed for wooden furniture companies. Built to handle the unique needs of furniture manufacturing, it manages customer relationships, wood product inventory, custom furniture orders, supplier relationships, and business analytics specifically tailored for the furniture industry.",
+      image: "/projects/CRM.png",
+      technologies: ["React", "TypeScript", "Node.js", "Express.js", "PostgreSQL", "Supabase", "Recharts", "JWT", "Docker"],
+      features: [
+        "Customer Management - Complete customer profiles and furniture order history",
+        "Wood Product Management - Inventory system for various wood types and furniture products",
+        "Custom Order Processing - Handle bespoke furniture orders and specifications",
+        "Supplier Relationship Management - Track wood suppliers and material costs",
+        "Production Workflow - Monitor furniture manufacturing process and timelines",
+        "Quality Control Tracking - Ensure furniture quality standards and inspections",
+        "Business Analytics Dashboard - Furniture sales insights and production KPIs",
+        "Inventory Management - Real-time wood stock levels and material requirements"
+      ],
+      github: "https://github.com/ezrabrilliant/manpro",
+      demo: "https://manpro.ezrabrilliant.tech",
+      status: "completed",
+      startDate: "2024-08",
+      endDate: "2024-11"
+    },
+    {
+      id: 3,
+      title: "CineHub - Netflix Recommendation Hub",
+      description: "An intelligent movie and TV show discovery platform featuring advanced AI recommendation algorithms, comprehensive data analytics, and modern streaming-inspired user experience for content exploration.",
+      longDescription: "CineHub is a sophisticated entertainment discovery platform that revolutionizes how users find movies and TV shows. Built with cutting-edge machine learning algorithms utilizing cosine similarity for personalized recommendations, the platform features a dual database architecture combining PostgreSQL and MongoDB for optimal performance. The system includes comprehensive data analytics dashboards, Netflix-inspired modern UI design, and advanced filtering capabilities to enhance content discovery experience.",
+      image: "/projects/cinehub.png",
+      technologies: ["React", "TypeScript", "Node.js", "Express.js", "PostgreSQL", "MongoDB", "Supabase", "Tailwind CSS", "Recharts"],
+      features: [
+        "Smart Recommendations - AI-powered content suggestions using cosine similarity",
+        "Advanced Search & Filtering - Find content by genre, rating, year, and more",
+        "Data Analytics Dashboard - Insights into content trends and patterns",
+        "Dual Database Architecture - PostgreSQL + MongoDB for optimal performance",
+        "Modern UI - Netflix-inspired design with responsive layout",
+        "Machine Learning - ml-matrix for recommendation computations",
+        "Real-time Data Visualization - Interactive charts with Recharts",
+        "Content Management - Comprehensive movie and TV show database"
+      ],
+      github: "https://github.com/ezrabrilliant/cinehub",
+      demo: "https://pdds.ezrabrilliant.tech",
+      status: "completed",
+      startDate: "2024-05",
+      endDate: "2024-07"
+    },
+    {
+      id: 4,
       title: "Discord Proxy Sales Bot with QRIS Integration",
       description: "Automated Discord bot system for proxy sales with seamless QRIS payment integration through Midtrans API.",
       longDescription: "A comprehensive e-commerce solution built within Discord ecosystem. This bot handles the complete sales process from product browsing, order placement, automated QRIS payment generation via Midtrans, payment verification, and order fulfillment. Perfect integration between Discord.js and payment gateway for seamless user experience.",
-      image: "/placeholder.jpg",
-      technologies: ["Discord.js", "Node.js", "Midtrans API", "QRIS", "Express.js", "Webhook Integration", "JavaScript"],
+      image: "",
+      technologies: ["Discord.js",  "MongoDB", "Midtrans API", "QRIS", "Webhook Integration", "Node.js", "Express.js", "JavaScript"],
       features: [
         "Automated product catalog display in Discord",
         "Real-time QRIS payment generation via Midtrans",
@@ -169,57 +223,11 @@ export const portfolioConfig = {
         "Secure payment processing with webhook validation"
       ],
       github: "https://github.com/ezrabrilliant/discord-proxy-bot",
-      demo: "https://discord-proxy-bot-demo.com",
+      demo: "",
       status: "completed",
       startDate: "2024-06",
       endDate: "2024-08"
     },
-    {
-      id: 2,
-      title: "ManPro - Project Management System",
-      description: "Comprehensive project management platform with advanced collaboration features and real-time tracking capabilities.",
-      longDescription: "ManPro is a full-featured project management system designed for teams and organizations. It includes task management, team collaboration, project tracking, and comprehensive reporting tools. Built with modern web technologies for optimal performance and user experience.",
-      image: "/placeholder.jpg",
-      technologies: ["React", "TypeScript", "Node.js", "Express", "PostgreSQL", "Socket.io", "Tailwind CSS"],
-      features: [
-        "Project dashboard with real-time updates",
-        "Task assignment and tracking",
-        "Team collaboration tools",
-        "Gantt chart visualization",
-        "Time tracking and reporting",
-        "File sharing and document management",
-        "Real-time notifications",
-        "Team performance analytics"
-      ],
-      github: "https://github.com/ezrabrilliant/manpro",
-      demo: "https://manpro.ezrabrilliant.tech",
-      status: "completed",
-      startDate: "2024-08",
-      endDate: "2024-11"
-    },
-    {
-      id: 3,
-      title: "CineHub - Movie Discovery Platform",
-      description: "Modern movie discovery and review platform with personalized recommendations and social features.",
-      longDescription: "CineHub is an innovative movie discovery platform that helps users find new movies, read reviews, and connect with other movie enthusiasts. Features include personalized recommendations, advanced search filters, user reviews, and social interaction capabilities.",
-      image: "/placeholder.jpg",
-      technologies: ["Next.js", "TypeScript", "Prisma", "PostgreSQL", "TMDB API", "NextAuth.js", "Tailwind CSS"],
-      features: [
-        "Movie search and discovery",
-        "Personalized recommendations",
-        "User reviews and ratings",
-        "Watchlist management",
-        "Social features and following",
-        "Advanced filtering options",
-        "Movie trailers and details",
-        "User profile customization"
-      ],
-      github: "https://github.com/ezrabrilliant/cinehub",
-      demo: "https://pdds.ezrabrilliant.tech",
-      status: "completed",
-      startDate: "2024-05",
-      endDate: "2024-07"
-    }
   ],
 
   // Skills

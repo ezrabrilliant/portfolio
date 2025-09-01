@@ -217,19 +217,8 @@ export default function Footer() {
               className="flex items-center gap-2 text-muted-foreground"
               whileHover={{ scale: 1.02 }}
             >
-              <span>© {currentYear}</span>
-              <span className="text-primary font-semibold">{portfolioConfig.personal.name}</span>
-              <span>•</span>
-              <span className="flex items-center gap-1">
-                Built with
-                <motion.div
-                  animate={{ scale: [1, 1.2, 1] }}
-                  transition={{ duration: 1, repeat: Infinity }}
-                >
-                  <Heart className="h-3 w-3 text-red-500 fill-current" />
-                </motion.div>
-                & passion
-              </span>
+              <span>{currentYear}</span>
+              <span className="text-primary font-semibold">@{portfolioConfig.personal.fullName.toLowerCase().replace(/\s+/g, '')}</span>
             </motion.div>
 
             {/* Fun tagline */}

@@ -2,15 +2,44 @@
 
 import { motion } from "framer-motion"
 import { useInView } from "react-intersection-observer"
-import { ExternalLink, Github, Calendar, ArrowRight } from "lucide-react"
+import { ExternalLink, Github, Calendar, ArrowRight, ChevronLeft, ChevronRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { portfolioConfig } from "@/config/portfolio"
+import { useState } from "react"
 
 export default function Projects() {
   const [ref, inView] = useInView({
     triggerOnce: true,
     threshold: 0.1,
   })
+
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1)
+  const projectsPerPage = 3
+  const totalProjects = portfolioConfig.projects.length
+  const totalPages = Math.ceil(totalProjects / projectsPerPage)
+
+  // Calculate current projects to display
+  const indexOfLastProject = currentPage * projectsPerPage
+  const indexOfFirstProject = indexOfLastProject - projectsPerPage
+  const currentProjects = portfolioConfig.projects.slice(indexOfFirstProject, indexOfLastProject)
+
+  // Pagination functions
+  const nextPage = () => {
+    if (currentPage < totalPages) {
+      setCurrentPage(currentPage + 1)
+    }
+  }
+
+  const prevPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(currentPage - 1)
+    }
+  }
+
+  const goToPage = (pageNumber: number) => {
+    setCurrentPage(pageNumber)
+  }
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -92,13 +121,73 @@ export default function Projects() {
 
           {/* Projects Grid */}
           <motion.div 
-            className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12"
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8"
             variants={containerVariants}
           >
-            {portfolioConfig.projects.map((project) => (
+            {currentProjects.map((project) => (
               <ProjectCard key={project.id} project={project} />
             ))}
           </motion.div>
+
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <motion.div 
+              className="flex flex-col items-center gap-6 mb-12"
+              variants={itemVariants}
+            >
+              {/* Page Info */}
+              <div className="text-sm text-muted-foreground">
+                Showing {indexOfFirstProject + 1}-{Math.min(indexOfLastProject, totalProjects)} of {totalProjects} projects
+              </div>
+
+              {/* Pagination Buttons */}
+              <div className="flex items-center gap-2">
+                {/* Previous Button */}
+                <motion.button
+                  onClick={prevPage}
+                  disabled={currentPage === 1}
+                  className="p-2 rounded-lg border border-border/50 hover:bg-primary/10 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300"
+                  whileHover={{ scale: currentPage === 1 ? 1 : 1.05 }}
+                  whileTap={{ scale: currentPage === 1 ? 1 : 0.95 }}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </motion.button>
+
+                {/* Page Numbers */}
+                <div className="flex gap-1">
+                  {Array.from({ length: totalPages }, (_, index) => {
+                    const pageNumber = index + 1
+                    return (
+                      <motion.button
+                        key={pageNumber}
+                        onClick={() => goToPage(pageNumber)}
+                        className={`px-3 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${
+                          currentPage === pageNumber
+                            ? 'bg-primary text-primary-foreground shadow-lg'
+                            : 'border border-border/50 hover:bg-primary/10 text-muted-foreground hover:text-foreground'
+                        }`}
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                      >
+                        {pageNumber}
+                      </motion.button>
+                    )
+                  })}
+                </div>
+
+                {/* Next Button */}
+                <motion.button
+                  onClick={nextPage}
+                  disabled={currentPage === totalPages}
+                  className="p-2 rounded-lg border border-border/50 hover:bg-primary/10 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300"
+                  whileHover={{ scale: currentPage === totalPages ? 1 : 1.05 }}
+                  whileTap={{ scale: currentPage === totalPages ? 1 : 0.95 }}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </motion.button>
+              </div>
+            </motion.div>
+          )}
 
           {/* View More Projects Button */}
           <motion.div 
@@ -182,10 +271,22 @@ function ProjectCard({ project }: ProjectCardProps) {
           whileHover={{ scale: 1.02 }}
           transition={{ type: "spring", stiffness: 400, damping: 10 }}
         >
-          <div className="w-full h-full flex items-center justify-center">
-            <div className="text-muted-foreground text-sm">
-              Project Image
-            </div>
+          {/* Actual Image */}
+          <img 
+            src={project.image} 
+            alt={project.title}
+            className="w-full h-full object-cover"
+            onError={(e) => {
+              // Fallback if image fails to load
+              e.currentTarget.style.display = 'none';
+              const fallback = e.currentTarget.nextElementSibling as HTMLElement;
+              if (fallback) fallback.style.display = 'flex';
+            }}
+          />
+          
+          {/* Fallback placeholder */}
+          <div className="w-full h-full flex items-center justify-center text-muted-foreground text-sm" style={{display: 'none'}}>
+            Project Image
           </div>
           
           {/* Overlay with links */}
@@ -266,7 +367,7 @@ function ProjectCard({ project }: ProjectCardProps) {
               >
                 <a href={project.demo} target="_blank" rel="noopener noreferrer">
                   <ExternalLink className="h-4 w-4 mr-2" />
-                  Live Demo
+                  Demo
                 </a>
               </Button>
             )}

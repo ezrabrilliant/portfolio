@@ -2,10 +2,11 @@
 
 import { motion } from "framer-motion"
 import { useInView } from "react-intersection-observer"
-import { Code, Server, Smartphone, Palette, Users } from "lucide-react"
+import { Code, Server, Smartphone, BarChart3, Users, TrendingUp, Database, Settings } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { portfolioConfig } from "../config/portfolio"
 import { use3DCard } from '@/hooks/use3DCard'
+import { parseHighlightedText } from '@/components/ui/highlighted-text'
 
 export default function About() {
   const [ref, inView] = useInView({
@@ -15,25 +16,25 @@ export default function About() {
 
   const skills = [
     {
-      icon: <Code className="h-8 w-8 text-primary" />,
-      title: "Frontend Development",
-      description: "Creating responsive and interactive user interfaces",
+      icon: <BarChart3 className="h-8 w-8 text-primary" />,
+      title: "Business Intelligence",
+      description: "Data Visualization, and business insights generation",
     },
     {
-      icon: <Server className="h-8 w-8 text-primary" />,
-      title: "Backend Development", 
-      description: "Building robust APIs and server-side applications",
+      icon: <Database className="h-8 w-8 text-primary" />,
+      title: "Data Analytics",
+      description: "Business data processing, SQL queries, and statistical analysis",
     },
     {
       icon: <Smartphone className="h-8 w-8 text-primary" />,
       title: "Mobile Development",
-      description: "Cross-platform mobile app development",
+      description: "Cross-platform mobile app development with Flutter and Android",
     },
     {
-      icon: <Palette className="h-8 w-8 text-primary" />,
-      title: "UI/UX Design",
-      description: "User-centered design and prototyping",
-    },
+      icon: <Settings className="h-8 w-8 text-primary" />,
+      title: "ERP Systems",
+      description: "Experienced with Odoo ERP implementation and business process automation",
+    }
   ]
 
   const containerVariants = {
@@ -201,7 +202,7 @@ export default function About() {
               <motion.div variants={itemVariants}>
                 <h3 className="text-2xl font-bold mb-4">Who I Am</h3>
                 <p className="text-lg text-muted-foreground leading-relaxed mb-4">
-                  {portfolioConfig.about.introduction}
+                  {parseHighlightedText(portfolioConfig.about.introduction)}
                 </p>
               </motion.div>
 
@@ -217,7 +218,7 @@ export default function About() {
                       transition={{ delay: 0.5 + index * 0.1 }}
                     >
                       <div className="w-2 h-2 rounded-full bg-primary mt-2 flex-shrink-0" />
-                      {highlight}
+                      <span>{parseHighlightedText(highlight)}</span>
                     </motion.li>
                   ))}
                 </ul>
@@ -333,7 +334,7 @@ function SkillCard({ skill, index }: SkillCardProps) {
         ref={cardRef}
         onMouseMove={handleMouseMove}
         onMouseLeave={handleMouseLeave}
-        className="holographic-card p-6 rounded-xl bg-gradient-to-br from-background/80 to-muted/30 backdrop-blur-sm border border-border/50 shadow-lg transition-all duration-500"
+        className="holographic-card h-full flex flex-col p-6 rounded-xl bg-gradient-to-br from-background/80 to-muted/30 backdrop-blur-sm border border-border/50 shadow-lg transition-all duration-500"
         style={{
           '--mouse-x': '50%',
           '--mouse-y': '50%',
@@ -359,9 +360,10 @@ function SkillCard({ skill, index }: SkillCardProps) {
           />
         </div>
 
-        <div className="relative z-10">
+        <div className="relative z-10 flex items-center gap-4 h-full">
+          {/* Logo di kiri */}
           <motion.div 
-            className="p-3 rounded-lg bg-primary/10 mb-4 w-fit group-hover:bg-primary/20 transition-colors"
+            className="p-3 rounded-lg bg-primary/10 group-hover:bg-primary/20 transition-colors flex-shrink-0"
             whileHover={{ 
               scale: 1.1,
               rotate: 5,
@@ -370,12 +372,16 @@ function SkillCard({ skill, index }: SkillCardProps) {
           >
             {skill.icon}
           </motion.div>
-          <h3 className="text-lg font-semibold mb-2 group-hover:text-primary transition-colors">
-            {skill.title}
-          </h3>
-          <p className="text-sm text-muted-foreground leading-relaxed">
-            {skill.description}
-          </p>
+          
+          {/* Text dan deskripsi di kanan */}
+          <div className="flex flex-col flex-grow">
+            <h3 className="text-lg font-semibold mb-2 group-hover:text-primary transition-colors">
+              {skill.title}
+            </h3>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              {skill.description}
+            </p>
+          </div>
         </div>
       </div>
     </motion.div>
