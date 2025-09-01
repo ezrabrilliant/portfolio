@@ -1,0 +1,266 @@
+"use client"
+
+import { motion } from "framer-motion"
+import { useInView } from "react-intersection-observer"
+import { ExternalLink, Github, Calendar, ArrowRight } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { portfolioConfig } from "@/config/portfolio"
+
+export default function Projects() {
+  const [ref, inView] = useInView({
+    triggerOnce: true,
+    threshold: 0.1,
+  })
+
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        delayChildren: 0.3,
+        staggerChildren: 0.2,
+      },
+    },
+  }
+
+  const itemVariants = {
+    hidden: { 
+      opacity: 0, 
+      y: 20 
+    },
+    visible: {
+      opacity: 1, 
+      y: 0,
+      transition: {
+        duration: 0.5,
+      },
+    },
+  }
+
+  return (
+    <section id="projects" className="py-20 relative overflow-hidden">
+      <div className="container mx-auto px-4">
+        {/* Background decorations */}
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-secondary/5 to-accent/5" />
+        <motion.div
+          className="absolute top-20 right-20 w-72 h-72 bg-gradient-to-br from-blue-500/10 to-purple-500/10 rounded-full blur-3xl"
+          animate={{
+            scale: [1, 1.2, 1],
+            rotate: [0, 180, 360],
+          }}
+          transition={{
+            duration: 20,
+            repeat: Infinity,
+            ease: "linear",
+          }}
+        />
+        <motion.div
+          className="absolute bottom-20 left-20 w-96 h-96 bg-gradient-to-br from-purple-500/10 to-pink-500/10 rounded-full blur-3xl"
+          animate={{
+            scale: [1.2, 1, 1.2],
+            rotate: [360, 180, 0],
+          }}
+          transition={{
+            duration: 25,
+            repeat: Infinity,
+            ease: "linear",
+          }}
+        />
+
+        <motion.div
+          ref={ref}
+          variants={containerVariants}
+          initial="hidden"
+          animate={inView ? "visible" : "hidden"}
+          className="relative z-10"
+        >
+          {/* Section Header */}
+          <motion.div variants={itemVariants} className="text-center mb-16">
+            <h2 className="text-4xl md:text-5xl font-bold mb-4 relative inline-block">
+              Featured <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Projects</span>
+              <motion.div
+                className="absolute -bottom-2 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full"
+                initial={{ width: "0%" }}
+                animate={inView ? { width: "100%" } : { width: "0%" }}
+                transition={{ duration: 0.8, delay: 0.5 }}
+              />
+            </h2>
+            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+              A collection of projects that showcase my skills and passion for creating innovative solutions
+            </p>
+          </motion.div>
+
+          {/* Projects Grid */}
+          <motion.div 
+            className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12"
+            variants={containerVariants}
+          >
+            {portfolioConfig.projects.map((project) => (
+              <ProjectCard key={project.id} project={project} />
+            ))}
+          </motion.div>
+
+          {/* View More Projects Button */}
+          <motion.div 
+            className="text-center"
+            variants={itemVariants}
+          >
+            <motion.div
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <Button 
+                size="lg" 
+                variant="outline"
+                className="rounded-full border-2 border-primary/20 hover:border-primary/50 hover:bg-primary/10 group"
+              >
+                <a 
+                  href={portfolioConfig.social.github}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2"
+                >
+                  View All Projects on GitHub
+                  <motion.div
+                    animate={{ x: [0, 5, 0] }}
+                    transition={{ duration: 1.5, repeat: Infinity }}
+                  >
+                    <ArrowRight className="h-4 w-4" />
+                  </motion.div>
+                </a>
+              </Button>
+            </motion.div>
+          </motion.div>
+        </motion.div>
+      </div>
+    </section>
+  )
+}
+
+interface ProjectCardProps {
+  project: any;
+}
+
+function ProjectCard({ project }: ProjectCardProps) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 50 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      transition={{ duration: 0.6 }}
+      className="group"
+    >
+      <div className="bg-card/50 backdrop-blur-sm border border-border/50 rounded-2xl p-6 shadow-lg hover:shadow-2xl transition-all duration-500 h-full">
+        {/* Project Image */}
+        <motion.div 
+          className="relative mb-6 rounded-xl overflow-hidden bg-gradient-to-br from-muted/20 to-muted/40 aspect-video"
+          whileHover={{ scale: 1.02 }}
+          transition={{ type: "spring", stiffness: 400, damping: 10 }}
+        >
+          <div className="w-full h-full flex items-center justify-center">
+            <div className="text-muted-foreground text-sm">
+              Project Image
+            </div>
+          </div>
+          
+          {/* Overlay with links */}
+          <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center gap-4">
+            {project.demo && (
+              <motion.a
+                href={project.demo}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="p-3 bg-white/20 backdrop-blur-sm rounded-full hover:bg-white/30 transition-colors"
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <ExternalLink className="h-5 w-5 text-white" />
+              </motion.a>
+            )}
+            {project.github && (
+              <motion.a
+                href={project.github}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="p-3 bg-white/20 backdrop-blur-sm rounded-full hover:bg-white/30 transition-colors"
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <Github className="h-5 w-5 text-white" />
+              </motion.a>
+            )}
+          </div>
+        </motion.div>
+
+        {/* Project Content */}
+        <div className="space-y-4">
+          {/* Status Badge */}
+          <div className="flex justify-between items-start">
+            <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${
+              project.status === 'completed' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' :
+              project.status === 'in-progress' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300' :
+              'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300'
+            }`}>
+              {project.status.replace('-', ' ').toUpperCase()}
+            </span>
+            <div className="flex items-center gap-1 text-muted-foreground text-sm">
+              <Calendar className="h-4 w-4" />
+              {project.year}
+            </div>
+          </div>
+
+          {/* Title and Description */}
+          <div>
+            <h3 className="text-xl font-bold text-foreground mb-2 group-hover:text-primary transition-colors">
+              {project.title}
+            </h3>
+            <p className="text-muted-foreground text-sm leading-relaxed">
+              {project.description}
+            </p>
+          </div>
+
+          {/* Technologies */}
+          <div className="flex flex-wrap gap-2">
+            {project.technologies.map((tech: string, index: number) => (
+              <span
+                key={index}
+                className="px-2 py-1 bg-muted/50 text-muted-foreground text-xs rounded-md border border-border/50 hover:bg-muted/80 transition-colors"
+              >
+                {tech}
+              </span>
+            ))}
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex gap-3 pt-2">
+            {project.demo && (
+              <Button
+                size="sm"
+                className="flex-1 rounded-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                asChild
+              >
+                <a href={project.demo} target="_blank" rel="noopener noreferrer">
+                  <ExternalLink className="h-4 w-4 mr-2" />
+                  Live Demo
+                </a>
+              </Button>
+            )}
+            {project.github && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="flex-1 rounded-full border-border/50 hover:border-border"
+                asChild
+              >
+                <a href={project.github} target="_blank" rel="noopener noreferrer">
+                  <Github className="h-4 w-4 mr-2" />
+                  Source
+                </a>
+              </Button>
+            )}
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
