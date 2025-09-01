@@ -142,6 +142,31 @@ interface ProjectCardProps {
 }
 
 function ProjectCard({ project }: ProjectCardProps) {
+  // Format date range for projects
+  const formatDateRange = (startDate: string, endDate: string | null) => {
+    if (!startDate) return '';
+    
+    // Split YYYY-MM format
+    const formatDate = (dateStr: string) => {
+      const parts = dateStr.split('-');
+      if (parts.length !== 2) return dateStr;
+      
+      const year = parts[0];
+      const monthNum = parseInt(parts[1]) - 1;
+      
+      const monthNames = [
+        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+      ];
+      
+      return `${monthNames[monthNum]} ${year}`;
+    };
+
+    const start = formatDate(startDate);
+    const end = endDate ? formatDate(endDate) : 'Present';
+    return `${start} - ${end}`;
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 50 }}
@@ -205,7 +230,7 @@ function ProjectCard({ project }: ProjectCardProps) {
             </span>
             <div className="flex items-center gap-1 text-muted-foreground text-sm">
               <Calendar className="h-4 w-4" />
-              {project.year}
+              {formatDateRange(project.startDate, project.endDate)}
             </div>
           </div>
 

@@ -97,39 +97,50 @@ export default function Experience() {
           className="flex justify-center mb-16"
         >
           <div className="relative bg-muted/50 p-1 rounded-2xl backdrop-blur-sm border border-border/50">
-            <motion.div
-              className="absolute inset-1 bg-background rounded-xl shadow-lg"
-              layoutId="activeTab"
-              initial={false}
-              transition={{ type: "spring", stiffness: 500, damping: 30 }}
-              style={{
-                left: activeTab === 'work' ? '4px' : '50%',
-                right: activeTab === 'education' ? '4px' : '50%',
-              }}
-            />
             <div className="relative z-10 flex">
-              <button
+              <motion.button
                 onClick={() => setActiveTab('work')}
-                className={`flex items-center gap-3 px-8 py-4 rounded-xl font-semibold transition-all duration-300 ${
+                className={`flex items-center gap-3 px-6 py-3 rounded-xl font-semibold transition-all duration-300 relative ${
                   activeTab === 'work'
-                    ? 'text-foreground'
+                    ? 'text-white'
                     : 'text-muted-foreground hover:text-foreground'
                 }`}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
               >
-                <Building2 className="w-5 h-5" />
-                Work Experience
-              </button>
-              <button
+                {activeTab === 'work' && (
+                  <motion.div
+                    className="absolute inset-0 bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl shadow-lg"
+                    layoutId="activeBackground"
+                    initial={false}
+                    transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                  />
+                )}
+                <Building2 className="w-5 h-5 relative z-10" />
+                <span className="relative z-10">Work Experience</span>
+              </motion.button>
+              
+              <motion.button
                 onClick={() => setActiveTab('education')}
-                className={`flex items-center gap-3 px-8 py-4 rounded-xl font-semibold transition-all duration-300 ${
+                className={`flex items-center gap-3 px-6 py-3 rounded-xl font-semibold transition-all duration-300 relative ${
                   activeTab === 'education'
-                    ? 'text-foreground'
+                    ? 'text-white'
                     : 'text-muted-foreground hover:text-foreground'
                 }`}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
               >
-                <GraduationCap className="w-5 h-5" />
-                Education
-              </button>
+                {activeTab === 'education' && (
+                  <motion.div
+                    className="absolute inset-0 bg-gradient-to-r from-purple-500 to-purple-600 rounded-xl shadow-lg"
+                    layoutId="activeBackground"
+                    initial={false}
+                    transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                  />
+                )}
+                <GraduationCap className="w-5 h-5 relative z-10" />
+                <span className="relative z-10">Education</span>
+              </motion.button>
             </div>
           </div>
         </motion.div>
@@ -192,16 +203,27 @@ interface ExperienceCardProps {
 function ExperienceCard({ item, index, type }: ExperienceCardProps) {
   // Format date range
   const formatDateRange = (startDate: string, endDate: string | null) => {
-    const start = new Date(startDate).toLocaleDateString('en-US', { 
-      year: 'numeric', 
-      month: 'short' 
-    });
-    const end = endDate 
-      ? new Date(endDate).toLocaleDateString('en-US', { 
-          year: 'numeric', 
-          month: 'short' 
-        })
-      : 'Present';
+    // Handle YYYY-MM format from portfolio.ts
+    const formatDate = (dateStr: string) => {
+      if (!dateStr) return '';
+      
+      // Split YYYY-MM format
+      const parts = dateStr.split('-');
+      if (parts.length !== 2) return dateStr; // fallback to original if not in expected format
+      
+      const year = parts[0];
+      const monthNum = parseInt(parts[1]) - 1; // Convert to 0-based month
+      
+      const monthNames = [
+        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+      ];
+      
+      return `${monthNames[monthNum]} ${year}`;
+    };
+
+    const start = formatDate(startDate);
+    const end = endDate ? formatDate(endDate) : 'Present';
     return `${start} - ${end}`;
   };
 
@@ -258,16 +280,16 @@ function ExperienceCard({ item, index, type }: ExperienceCardProps) {
 
             {/* Meta Information */}
             <div className="space-y-4 mb-8">
-              <div className="flex items-center gap-3 text-muted-foreground">
-                <Calendar className="w-5 h-5" />
-                <span className="font-medium text-base">{formatDateRange(item.startDate, item.endDate)}</span>
-              </div>
-              {item.location && (
-                <div className="flex items-center gap-3 text-muted-foreground">
+              <div className="flex items-center justify-between text-muted-foreground">
+                <div className="flex items-center gap-3">
                   <MapPin className="w-5 h-5" />
-                  <span className="text-base">{item.location}</span>
+                  <span className="text-base">{item.location || 'Location not specified'}</span>
                 </div>
-              )}
+                <div className="flex items-center gap-3">
+                  <Calendar className="w-5 h-5" />
+                  <span className="font-medium text-base">{formatDateRange(item.startDate, item.endDate)}</span>
+                </div>
+              </div>
               {item.gpa && (
                 <div className="inline-flex items-center px-4 py-2 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-full text-base font-medium">
                   GPA: {item.gpa}

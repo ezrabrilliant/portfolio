@@ -1,16 +1,16 @@
 // Portfolio Configuration
-export const portfolioConfig = {
+const config = {
   // Personal Information
   personal: {
     name: "Ezra",
     fullName: "Ezra Brilliant",
-    title: "Information Systems Student | Data Analytics & Mobile Development Expert",
-    subtitle: "Top graduate of Bangkit Academy Mobile Development Specialist",
-    description: "Passionate about building innovative mobile solutions and payment systems with data-driven insights",
+    title: "Business Information Systems Student | Business Intelligence Specialist",
+    subtitle: "Specializing in Business Intelligence with Mobile Development expertise from Bangkit Academy",
+    description: "I'm specializing in Business Intelligence, with additional expertise as top graduate of Bangkit Academy Mobile Development program. Passionate about leveraging technology and data to drive business solutions.",
     location: "Indonesia",
     email: "ezrakonterliem@gmail.com",
     phone: "+62-8788-456-7890",
-    avatar: "https://avatars.githubusercontent.com/u/64943463?v=4",
+    avatar: "/placeholder-user.jpg",
     resume: "/resume.pdf"
   },
 
@@ -32,14 +32,14 @@ export const portfolioConfig = {
 
   // About Section
   about: {
-    introduction: "I'm an Information Systems student specializing in mobile development and data analytics. As a top graduate of Bangkit Academy, I love building innovative solutions that make a real impact.",
+    introduction: "I'm a Business Information Systems student specializing in Business Intelligence, with additional recognition as top graduate of Bangkit Academy Mobile Development program. I love creating technology solutions that bridge business needs with data-driven insights.",
     highlights: [
-      "Information Systems student with Data Analytics specialization",
+      "Business Information Systems student with Business Intelligence specialization",
       "Top graduate of Bangkit Academy Mobile Development program (Google, Gojek, Tokopedia, Traveloka)",
-      "Expert in Discord bot development and payment system integration",
-      "Skilled in mobile development, data analytics, and modern web technologies",
-      "Proven ability to bridge technical solutions with real-world applications",
-      "Passionate about automation, fintech solutions, and emerging technologies"
+      "Experienced in Discord bot development and payment system integration",
+      "Skilled in mobile development, data analytics, and business intelligence tools",
+      "Strong focus on bridging business requirements with technical solutions",
+      "Passionate about automation, e-commerce solutions, and emerging technologies"
     ],
     stats: [
       { label: "Projects Completed", value: "15+" },
@@ -113,18 +113,18 @@ export const portfolioConfig = {
     {
       id: 1,
       institution: "Telkom University",
-      degree: "Bachelor of Information Systems",
-      field: "Data Analytics",
+      degree: "Bachelor of Business Information Systems",
+      field: "Business Intelligence",
       startDate: "2022-09",
       endDate: "2026-06",
       gpa: "3.6/4.0",
-      description: "Focused on information systems, data analytics, system design, and technology integration for modern digital solutions.",
+      description: "Focused on business information systems, business intelligence, data analytics, and technology integration for business solutions.",
       achievements: [
         "Maintained GPA of 3.6/4.0",
-        "Specializing in Data Analytics and Information Systems",
-        "Active in case competitions and technology projects",
-        "Completed coursework in Data Mining, System Analysis, and Database Management",
-        "Participated in various technology and innovation communities"
+        "Specializing in Business Intelligence and Data Analytics",
+        "Active in business case competitions and tech projects",
+        "Completed relevant coursework in Business Intelligence, Data Mining, and System Analysis",
+        "Participated in various tech and business communities"
       ]
     },
     {
@@ -212,10 +212,50 @@ export const portfolioConfig = {
         "User profile customization"
       ],
       github: "https://github.com/ezrabrilliant/cinehub",
-      demo: "https://pdds.ezrabrilliant.tech",
+      demo: "https://cinehub.ezrabrilliant.tech",
       status: "completed",
       startDate: "2024-05",
       endDate: "2024-07"
+    },
+    {
+      id: 4,
+      title: "E-Commerce Platform",
+      description: "A modern e-commerce platform with advanced features including real-time inventory, payment processing, and admin dashboard.",
+      longDescription: "This comprehensive e-commerce solution features a customer-facing store, admin dashboard, and vendor portal. Built with microservices architecture for scalability.",
+      image: "/placeholder.jpg",
+      technologies: ["Next.js", "TypeScript", "Prisma", "PostgreSQL", "Stripe"],
+      features: [
+        "Real-time inventory management",
+        "Multi-vendor support",
+        "Advanced search and filtering",
+        "Payment processing with Stripe",
+        "Admin analytics dashboard"
+      ],
+      github: "https://github.com/ezrabrilliant/ecommerce",
+      demo: "https://ecommerce-demo.com",
+      status: "completed",
+      startDate: "2024-01",
+      endDate: "2024-03"
+    },
+    {
+      id: 5,
+      title: "Task Management App",
+      description: "A collaborative task management application with real-time updates and team collaboration features.",
+      longDescription: "Full-featured project management tool with kanban boards, team collaboration, and real-time notifications.",
+      image: "/placeholder.jpg",
+      technologies: ["React", "Firebase", "Material-UI", "Node.js"],
+      features: [
+        "Kanban board interface",
+        "Real-time collaboration",
+        "File attachments",
+        "Due date notifications",
+        "Team member management"
+      ],
+      github: "https://github.com/ezrabrilliant/taskapp",
+      demo: "https://taskapp-demo.com",
+      status: "in-progress",
+      startDate: "2024-04",
+      endDate: null
     }
   ],
 
@@ -382,4 +422,5 @@ export const portfolioConfig = {
   ]
 };
 
-export type PortfolioConfig = typeof portfolioConfig;
+export { config as portfolioConfig };
+export default config;

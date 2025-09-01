@@ -4,7 +4,7 @@ import { motion } from "framer-motion"
 import { useInView } from "react-intersection-observer"
 import { Code, Server, Smartphone, Palette, Users } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { portfolioConfig } from "@/config/portfolio"
+import { portfolioConfig } from "../config/portfolio"
 import { use3DCard } from '@/hooks/use3DCard'
 
 export default function About() {
@@ -187,7 +187,7 @@ export default function About() {
                   </div>
                   {/* Overlay text */}
                   <div className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                    <span className="text-white font-semibold text-lg">Add Your Photo Here</span>
+                    <span className="text-white font-semibold text-lg">Ezra Brilliant</span>
                   </div>
                 </motion.div>
               </motion.div>
