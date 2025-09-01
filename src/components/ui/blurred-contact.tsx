@@ -1,7 +1,7 @@
 import type { ReactNode } from "react"
 import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
-import { Eye, EyeOff } from "lucide-react"
+import { Eye, EyeOff, Mail, Phone } from "lucide-react"
 import { portfolioConfig } from "@/config/portfolio"
 
 interface BlurredContactProps {
@@ -38,10 +38,41 @@ export default function BlurredContact({ children, type, className = "" }: Blurr
   if (showPublicInfoOnly && (type === "email" || type === "phone")) {
     return (
       <div className={`relative ${className}`}>
-        <div className="flex items-center gap-2 text-muted-foreground">
-          <EyeOff className="h-4 w-4" />
-          <span className="text-sm">Contact info hidden</span>
-        </div>
+        <motion.div 
+          className="flex items-center gap-4 group"
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.5 }}
+        >
+          <div className="p-3 bg-gradient-to-br from-gray-400/70 to-gray-500/70 rounded-xl text-white/80 relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-br from-purple-500/20 to-pink-500/20 animate-pulse"></div>
+            {type === "email" ? (
+              <Mail className="h-5 w-5 relative z-10" />
+            ) : (
+              <Phone className="h-5 w-5 relative z-10" />
+            )}
+          </div>
+          <div className="flex-1">
+            <p className="font-medium text-foreground mb-1">
+              {type === "email" ? "Email" : "Phone"}
+            </p>
+            <motion.div 
+              className="flex items-center gap-2 bg-gradient-to-r from-purple-500/10 to-pink-500/10 px-3 py-1.5 rounded-lg border border-purple-200/30 dark:border-purple-700/30"
+              whileHover={{ scale: 1.02 }}
+              transition={{ type: "spring", stiffness: 400, damping: 10 }}
+            >
+              <motion.div
+                animate={{ opacity: [0.5, 1, 0.5] }}
+                transition={{ duration: 2, repeat: Infinity }}
+              >
+                <EyeOff className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+              </motion.div>
+              <span className="text-sm text-purple-700 dark:text-purple-300 font-medium">
+                Contact protected for privacy
+              </span>
+            </motion.div>
+          </div>
+        </motion.div>
       </div>
     )
   }
@@ -67,16 +98,26 @@ export default function BlurredContact({ children, type, className = "" }: Blurr
         {children}
       </div>
       
-      {/* Overlay with eye icon */}
+      {/* Elegant overlay with gradient and animation */}
       <motion.div 
-        className="absolute inset-0 flex items-center justify-center bg-background/20 backdrop-blur-sm rounded-lg opacity-100 group-hover:opacity-0 transition-opacity duration-300 pointer-events-none"
+        className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-white/10 to-gray-100/20 dark:from-gray-800/20 dark:to-gray-900/30 backdrop-blur-sm rounded-xl opacity-100 group-hover:opacity-0 transition-all duration-300 pointer-events-none border border-border/30"
         initial={{ opacity: 1 }}
         whileHover={{ opacity: 0 }}
       >
-        <div className="flex items-center gap-2 text-muted-foreground">
-          <Eye className="h-4 w-4" />
-          <span className="text-xs">Hover to reveal</span>
-        </div>
+        <motion.div 
+          className="flex items-center gap-3 text-muted-foreground bg-background/80 px-4 py-2 rounded-lg shadow-sm border border-border/50"
+          initial={{ scale: 0.9, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ delay: 0.1 }}
+        >
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+          >
+            <Eye className="h-4 w-4" />
+          </motion.div>
+          <span className="text-sm font-medium">Hover to reveal</span>
+        </motion.div>
       </motion.div>
     </div>
   )
