@@ -66,6 +66,23 @@ export default function About() {
     },
   }
 
+  const statsVariants = {
+    hidden: { 
+      opacity: 0, 
+      scale: 0.5,
+    },
+    visible: {
+      opacity: 1,
+      scale: 1,
+      transition: {
+        type: "spring" as const,
+        damping: 15,
+        stiffness: 200,
+        duration: 0.8,
+      },
+    },
+  }
+
   return (
     <section id="about" className="py-20 relative overflow-hidden">
       {/* Background decorations */}
@@ -232,6 +249,68 @@ export default function About() {
       </div>
     </section>
   )
+}
+
+interface StatsCardProps {
+  stat: { value: string; label: string };
+  index: number;
+  inView: boolean;
+}
+
+function StatsCard({ stat, index, inView }: StatsCardProps) {
+  const { cardRef, handleMouseMove, handleMouseLeave } = use3DCard();
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 50 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      transition={{ duration: 0.6, delay: index * 0.1 }}
+    >
+      <div
+        ref={cardRef}
+        onMouseMove={handleMouseMove}
+        onMouseLeave={handleMouseLeave}
+        className="holographic-card text-center p-6 rounded-xl bg-gradient-to-br from-background/50 to-muted/20 backdrop-blur-sm border border-border/50 shadow-lg transition-all duration-500"
+        style={{
+          '--mouse-x': '50%',
+          '--mouse-y': '50%',
+        } as React.CSSProperties}
+      >
+        {/* Holographic shine overlay */}
+        <div className="absolute inset-0 opacity-0 hover:opacity-100 transition-opacity duration-500 pointer-events-none">
+          <div 
+            className="absolute inset-0 bg-gradient-radial from-white/20 via-transparent to-transparent"
+            style={{
+              background: `radial-gradient(circle 200px at var(--mouse-x) var(--mouse-y), rgba(255,255,255,0.15) 0%, transparent 50%)`,
+            }}
+          />
+          <div 
+            className="absolute inset-0"
+            style={{
+              background: `conic-gradient(from 0deg at var(--mouse-x) var(--mouse-y), 
+                rgba(59, 130, 246, 0.1) 0deg, 
+                rgba(147, 51, 234, 0.1) 120deg, 
+                rgba(236, 72, 153, 0.1) 240deg, 
+                rgba(59, 130, 246, 0.1) 360deg)`,
+            }}
+          />
+        </div>
+
+        <div className="relative z-10">
+          <motion.div 
+            className="text-3xl md:text-4xl font-bold text-primary mb-2"
+            initial={{ scale: 0 }}
+            animate={inView ? { scale: 1 } : { scale: 0 }}
+            transition={{ delay: 0.5 + index * 0.1, type: "spring", stiffness: 200 }}
+          >
+            {stat.value}
+          </motion.div>
+          <div className="text-sm text-muted-foreground font-medium">{stat.label}</div>
+        </div>
+      </div>
+    </motion.div>
+  );
 }
 
 interface SkillCardProps {

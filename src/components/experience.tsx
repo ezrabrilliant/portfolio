@@ -70,16 +70,6 @@ export default function Experience() {
           transition={{ duration: 0.8 }}
           className="text-center mb-16"
         >
-          <motion.div
-            initial={{ scale: 0 }}
-            whileInView={{ scale: 1 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 text-primary rounded-full text-sm font-medium mb-4"
-          >
-            <Briefcase className="w-4 h-4" />
-            My Journey
-          </motion.div>
           <h2 className="text-4xl md:text-6xl font-bold mb-6 relative inline-block">
             Experience &{" "}
             <span className="bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">

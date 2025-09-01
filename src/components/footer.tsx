@@ -1,7 +1,7 @@
 "use client"
 
 import { motion } from "framer-motion"
-import { Heart, ArrowUp } from "lucide-react"
+import { ArrowUp } from "lucide-react"
 import { portfolioConfig } from "@/config/portfolio"
 
 export default function Footer() {
@@ -130,17 +130,10 @@ export default function Footer() {
           >
             {/* Copyright */}
             <motion.p 
-              className="text-sm text-muted-foreground flex items-center gap-2"
+              className="text-sm text-muted-foreground"
               whileHover={{ scale: 1.02 }}
             >
-              © {currentYear} {portfolioConfig.personal.name}. Made with 
-              <motion.span
-                animate={{ scale: [1, 1.2, 1] }}
-                transition={{ duration: 1, repeat: Infinity, repeatDelay: 2 }}
-              >
-                <Heart className="h-4 w-4 text-red-500 fill-current" />
-              </motion.span>
-              using React & TypeScript
+              © {currentYear} {portfolioConfig.personal.name}. All rights reserved.
             </motion.p>
 
             {/* Back to top button */}
