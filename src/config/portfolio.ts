@@ -61,8 +61,8 @@ export const portfolioConfig = {
       company: "FlowOrbit - Commercial Discord Bot Platform",
       type: "Entrepreneurial Project",
       location: "Remote",
-      startDate: "2024-06",
-      endDate: null,
+      startDate: "2024-07",
+      endDate: "2025-04",
       description: "Developed and deployed a production-ready Discord e-commerce bot with real QRIS payment integration serving hundreds of active customers. Successfully processed thousands of monetary transactions through Midtrans API, creating a fully automated sales platform within Discord ecosystem.",
       technologies: ["Discord.js", "Node.js", "Midtrans API", "QRIS", "JavaScript", "Express.js", "MongoDB", "Webhook Integration"],
       achievements: [
@@ -82,7 +82,7 @@ export const portfolioConfig = {
       location: "Remote",
       startDate: "2024-09",
       endDate: "2025-01",
-      description: "Graduated as top student from intensive mobile development program focused on Android development, Flutter, UI/UX design, and mobile app architecture.",
+      description: "Graduated as top cohort from intensive mobile development program focused on Android development, Flutter, UI/UX design, and mobile app architecture.",
       technologies: ["Android", "Kotlin", "Flutter", "Dart", "Firebase", "UI/UX Design", "Mobile Architecture"],
       achievements: [
         "Graduated as top student in the cohort",
