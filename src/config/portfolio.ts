@@ -57,21 +57,21 @@ export const portfolioConfig = {
   experience: [
     {
       id: 1,
-      title: "Discord Bot Developer & Payment Integration Specialist",
-      company: "Freelance Project",
-      type: "Personal Project",
+      title: "E-commerce Bot Developer & Payment Integration Specialist",
+      company: "FlowOrbit - Commercial Discord Bot Platform",
+      type: "Entrepreneurial Project",
       location: "Remote",
       startDate: "2024-06",
       endDate: null,
-      description: "Developed an automated Discord bot system for proxy sales with seamless QRIS payment integration through Midtrans. Created a complete e-commerce solution within Discord ecosystem.",
-      technologies: ["Discord.js", "Node.js", "Midtrans API", "QRIS", "JavaScript", "Express.js", "Webhook Integration"],
+      description: "Developed and deployed a production-ready Discord e-commerce bot with real QRIS payment integration serving hundreds of active customers. Successfully processed thousands of monetary transactions through Midtrans API, creating a fully automated sales platform within Discord ecosystem.",
+      technologies: ["Discord.js", "Node.js", "Midtrans API", "QRIS", "JavaScript", "Express.js", "MongoDB", "Webhook Integration"],
       achievements: [
-        "Built fully automated Discord sales bot for proxy services",
-        "Integrated QRIS payment system using Midtrans API",
-        "Implemented real-time payment verification and order processing",
-        "Created seamless user experience from browsing to payment within Discord",
-        "Automated order fulfillment and customer notification system",
-        "Handled secure payment processing and transaction management"
+        "Built commercial Discord bot processing real monetary transactions with hundreds of active users",
+        "Integrated enterprise-level QRIS payment system with Midtrans API for seamless transactions",
+        "Achieved thousands of successful transactions in live production environment",
+        "Developed scalable architecture handling multiple concurrent transactions and high user traffic",
+        "Implemented secure webhook validation and real-time payment verification system",
+        "Created automated order fulfillment system with customer base management and transaction history"
       ]
     },
     {
@@ -135,9 +135,55 @@ export const portfolioConfig = {
 
   // Projects
   projects: [
-    
     {
       id: 1,
+      title: "Bee Furniture - Customer Relationship Management (CRM)",
+      description: "A comprehensive web-based CRM application specifically developed for a wooden furniture manufacturing company to manage customers, wood products, transactions, and business operations efficiently.",
+      longDescription: "Bee Furniture is a specialized Customer Relationship Management (CRM) system designed for wooden furniture companies. Built to handle the unique needs of furniture manufacturing, it manages customer relationships, wood product inventory, custom furniture orders, supplier relationships, and business analytics specifically tailored for the furniture industry.",
+      image: "/projects/Bee.png",
+      technologies: ["React", "TypeScript", "Node.js", "Express.js", "PostgreSQL", "Supabase", "Recharts", "JWT", "Docker"],
+      features: [
+        "Customer Management - Complete customer profiles and furniture order history",
+        "Wood Product Management - Inventory system for various wood types and furniture products",
+        "Custom Order Processing - Handle bespoke furniture orders and specifications",
+        "Supplier Relationship Management - Track wood suppliers and material costs",
+        "Production Workflow - Monitor furniture manufacturing process and timelines",
+        "Quality Control Tracking - Ensure furniture quality standards and inspections",
+        "Business Analytics Dashboard - Furniture sales insights and production KPIs",
+        "Inventory Management - Real-time wood stock levels and material requirements"
+      ],
+      github: "https://github.com/ezrabrilliant/manpro",
+      demo: "https://manpro.ezrabrilliant.tech",
+      status: "completed",
+      startDate: "2025-02",
+      endDate: "2025-05"
+    },
+    {
+      id: 2,
+      title: "CineHub - Netflix Recommendation Hub",
+      description: "An intelligent movie and TV show discovery platform featuring advanced AI recommendation algorithms, comprehensive data analytics, and modern streaming-inspired user experience for content exploration.",
+      longDescription: "CineHub is a sophisticated entertainment discovery platform that revolutionizes how users find movies and TV shows. Built with cutting-edge machine learning algorithms utilizing cosine similarity for personalized recommendations, the platform features a dual database architecture combining PostgreSQL and MongoDB for optimal performance. The system includes comprehensive data analytics dashboards, Netflix-inspired modern UI design, and advanced filtering capabilities to enhance content discovery experience.",
+      image: "/projects/cinehub.png",
+      technologies: ["React", "TypeScript", "Node.js", "Express.js", "PostgreSQL", "MongoDB", "Supabase", "Tailwind CSS", "Recharts"],
+      features: [
+        "Smart Recommendations - AI-powered content suggestions using cosine similarity",
+        "Advanced Search & Filtering - Find content by genre, rating, year, and more",
+        "Data Analytics Dashboard - Insights into content trends and patterns",
+        "Dual Database Architecture - PostgreSQL + MongoDB for optimal performance",
+        "Modern UI - Netflix-inspired design with responsive layout",
+        "Machine Learning - ml-matrix for recommendation computations",
+        "Real-time Data Visualization - Interactive charts with Recharts",
+        "Content Management - Comprehensive movie and TV show database"
+      ],
+      github: "https://github.com/ezrabrilliant/cinehub",
+      demo: "https://pdds.ezrabrilliant.tech",
+      status: "completed",
+      startDate: "2025-02",
+      endDate: "2025-05"
+    },
+
+    {
+      id: 3,
       title: "PeduliPasal - AI-Powered Legal Awareness App",
       description: "An intelligent Android application designed to assist lawyers and law students in navigating complex Indonesian legal statutes by quickly identifying relevant articles and legal provisions for specific cases.",
       longDescription: "PeduliPasal is a comprehensive legal assistance platform developed as part of Bangkit 2024 Capstone Project by Team C242-PS139. The application addresses the challenge faced by legal professionals in navigating complex legal statutes and identifying relevant articles for various cases. By utilizing advanced AI technology including TensorFlow and Gemini API, users can input case descriptions and receive accurate legal provisions. For example, inputting 'pelanggaran UU ITE terkait pornografi' returns specific violations like 'melanggar Pasal 45 Ayat 1. Pasal 27 Ayat 1 UU RI No. 1 Tahun 2024' with detailed penalty information. The app serves dual purposes: helping legal professionals develop effective strategies and educating law students about practical legal applications.",
@@ -160,96 +206,50 @@ export const portfolioConfig = {
       endDate: "2025-01"
     },
     {
-      id: 2,
-      title: "Bee Furniture - Customer Relationship Management (CRM)",
-      description: "A comprehensive web-based CRM application specifically developed for a wooden furniture manufacturing company to manage customers, wood products, transactions, and business operations efficiently.",
-      longDescription: "Bee Furniture is a specialized Customer Relationship Management (CRM) system designed for wooden furniture companies. Built to handle the unique needs of furniture manufacturing, it manages customer relationships, wood product inventory, custom furniture orders, supplier relationships, and business analytics specifically tailored for the furniture industry.",
-      image: "/projects/CRM.png",
-      technologies: ["React", "TypeScript", "Node.js", "Express.js", "PostgreSQL", "Supabase", "Recharts", "JWT", "Docker"],
-      features: [
-        "Customer Management - Complete customer profiles and furniture order history",
-        "Wood Product Management - Inventory system for various wood types and furniture products",
-        "Custom Order Processing - Handle bespoke furniture orders and specifications",
-        "Supplier Relationship Management - Track wood suppliers and material costs",
-        "Production Workflow - Monitor furniture manufacturing process and timelines",
-        "Quality Control Tracking - Ensure furniture quality standards and inspections",
-        "Business Analytics Dashboard - Furniture sales insights and production KPIs",
-        "Inventory Management - Real-time wood stock levels and material requirements"
-      ],
-      github: "https://github.com/ezrabrilliant/manpro",
-      demo: "https://manpro.ezrabrilliant.tech",
-      status: "completed",
-      startDate: "2024-08",
-      endDate: "2024-11"
-    },
-    {
-      id: 3,
-      title: "CineHub - Netflix Recommendation Hub",
-      description: "An intelligent movie and TV show discovery platform featuring advanced AI recommendation algorithms, comprehensive data analytics, and modern streaming-inspired user experience for content exploration.",
-      longDescription: "CineHub is a sophisticated entertainment discovery platform that revolutionizes how users find movies and TV shows. Built with cutting-edge machine learning algorithms utilizing cosine similarity for personalized recommendations, the platform features a dual database architecture combining PostgreSQL and MongoDB for optimal performance. The system includes comprehensive data analytics dashboards, Netflix-inspired modern UI design, and advanced filtering capabilities to enhance content discovery experience.",
-      image: "/projects/cinehub.png",
-      technologies: ["React", "TypeScript", "Node.js", "Express.js", "PostgreSQL", "MongoDB", "Supabase", "Tailwind CSS", "Recharts"],
-      features: [
-        "Smart Recommendations - AI-powered content suggestions using cosine similarity",
-        "Advanced Search & Filtering - Find content by genre, rating, year, and more",
-        "Data Analytics Dashboard - Insights into content trends and patterns",
-        "Dual Database Architecture - PostgreSQL + MongoDB for optimal performance",
-        "Modern UI - Netflix-inspired design with responsive layout",
-        "Machine Learning - ml-matrix for recommendation computations",
-        "Real-time Data Visualization - Interactive charts with Recharts",
-        "Content Management - Comprehensive movie and TV show database"
-      ],
-      github: "https://github.com/ezrabrilliant/cinehub",
-      demo: "https://pdds.ezrabrilliant.tech",
-      status: "completed",
-      startDate: "2024-05",
-      endDate: "2024-07"
-    },
-    {
       id: 4,
-      title: "Discord Proxy Sales Bot with QRIS Integration",
-      description: "Automated Discord bot system for proxy sales with seamless QRIS payment integration through Midtrans API.",
-      longDescription: "A comprehensive e-commerce solution built within Discord ecosystem. This bot handles the complete sales process from product browsing, order placement, automated QRIS payment generation via Midtrans, payment verification, and order fulfillment. Perfect integration between Discord.js and payment gateway for seamless user experience.",
+      title: "Orbit Store - Discord E-commerce Bot with Real QRIS Payment Integration",
+      description: "A fully functional Discord-based e-commerce platform with real payment processing using QRIS integration through Midtrans API. Successfully deployed and actively used by hundreds of customers for automated proxy sales with seamless payment verification.",
+      longDescription: "FlowOrbit is a comprehensive e-commerce automation system built entirely within Discord ecosystem using JavaScript and Node.js. This production-ready bot successfully processes real monetary transactions through Midtrans QRIS integration, serving hundreds of active customers in the proxy services market. The system handles the complete sales funnel from product browsing, automated order placement, real-time QRIS payment generation, instant payment verification via webhooks, to automatic order fulfillment. Built with enterprise-level security and reliability, this bot demonstrates advanced payment gateway integration, real-world transaction processing, and scalable Discord bot architecture. The platform has processed thousands of successful transactions, proving its commercial viability and technical robustness in a live production environment.",
       image: "/projects/QRIS.png",
-      technologies: ["Discord.js",  "MongoDB", "Midtrans API", "QRIS", "Webhook Integration", "Node.js", "Express.js", "JavaScript"],
+      technologies: ["Discord.js", "MongoDB", "Midtrans API", "QRIS", "Webhook Integration", "Node.js", "Express.js", "JavaScript"],
       features: [
-        "Automated product catalog display in Discord",
-        "Real-time QRIS payment generation via Midtrans",
-        "Instant payment verification and confirmation",
-        "Automated order processing and fulfillment",
-        "Customer notification system",
-        "Transaction history and receipt generation",
-        "Admin dashboard for order management",
-        "Secure payment processing with webhook validation"
+        "Real Payment Processing - Live QRIS integration with actual money transactions through Midtrans",
+        "Production-Ready System - Successfully serving hundreds of active customers daily",
+        "Automated E-commerce Flow - Complete sales process from browsing to fulfillment",
+        "Enterprise Payment Security - Secure webhook validation and transaction verification",
+        "Real-time Order Management - Instant payment confirmation and automated order processing",
+        "Customer Base Management - Active user database with transaction history tracking",
+        "Scalable Architecture - Handles multiple concurrent transactions and high user traffic",
+        "Commercial Success - Thousands of successful transactions processed in production environment"
       ],
       github: "",
       demo: "/projects/flowOrbit.pdf",
       status: "completed",
-      startDate: "2024-06",
-      endDate: "2024-08"
+      startDate: "2024-07",
+      endDate: "2025-04"
     },
     {
       id: 5,
-      title: "Pay2Win - Game Top-Up Website",
-      description: "A comprehensive game top-up website featuring user authentication, balance management, and payment processing for game item purchases, built as a foundational web development project.",
-      longDescription: "Pay2Win is a game top-up website developed as a final project for the Web Technology course in 3rd semester. The platform provides essential e-commerce functionalities including user login system, balance top-up mechanisms, and secure payment processing for game item purchases. Built using fundamental web technologies without frameworks, this project demonstrates core web development skills and database integration challenges. The development process involved managing complex PHP file structures and implementing AJAX-based data transfer between JavaScript and PHP for seamless database operations.",
-      image: "/projects/Pay2Win.png",
-      technologies: ["PHP", "JavaScript", "CSS", "Bootstrap", "MySQL", "AJAX", "HTML"],
+      title: "Diamond Lock Price Scraper - Growtopia Market Analytics",
+      description: "An automated Python bot that scrapes Diamond Lock price data from the Growtopia Indonesia Discord community, processes fluctuating market data, and generates visual price charts and candlestick analysis.",
+      longDescription: "Diamond Lock Price Scraper is a sophisticated data collection and analysis system designed to track the highly volatile Diamond Lock prices in the Growtopia gaming community. The project utilizes Python automation to scrape price data from the Growtopia Indonesia (GTID) Discord server, processes the collected information, and stores it in MongoDB for historical analysis. The bot generates comprehensive price visualizations including trend charts and candlestick patterns, providing valuable market insights for the gaming community. This project demonstrates expertise in web scraping, data processing, database management, and financial data visualization.",
+      image: "/projects/DL.png",
+      technologies: ["Python", "Discord.py", "MongoDB", "PyMongo", "Pandas", "Matplotlib", "BeautifulSoup4", "Requests", "mplfinance"],
       features: [
-        "User Authentication - Secure login and registration system",
-        "Balance Management - Top-up and balance tracking functionality",
-        "Payment Processing - Secure payment system for game item purchases",
-        "Game Item Catalog - Comprehensive listing of available game items",
-        "Transaction History - Complete purchase and payment records",
-        "AJAX Integration - Seamless data transfer between frontend and backend",
-        "Database Operations - MySQL integration for data persistence",
-        "Responsive Design - Bootstrap-based responsive user interface"
+        "Automated Data Scraping - Real-time price collection from GTID Discord community",
+        "Price Trend Analysis - Historical price tracking and fluctuation monitoring",
+        "Candlestick Chart Generation - Financial-style market analysis with customizable timeframes",
+        "MongoDB Integration - Efficient data storage and retrieval for historical analysis",
+        "Discord Bot Commands - Interactive !hargadl and !candle commands for price queries",
+        "Visual Data Export - Automated generation of hargadl.png and candle.png charts",
+        "Market Volatility Tracking - Real-time monitoring of Diamond Lock price fluctuations",
+        "Community Integration - Seamless integration with Growtopia gaming community"
       ],
-      github: "https://github.com/ezrabrilliant/project-tekweb",
-      demo: "https://pay2win.ezrabrilliant.tech",
+      github: "https://github.com/ezrabrilliant/collect-price-dl",
+      demo: "",
       status: "completed",
-      startDate: "2023-10",
-      endDate: "2023-12"
+      startDate: "2024-05",
+      endDate: "2024-05"
     },
     {
       id: 6,
@@ -274,7 +274,31 @@ export const portfolioConfig = {
       startDate: "2024-02",
       endDate: "2024-05"
     },
-    
+
+    {
+      id: 7,
+      title: "Pay2Win - Game Top-Up Website",
+      description: "A comprehensive game top-up website featuring user authentication, balance management, and payment processing for game item purchases, built as a foundational web development project.",
+      longDescription: "Pay2Win is a game top-up website developed as a final project for the Web Technology course in 3rd semester. The platform provides essential e-commerce functionalities including user login system, balance top-up mechanisms, and secure payment processing for game item purchases. Built using fundamental web technologies without frameworks, this project demonstrates core web development skills and database integration challenges. The development process involved managing complex PHP file structures and implementing AJAX-based data transfer between JavaScript and PHP for seamless database operations.",
+      image: "/projects/Pay2Win.png",
+      technologies: ["PHP", "JavaScript", "CSS", "Bootstrap", "MySQL", "AJAX", "HTML"],
+      features: [
+        "User Authentication - Secure login and registration system",
+        "Balance Management - Top-up and balance tracking functionality",
+        "Payment Processing - Secure payment system for game item purchases",
+        "Game Item Catalog - Comprehensive listing of available game items",
+        "Transaction History - Complete purchase and payment records",
+        "AJAX Integration - Seamless data transfer between frontend and backend",
+        "Database Operations - MySQL integration for data persistence",
+        "Responsive Design - Bootstrap-based responsive user interface"
+      ],
+      github: "https://github.com/ezrabrilliant/project-tekweb",
+      demo: "https://pay2win.ezrabrilliant.tech",
+      status: "completed",
+      startDate: "2023-10",
+      endDate: "2023-12"
+    },
+
   ],
 
   // Skills
