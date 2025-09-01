@@ -117,10 +117,10 @@ const config = {
       field: "Business Intelligence",
       startDate: "2022-09",
       endDate: "2026-06",
-      gpa: "3.6/4.0",
+      gpa: "3.12/4.0",
       description: "Focused on business information systems, business intelligence, data analytics, and technology integration for business solutions.",
       achievements: [
-        "Maintained GPA of 3.6/4.0",
+        "Maintained GPA of 3.12/4.0",
         "Specializing in Business Intelligence and Data Analytics",
         "Active in business case competitions and tech projects",
         "Completed relevant coursework in Business Intelligence, Data Mining, and System Analysis",

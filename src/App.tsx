@@ -7,8 +7,11 @@ import Projects from "@/components/projects"
 import Experience from "@/components/experience"
 import Contact from "@/components/contact"
 import Footer from "@/components/footer"
+import { portfolioConfig } from "@/config/portfolio"
 
 function App() {
+  const { settings } = portfolioConfig;
+
   return (
     <ThemeProvider 
       attribute="class" 
@@ -21,10 +24,10 @@ function App() {
         <Navbar />
         <main>
           <Hero />
-          <About />
-          <Projects />
-          <Experience />
-          <Contact />
+          {settings.showAbout && <About />}
+          {settings.showProjects && <Projects />}
+          {settings.showExperience && <Experience />}
+          {settings.showContact && <Contact />}
         </main>
         <Footer />
       </div>

@@ -1,5 +1,17 @@
 // Portfolio Configuration
 export const portfolioConfig = {
+  // Display Settings - Control section visibility
+  settings: {
+    showContact: false,         // Show/hide contact section
+    showAbout: true,           // Show/hide about section
+    showProjects: true,        // Show/hide projects section
+    showExperience: true,      // Show/hide experience section
+    showSkills: true,          // Show/hide skills section
+    showServices: true,        // Show/hide services section
+    showTestimonials: false,   // Show/hide testimonials section
+    showCertificates: false,   // Show/hide certificates section
+  },
+
   // Personal Information
   personal: {
     name: "Ezra",
@@ -21,13 +33,13 @@ export const portfolioConfig = {
     instagram: "https://instagram.com/ezrabrilliant"
   },
 
-  // Navigation
+  // Navigation - Will be filtered based on settings
   navigation: [
-    { name: "Home", href: "#home" },
-    { name: "About", href: "#about" },
-    { name: "Projects", href: "#projects" },
-    { name: "Experience", href: "#experience" },
-    { name: "Contact", href: "#contact" }
+    { name: "Home", href: "#home", show: true },
+    { name: "About", href: "#about", show: true },
+    { name: "Projects", href: "#projects", show: true },
+    { name: "Experience", href: "#experience", show: true },
+    { name: "Contact", href: "#contact", show: true }
   ],
 
   // About Section

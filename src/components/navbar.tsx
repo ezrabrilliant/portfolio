@@ -9,6 +9,26 @@ export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
 
+  // Filter navigation items based on settings
+  const getVisibleNavigation = () => {
+    return portfolioConfig.navigation.filter(item => {
+      switch (item.name) {
+        case "About":
+          return portfolioConfig.settings.showAbout
+        case "Projects":
+          return portfolioConfig.settings.showProjects
+        case "Experience":
+          return portfolioConfig.settings.showExperience
+        case "Contact":
+          return portfolioConfig.settings.showContact
+        default:
+          return true // Home and other items always visible
+      }
+    })
+  }
+
+  const visibleNavigation = getVisibleNavigation()
+
   useEffect(() => {
     const handleScroll = () => {
       setScrolled(window.scrollY > 10)
@@ -100,7 +120,7 @@ export default function Navbar() {
 
         {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center space-x-8">
-          {portfolioConfig.navigation.map((item, index) => (
+          {visibleNavigation.map((item, index) => (
             <motion.button
               key={item.name}
               className="text-muted-foreground hover:text-primary transition-colors relative group"
@@ -172,7 +192,7 @@ export default function Navbar() {
         >
           <div className="container mx-auto px-4 py-8">
             <nav className="space-y-6">
-              {portfolioConfig.navigation.map((item, index) => (
+              {visibleNavigation.map((item, index) => (
                 <motion.button
                   key={item.name}
                   className="block text-lg font-medium text-muted-foreground hover:text-primary transition-colors w-full text-left"
@@ -194,7 +214,7 @@ export default function Navbar() {
                 variants={menuItemVariants}
                 initial="hidden"
                 animate="visible"
-                transition={{ delay: portfolioConfig.navigation.length * 0.1 }}
+                transition={{ delay: visibleNavigation.length * 0.1 }}
                 className="pt-6 border-t border-border/50"
               >
                 <Button className="w-full" asChild>
