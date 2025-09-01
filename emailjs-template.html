@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>New Portfolio Contact</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f8fafc;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            border-left: 4px solid #6366f1;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #e5e7eb;
+        }
+        
+        .header h1 {
+            color: #1f2937;
+            margin: 0;
+            font-size: 24px;
+            font-weight: 700;
+        }
+        
+        .header .subtitle {
+            color: #6b7280;
+            margin: 5px 0 0 0;
+            font-size: 14px;
+        }
+        
+        .message-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            color: white;
+        }
+        
+        .sender-info {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .avatar {
+            width: 50px;
+            height: 50px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+            font-size: 20px;
+        }
+        
+        .sender-details h3 {
+            margin: 0;
+            font-size: 18px;
+            font-weight: 600;
+        }
+        
+        .sender-details .email {
+            margin: 2px 0 0 0;
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        
+        .sender-details .time {
+            margin: 2px 0 0 0;
+            font-size: 12px;
+            opacity: 0.7;
+        }
+        
+        .message-content {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 6px;
+            padding: 15px;
+            margin-top: 15px;
+            border-left: 3px solid rgba(255, 255, 255, 0.3);
+        }
+        
+        .message-text {
+            margin: 0;
+            font-size: 16px;
+            line-height: 1.5;
+        }
+        
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #e5e7eb;
+            color: #6b7280;
+            font-size: 12px;
+        }
+        
+        .action-buttons {
+            text-align: center;
+            margin: 25px 0;
+        }
+        
+        .reply-button {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-decoration: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 14px;
+            transition: transform 0.2s;
+        }
+        
+        .reply-button:hover {
+            transform: translateY(-1px);
+        }
+        
+        .stats {
+            display: flex;
+            justify-content: space-between;
+            margin: 20px 0;
+            padding: 15px;
+            background: #f9fafb;
+            border-radius: 8px;
+        }
+        
+        .stat {
+            text-align: center;
+            flex: 1;
+        }
+        
+        .stat-number {
+            font-size: 18px;
+            font-weight: 700;
+            color: #1f2937;
+            margin: 0;
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            color: #6b7280;
+            margin: 2px 0 0 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>⚡ New Portfolio Contact</h1>
+            <p class="subtitle">Someone is interested in working with you!</p>
+        </div>
+        
+        <div class="stats">
+            <div class="stat">
+                <p class="stat-number">📧</p>
+                <p class="stat-label">New Message</p>
+            </div>
+            <div class="stat">
+                <p class="stat-number">🚀</p>
+                <p class="stat-label">Portfolio</p>
+            </div>
+            <div class="stat">
+                <p class="stat-number">⭐</p>
+                <p class="stat-label">Opportunity</p>
+            </div>
+        </div>
+        
+        <div class="message-card">
+            <div class="sender-info">
+                <div class="avatar">👤</div>
+                <div class="sender-details">
+                    <h3>{{from_name}}</h3>
+                    <p class="email">{{from_email}}</p>
+                    <p class="time">{{time}}</p>
+                </div>
+            </div>
+            
+            <div class="message-content">
+                <p class="message-text">{{message}}</p>
+            </div>
+        </div>
+        
+        <div class="action-buttons">
+            <a href="mailto:{{from_email}}?subject=Re: Portfolio Contact from {{from_name}}" class="reply-button">
+                💬 Reply to {{from_name}}
+            </a>
+        </div>
+        
+        <div style="background: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0;">
+            <h4 style="margin: 0 0 10px 0; color: #374151; font-size: 14px;">📋 Quick Response Templates:</h4>
+            <ul style="margin: 0; padding-left: 20px; color: #6b7280; font-size: 13px;">
+                <li>"Thank you for reaching out! I'd love to discuss your project..."</li>
+                <li>"I'm available for a consultation call this week..."</li>
+                <li>"Let me send you my portfolio and pricing information..."</li>
+            </ul>
+        </div>
+        
+        <div class="footer">
+            <p>📍 This message was sent from your portfolio contact form</p>
+            <p>🌐 <strong>ezrabrilliant.tech</strong> | Business Intelligence & Mobile Development</p>
+            <p style="margin-top: 10px; font-size: 11px;">
+                Portfolio by Ezra Brilliant
+            </p>
+        </div>
+    </div>
+</body>
+</html>

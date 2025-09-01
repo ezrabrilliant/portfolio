@@ -3,6 +3,7 @@
 import { motion } from "framer-motion"
 import { useInView } from "react-intersection-observer"
 import { useState } from "react"
+import emailjs from '@emailjs/browser'
 import { 
   Mail, 
   MapPin, 
@@ -12,7 +13,8 @@ import {
   Linkedin, 
   Instagram,
   CheckCircle,
-  Loader2 
+  Loader2,
+  AlertCircle
 } from "lucide-react"
 import { portfolioConfig } from "@/config/portfolio"
 import BlurredContact from "@/components/ui/blurred-contact"
@@ -31,6 +33,12 @@ export default function Contact() {
 
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isSubmitted, setIsSubmitted] = useState(false)
+  const [submitError, setSubmitError] = useState("")
+
+  // EmailJS configuration
+  const EMAILJS_SERVICE_ID = import.meta.env.VITE_EMAILJS_SERVICE_ID
+  const EMAILJS_TEMPLATE_ID = import.meta.env.VITE_EMAILJS_TEMPLATE_ID
+  const EMAILJS_PUBLIC_KEY = import.meta.env.VITE_EMAILJS_PUBLIC_KEY
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -73,16 +81,43 @@ export default function Contact() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsSubmitting(true)
+    setSubmitError("")
     
-    // Simulate form submission
-    await new Promise(resolve => setTimeout(resolve, 2000))
-    
-    setIsSubmitting(false)
-    setIsSubmitted(true)
-    setFormData({ name: "", email: "", message: "" })
-    
-    // Reset success state after 3 seconds
-    setTimeout(() => setIsSubmitted(false), 3000)
+    try {
+      // Send email using EmailJS
+      const result = await emailjs.send(
+        EMAILJS_SERVICE_ID,
+        EMAILJS_TEMPLATE_ID,
+        {
+          from_name: formData.name,
+          from_email: formData.email,
+          message: formData.message,
+          time: new Date().toLocaleString('en-US', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            timeZone: 'Asia/Jakarta'
+          }),
+        },
+        EMAILJS_PUBLIC_KEY
+      )
+      
+      console.log('Email sent successfully:', result)
+      setIsSubmitted(true)
+      setFormData({ name: "", email: "", message: "" })
+      
+      // Reset success state after 5 seconds
+      setTimeout(() => setIsSubmitted(false), 5000)
+      
+    } catch (error) {
+      console.error('Failed to send email:', error)
+      setSubmitError("Failed to send message. Please try again or contact me directly via email.")
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   const getSocialIcon = (platform: string) => {
@@ -334,11 +369,21 @@ export default function Contact() {
                   >
                     <CheckCircle className="h-10 w-10 text-white" />
                   </motion.div>
-                  <h4 className="text-xl font-bold text-green-600 mb-2">Message Sent!</h4>
-                  <p className="text-muted-foreground">Thank you for reaching out. I'll get back to you soon!</p>
+                  <h4 className="text-xl font-bold text-green-600 mb-2">Message Sent Successfully!</h4>
+                  <p className="text-muted-foreground">Thank you for reaching out. I'll get back to you within 24 hours!</p>
                 </motion.div>
               ) : (
                 <form onSubmit={handleSubmit} className="space-y-6 flex-1 flex flex-col">
+                  {submitError && (
+                    <motion.div 
+                      className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl flex items-center gap-3"
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                    >
+                      <AlertCircle className="h-5 w-5 flex-shrink-0" />
+                      <p className="text-sm">{submitError}</p>
+                    </motion.div>
+                  )}
                   <div className="space-y-6">
                     <div>
                       <label htmlFor="name" className="block text-sm font-medium mb-2">
