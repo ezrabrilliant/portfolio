@@ -8,8 +8,8 @@ export const portfolioConfig = {
     showExperience: true,      // Show/hide experience section
     showSkills: true,          // Show/hide skills section
     showServices: true,        // Show/hide services section
-    showTestimonials: false,   // Show/hide testimonials section
-    showCertificates: false,   // Show/hide certificates section
+    showTestimonials: true,   // Show/hide testimonials section
+    showCertificates: true,   // Show/hide certificates section
   },
 
   // Personal Information
