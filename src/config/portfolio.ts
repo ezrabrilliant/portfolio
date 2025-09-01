@@ -210,7 +210,7 @@ export const portfolioConfig = {
       title: "Discord Proxy Sales Bot with QRIS Integration",
       description: "Automated Discord bot system for proxy sales with seamless QRIS payment integration through Midtrans API.",
       longDescription: "A comprehensive e-commerce solution built within Discord ecosystem. This bot handles the complete sales process from product browsing, order placement, automated QRIS payment generation via Midtrans, payment verification, and order fulfillment. Perfect integration between Discord.js and payment gateway for seamless user experience.",
-      image: "",
+      image: "/projects/QRIS.png",
       technologies: ["Discord.js",  "MongoDB", "Midtrans API", "QRIS", "Webhook Integration", "Node.js", "Express.js", "JavaScript"],
       features: [
         "Automated product catalog display in Discord",
@@ -222,8 +222,8 @@ export const portfolioConfig = {
         "Admin dashboard for order management",
         "Secure payment processing with webhook validation"
       ],
-      github: "https://github.com/ezrabrilliant/discord-proxy-bot",
-      demo: "",
+      github: "",
+      demo: "/projects/flowOrbit.pdf",
       status: "completed",
       startDate: "2024-06",
       endDate: "2024-08"
