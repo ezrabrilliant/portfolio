@@ -15,6 +15,7 @@ import {
   Loader2 
 } from "lucide-react"
 import { portfolioConfig } from "@/config/portfolio"
+import BlurredContact from "@/components/ui/blurred-contact"
 
 export default function Contact() {
   const [ref, inView] = useInView({
@@ -192,38 +193,42 @@ export default function Contact() {
                 <h3 className="text-2xl font-bold mb-6">Contact Information</h3>
                 <div className="space-y-6">
                   {/* Email */}
-                  <motion.div 
-                    className="flex items-center gap-4 group cursor-pointer"
-                    whileHover={{ x: 5 }}
-                    onClick={() => window.open(`mailto:${portfolioConfig.personal.email}`)}
-                  >
-                    <div className="p-3 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl text-white group-hover:scale-110 transition-transform">
-                      <Mail className="h-5 w-5" />
-                    </div>
-                    <div>
-                      <p className="font-medium">Email</p>
-                      <p className="text-muted-foreground group-hover:text-primary transition-colors">
-                        {portfolioConfig.personal.email}
-                      </p>
-                    </div>
-                  </motion.div>
+                  <BlurredContact type="email">
+                    <motion.div 
+                      className="flex items-center gap-4 group cursor-pointer"
+                      whileHover={{ x: 5 }}
+                      onClick={() => window.open(`mailto:${portfolioConfig.personal.email}`)}
+                    >
+                      <div className="p-3 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl text-white group-hover:scale-110 transition-transform">
+                        <Mail className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <p className="font-medium">Email</p>
+                        <p className="text-muted-foreground group-hover:text-primary transition-colors">
+                          {portfolioConfig.personal.email}
+                        </p>
+                      </div>
+                    </motion.div>
+                  </BlurredContact>
 
                   {/* Phone */}
-                  <motion.div 
-                    className="flex items-center gap-4 group cursor-pointer"
-                    whileHover={{ x: 5 }}
-                    onClick={() => window.open(`tel:${portfolioConfig.personal.phone}`)}
-                  >
-                    <div className="p-3 bg-gradient-to-br from-green-500 to-emerald-500 rounded-xl text-white group-hover:scale-110 transition-transform">
-                      <Phone className="h-5 w-5" />
-                    </div>
-                    <div>
-                      <p className="font-medium">Phone</p>
-                      <p className="text-muted-foreground group-hover:text-primary transition-colors">
-                        {portfolioConfig.personal.phone}
-                      </p>
-                    </div>
-                  </motion.div>
+                  <BlurredContact type="phone">
+                    <motion.div 
+                      className="flex items-center gap-4 group cursor-pointer"
+                      whileHover={{ x: 5 }}
+                      onClick={() => window.open(`tel:${portfolioConfig.personal.phone}`)}
+                    >
+                      <div className="p-3 bg-gradient-to-br from-green-500 to-emerald-500 rounded-xl text-white group-hover:scale-110 transition-transform">
+                        <Phone className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <p className="font-medium">Phone</p>
+                        <p className="text-muted-foreground group-hover:text-primary transition-colors">
+                          {portfolioConfig.personal.phone}
+                        </p>
+                      </div>
+                    </motion.div>
+                  </BlurredContact>
 
                   {/* Location */}
                   <motion.div 
