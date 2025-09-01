@@ -1,6 +1,18 @@
-#!/bin/bash
+#!/bin/bas# Pull latest changes from GitHub
+echo "📦 Pulling latest changes from GitHub..."
 
-# Portfolio Quick Update Script for Ubuntu Server
+# Stash any local changes first (especially package-lock.json)
+git stash
+
+git pull origin main
+
+if [ $? -ne 0 ]; then
+    echo "❌ Git pull failed, trying to reset..."
+    git reset --hard origin/main
+fi
+
+# Apply stash if needed (optional, usually not needed for package-lock.json)
+# git stash pop 2>/dev/null || echo "No stash to apply"ortfolio Quick Update Script for Ubuntu Server
 # Usage: Run this script on your Ubuntu server after pushing to GitHub
 
 echo "🚀 Starting Portfolio Update..."
