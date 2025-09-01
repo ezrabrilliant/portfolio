@@ -42,12 +42,12 @@ Write-Host "Changes pushed to GitHub successfully!" -ForegroundColor Green
 Write-Host ""
 Write-Host "Attempting auto deployment to server..." -ForegroundColor Yellow
 
-# Try to deploy to server automatically
+# Try to deploy to server automatically using the new SSH key
 $sshCommand = "cd /var/www/portfolio && git pull origin main && npm install && npm run build && cp -r dist/* /var/www/html/ && systemctl reload nginx"
 
 try {
     Write-Host "Connecting to server..." -ForegroundColor Yellow
-    $result = ssh -o "StrictHostKeyChecking=no" -o "ConnectTimeout=10" root@31.57.241.234 $sshCommand
+    $result = ssh -i "$env:USERPROFILE\.ssh\id_rsa_nopass" -o "StrictHostKeyChecking=no" -o "ConnectTimeout=10" root@31.57.241.234 $sshCommand
     
     if ($LASTEXITCODE -eq 0) {
         Write-Host "Server deployment successful!" -ForegroundColor Green
