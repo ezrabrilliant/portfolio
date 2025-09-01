@@ -11,9 +11,9 @@ export const portfolioConfig = {
   personal: {
     name: "Ezra",
     fullName: "Ezra Brilliant",
-    title: "Information Systems Student | Data Analytics & Mobile Development Expert",
-    subtitle: "Top graduate of Bangkit Academy Mobile Development Specialist",
-    description: "Passionate about building innovative mobile solutions and payment systems with data-driven insights",
+    title: "Information Systems Student | Mobile & Web Developer",
+    subtitle: "Bangkit Academy Mobile Development Program Graduate",
+    description: "Creating impactful digital solutions through mobile and web development",
     location: "Indonesia",
     email: "ezrakonterliem@gmail.com",
     phone: "+62-8788-456-7890",
@@ -39,14 +39,10 @@ export const portfolioConfig = {
 
   // About Section
   about: {
-    introduction: "I'm an Information Systems student specializing in mobile development and data analytics. As a top graduate of Bangkit Academy, I love building innovative solutions that make a real impact.",
+    introduction: "Information Systems student at Petra Christian University specializing in Mobile Development and Data Analytics. Experienced with Flutter, React, and modern web technologies.",
     highlights: [
-      "Information Systems student with Data Analytics specialization",
-      "Top graduate of Bangkit Academy Mobile Development program (Google, Gojek, Tokopedia, Traveloka)",
-      "Expert in Discord bot development and payment system integration",
-      "Skilled in mobile development, data analytics, and modern web technologies",
-      "Proven ability to bridge technical solutions with real-world applications",
-      "Passionate about automation, fintech solutions, and emerging technologies"
+      "Enhanced technical and leadership skills through the Bangkit Academy 2024 Mobile Development Path, completing industry-aligned training and certifications.",
+      "Seeking to drive innovation through mobile applications and data-driven solutions."
     ],
     stats: [
       { label: "Projects Completed", value: "15+" },
