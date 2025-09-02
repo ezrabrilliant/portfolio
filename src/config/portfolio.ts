@@ -58,7 +58,7 @@ export const portfolioConfig = {
     {
       id: 1,
       title: "E-commerce Bot Developer & Payment Integration Specialist",
-      company: "FlowOrbit - Commercial Discord Bot Platform",
+      company: "Orbit Store - Auto Store Discord Bot",
       type: "Entrepreneurial Project",
       location: "Remote",
       startDate: "2024-07",
