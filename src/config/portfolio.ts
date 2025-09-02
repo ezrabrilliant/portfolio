@@ -122,7 +122,7 @@ export const portfolioConfig = {
       startDate: "2024-09",
       endDate: "2025-01",
       gpa: "Top Graduate",
-      description: "Intensive program by Google, Tokopedia, Gojek, and Traveloka focusing on mobile development, Android programming, and modern app architecture. More info: https://grow.google/intl/id_id/bangkit",
+      description: "Intensive program by Google, Tokopedia, Gojek, and Traveloka focusing on mobile development, Android programming, and modern app architecture.",
       achievements: [
         "Graduated as top student in the program",
         "Mastered Android development with Kotlin",

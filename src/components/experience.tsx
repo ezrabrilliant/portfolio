@@ -151,18 +151,17 @@ export default function Experience() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.5 }}
-          className="relative max-w-6xl mx-auto px-4"
+          className="relative max-w-4xl mx-auto px-4"
         >
-          {/* Timeline Line - Always on the left */}
-          <div className="absolute left-6 md:left-10 top-0 bottom-0 w-0.5 bg-gradient-to-b from-blue-500 via-purple-500 to-pink-500 opacity-30"></div>
-          
-          <div className="space-y-4 md:space-y-6">
+          {/* Simple card layout without timeline */}
+          <div className="space-y-3 md:space-y-4">
             {experiences.map((item: ExperienceItem, index: number) => (
               <ExperienceCard
                 key={`${activeTab}-${item.id}-${index}`}
                 item={item}
                 index={index}
                 type={activeTab}
+                isLast={index === experiences.length - 1}
               />
             ))}
           </div>
@@ -174,7 +173,7 @@ export default function Experience() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6, delay: 0.4 }}
-          className="text-center mt-6 md:mt-8 px-4"
+          className="text-center mt-4 md:mt-6 px-4"
         >
           <motion.a
             href={portfolioConfig.personal.resume}
@@ -198,9 +197,10 @@ interface ExperienceCardProps {
   item: ExperienceItem;
   index: number;
   type: 'work' | 'education';
+  isLast?: boolean;
 }
 
-function ExperienceCard({ item, index, type }: ExperienceCardProps) {
+function ExperienceCard({ item, index, type, isLast = false }: ExperienceCardProps) {
   // Format date range
   const formatDateRange = (startDate: string, endDate: string | null) => {
     // Handle YYYY-MM format from portfolio.ts
@@ -233,26 +233,22 @@ function ExperienceCard({ item, index, type }: ExperienceCardProps) {
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
       transition={{ duration: 0.6, delay: index * 0.1 }}
-      className="relative flex items-start gap-4 md:gap-6"
+      className="relative mb-4"
     >
-      {/* Timeline Node - Always on the left */}
-      <div className="absolute left-[18px] md:left-[34px] w-3 h-3 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full border-4 border-background shadow-lg z-20"></div>
-      
-      {/* Content Card - Always on the right with full width */}
+      {/* Content Card */}
       <motion.div
-        className="w-full ml-12 md:ml-20"
         whileHover={{ y: -5 }}
         transition={{ type: "spring", stiffness: 300, damping: 30 }}
       >
-        <div className="group relative bg-card/80 backdrop-blur-sm border border-border/50 rounded-2xl p-4 md:p-5 lg:p-6 shadow-lg hover:shadow-2xl transition-all duration-500 overflow-hidden">
+          <div className="group relative bg-card/80 backdrop-blur-sm border border-border/50 rounded-2xl p-4 md:p-5 lg:p-6 shadow-lg hover:shadow-2xl transition-all duration-500 overflow-hidden max-w-3xl mx-auto">
           {/* Background Pattern */}
           <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-secondary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
           
           <div className="relative z-10">
             {/* Header */}
-            <div className="flex flex-col sm:flex-row sm:items-start justify-between mb-3 md:mb-4">
-              <div className="flex items-start gap-3 md:gap-4 mb-3 sm:mb-0">
-                <div className={`p-2 md:p-3 rounded-xl shadow-lg ${
+            <div className="flex flex-col lg:flex-row lg:items-start justify-between mb-2 md:mb-3">
+              <div className="flex items-start gap-3 md:gap-4 mb-2 lg:mb-0 flex-1">
+                <div className={`p-2 md:p-3 rounded-xl shadow-lg flex-shrink-0 ${
                   type === 'work' 
                     ? 'bg-gradient-to-br from-blue-500 to-blue-600' 
                     : 'bg-gradient-to-br from-purple-500 to-purple-600'
@@ -272,38 +268,40 @@ function ExperienceCard({ item, index, type }: ExperienceCardProps) {
                   </h4>
                 </div>
               </div>
-            </div>
-
-            {/* Meta Information */}
-            <div className="space-y-2 mb-3 md:mb-4">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between text-muted-foreground gap-2 sm:gap-3">
-                <div className="flex items-center gap-2 md:gap-3">
-                  <MapPin className="w-3 md:w-4 h-3 md:h-4 flex-shrink-0" />
-                  <span className="text-xs md:text-sm">{item.location || 'Location not specified'}</span>
-                </div>
-                <div className="flex items-center gap-2 md:gap-3">
-                  <Calendar className="w-3 md:w-4 h-3 md:h-4 flex-shrink-0" />
-                  <span className="font-medium text-xs md:text-sm">{formatDateRange(item.startDate, item.endDate)}</span>
+              
+              {/* Move meta information to the right on larger screens */}
+              <div className="lg:text-right lg:ml-4 flex-shrink-0">
+                <div className="flex flex-col lg:items-end gap-1.5">
+                  <div className="flex items-center gap-2 text-muted-foreground text-xs md:text-sm">
+                    <MapPin className="w-3 md:w-4 h-3 md:h-4 flex-shrink-0" />
+                    <span>{item.location || 'Location not specified'}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-muted-foreground text-xs md:text-sm">
+                    <Calendar className="w-3 md:w-4 h-3 md:h-4 flex-shrink-0" />
+                    <span className="font-medium">{formatDateRange(item.startDate, item.endDate)}</span>
+                  </div>
+                  {item.gpa && (
+                    <div className="inline-flex items-center px-2 md:px-3 py-1 md:py-1.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-full text-xs md:text-sm font-medium mt-1">
+                      GPA: {item.gpa}
+                    </div>
+                  )}
                 </div>
               </div>
-              {item.gpa && (
-                <div className="inline-flex items-center px-2 md:px-3 py-1 md:py-1.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-full text-xs md:text-sm font-medium">
-                  GPA: {item.gpa}
-                </div>
-              )}
             </div>
+
+            {/* Remove duplicate meta information section since it's now in header */}
 
             {/* Description */}
             {item.description && (
-              <p className="text-muted-foreground leading-relaxed mb-3 md:mb-4 text-xs md:text-sm">
+              <p className="text-muted-foreground leading-relaxed mb-2 md:mb-3 text-xs md:text-sm">
                 {item.description}
               </p>
             )}
 
             {/* Technologies */}
             {item.technologies && item.technologies.length > 0 && (
-              <div className="mb-3 md:mb-4">
-                <h5 className="text-xs md:text-sm font-semibold text-foreground mb-2">
+              <div className="mb-2 md:mb-3">
+                <h5 className="text-xs md:text-sm font-semibold text-foreground mb-1.5">
                   Technologies Used:
                 </h5>
                 <div className="flex flex-wrap gap-1.5 md:gap-2">
@@ -326,10 +324,7 @@ function ExperienceCard({ item, index, type }: ExperienceCardProps) {
             {/* Achievements */}
             {item.achievements && item.achievements.length > 0 && (
               <div>
-                <h5 className="text-xs md:text-sm font-semibold text-foreground mb-2">
-                  Key Achievements:
-                </h5>
-                <ul className="space-y-1.5 md:space-y-2">
+                <ul className="space-y-1 md:space-y-1.5">
                   {item.achievements.map((achievement: string, achievementIndex: number) => (
                     <motion.li 
                       key={achievementIndex}
@@ -339,7 +334,7 @@ function ExperienceCard({ item, index, type }: ExperienceCardProps) {
                       transition={{ delay: achievementIndex * 0.1 }}
                       className="flex items-start gap-2 md:gap-3 text-xs md:text-sm text-muted-foreground"
                     >
-                      <div className="w-1.5 md:w-2 h-1.5 md:h-2 bg-primary rounded-full mt-1.5 md:mt-2 flex-shrink-0"></div>
+                      <span className="text-primary font-bold mt-0.5 flex-shrink-0">•</span>
                       <span className="leading-relaxed">{achievement}</span>
                     </motion.li>
                   ))}
