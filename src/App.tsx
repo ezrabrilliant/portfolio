@@ -1,5 +1,6 @@
 import { useState } from "react"
 import { ThemeProvider } from "@/components/theme-provider"
+import { AnalyticsProvider } from "@/components/analytics-provider"
 import AnimatedBackground from "@/components/animated-background"
 import Navbar from "@/components/navbar"
 import Hero from "@/components/hero"
@@ -25,19 +26,21 @@ function App() {
       enableSystem 
       disableTransitionOnChange
     >
-      <div className="min-h-screen relative" key={forceUpdate}>
-        <AnimatedBackground />
-        <Navbar />
-        <main>
-          <Hero />
-          <About />
-          <Projects />
-          <Experience />
-          <Contact />
-        </main>
-        <Footer />
-        <BackToTop onPrivacyToggle={handlePrivacyToggle} />
-      </div>
+      <AnalyticsProvider>
+        <div className="min-h-screen relative" key={forceUpdate}>
+          <AnimatedBackground />
+          <Navbar />
+          <main>
+            <Hero />
+            <About />
+            <Projects />
+            <Experience />
+            <Contact />
+          </main>
+          <Footer />
+          <BackToTop onPrivacyToggle={handlePrivacyToggle} />
+        </div>
+      </AnalyticsProvider>
     </ThemeProvider>
   )
 }

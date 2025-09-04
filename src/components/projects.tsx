@@ -6,12 +6,15 @@ import { ExternalLink, Github, Calendar, ArrowRight, ChevronLeft, ChevronRight }
 import { Button } from "@/components/ui/button"
 import { portfolioConfig } from "@/config/portfolio"
 import { useState } from "react"
+import { useAnalyticsTracking } from "@/components/analytics-provider"
 
 export default function Projects() {
   const [ref, inView] = useInView({
     triggerOnce: true,
     threshold: 0.1,
   })
+  
+  const { trackProjectView, trackButtonClick } = useAnalyticsTracking()
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1)
@@ -231,6 +234,8 @@ interface ProjectCardProps {
 }
 
 function ProjectCard({ project }: ProjectCardProps) {
+  const { trackProjectView, trackButtonClick } = useAnalyticsTracking()
+  
   // Format date range for projects
   const formatDateRange = (startDate: string, endDate: string | null) => {
     if (!startDate) return '';
@@ -299,6 +304,10 @@ function ProjectCard({ project }: ProjectCardProps) {
                 className="p-3 bg-white/20 backdrop-blur-sm rounded-full hover:bg-white/30 transition-colors"
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.95 }}
+                onClick={() => {
+                  trackProjectView(project.title)
+                  trackButtonClick('Demo', `Project: ${project.title}`)
+                }}
               >
                 <ExternalLink className="h-5 w-5 text-white" />
               </motion.a>

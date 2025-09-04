@@ -18,12 +18,15 @@ import {
 } from "lucide-react"
 import { portfolioConfig } from "@/config/portfolio"
 import BlurredContact from "@/components/ui/blurred-contact"
+import { useAnalyticsTracking } from "@/components/analytics-provider"
 
 export default function Contact() {
   const [ref, inView] = useInView({
     triggerOnce: true,
     threshold: 0.1,
   })
+  
+  const { trackContactInteraction, trackButtonClick } = useAnalyticsTracking()
 
   const [formData, setFormData] = useState({
     name: "",
@@ -83,6 +86,9 @@ export default function Contact() {
     setIsSubmitting(true)
     setSubmitError("")
     
+    // Track form submission attempt
+    trackContactInteraction('Form Submission Started')
+    
     try {
       // Send email using EmailJS
       const result = await emailjs.send(
@@ -109,12 +115,18 @@ export default function Contact() {
       setIsSubmitted(true)
       setFormData({ name: "", email: "", message: "" })
       
+      // Track successful form submission
+      trackContactInteraction('Form Submission Success')
+      
       // Reset success state after 5 seconds
       setTimeout(() => setIsSubmitted(false), 5000)
       
     } catch (error) {
       console.error('Failed to send email:', error)
       setSubmitError("Failed to send message. Please try again or contact me directly via email.")
+      
+      // Track failed form submission
+      trackContactInteraction('Form Submission Failed')
     } finally {
       setIsSubmitting(false)
     }

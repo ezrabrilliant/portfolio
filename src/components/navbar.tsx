@@ -4,10 +4,12 @@ import { Menu, X, Download } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ModeToggle } from "@/components/mode-toggle"
 import { portfolioConfig } from "@/config/portfolio"
+import { useAnalyticsTracking } from "@/components/analytics-provider"
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
+  const { trackSectionView, trackButtonClick, trackDownload } = useAnalyticsTracking()
 
   useEffect(() => {
     const handleScroll = () => {
@@ -112,6 +114,7 @@ export default function Navbar() {
               onClick={() => {
                 const target = document.querySelector(item.href)
                 target?.scrollIntoView({ behavior: "smooth" })
+                trackSectionView(item.name)
               }}
             >
               {item.name}
@@ -134,6 +137,10 @@ export default function Navbar() {
                 target="_blank" 
                 rel="noopener noreferrer"
                 className="flex items-center"
+                onClick={() => {
+                  trackDownload('Resume')
+                  trackButtonClick('Resume Download', 'Navbar')
+                }}
               >
                 <Download className="mr-2 h-4 w-4" />
                 Resume
@@ -184,6 +191,7 @@ export default function Navbar() {
                   onClick={() => {
                     const target = document.querySelector(item.href)
                     target?.scrollIntoView({ behavior: "smooth" })
+                    trackSectionView(item.name)
                     setIsOpen(false)
                   }}
                 >
@@ -204,7 +212,11 @@ export default function Navbar() {
                     target="_blank" 
                     rel="noopener noreferrer"
                     className="flex items-center justify-center"
-                    onClick={() => setIsOpen(false)}
+                    onClick={() => {
+                      trackDownload('Resume')
+                      trackButtonClick('Resume Download', 'Mobile Menu')
+                      setIsOpen(false)
+                    }}
                   >
                     <Download className="mr-2 h-4 w-4" />
                     Download Resume
