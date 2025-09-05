@@ -20,9 +20,6 @@ if [ $? -ne 0 ]; then
     git reset --hard origin/main
 fi
 
-# Apply stash if needed (optional, usually not needed for package-lock.json)
-# git stash pop 2>/dev/null || echo "No stash to apply"
-
 # Install/update dependencies
 echo "⚙️ Installing dependencies..."
 npm install
@@ -61,18 +58,30 @@ fi
 echo "📋 Copying files to web directory..."
 cp -r dist/* /var/www/html/
 
+# Create Discord verification file
+echo "🔗 Creating Discord verification file..."
+mkdir -p /var/www/html/.well-known
+echo "dh=6974e98c8b840c8d17b60275a98a7cbd33a0d457" > /var/www/html/.well-known/discord
+
 # Set proper permissions
 chown -R www-data:www-data /var/www/html
 chmod -R 755 /var/www/html
+chmod 644 /var/www/html/.well-known/discord
 
 # Reload nginx
 echo "🔄 Reloading Nginx..."
 systemctl reload nginx
 
 echo "✅ Portfolio updated successfully!"
-echo "🌐 Access your portfolio at: http://31.57.241.234"
+echo "🌐 Access your portfolio at: https://ezrabrilliant.tech"
+echo "🔗 Discord verification: https://ezrabrilliant.tech/.well-known/discord"
 
 # Optional: Show recent git log
 echo ""
 echo "📝 Latest changes:"
 git log --oneline -5
+
+# Test Discord verification
+echo ""
+echo "🧪 Testing Discord verification..."
+curl -s https://ezrabrilliant.tech/.well-known/discord || echo "⚠️  Verification file test failed"
