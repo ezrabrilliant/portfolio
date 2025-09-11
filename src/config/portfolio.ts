@@ -12,13 +12,13 @@ export const portfolioConfig = {
     name: "Ezra",
     lastName: "Brilliant",
     fullName: "Ezra Brilliant",
-    title: "Business Information Systems Student | Full Stack Developer",
+    title: "Business Information Systems Student | Mobile App Developer",
     subtitle: "Mobile Development & Business Intelligence Expert",
     description: "Building **innovative digital solutions** that bridge **technology** and **business** through mobile apps and data-driven systems.",
-    location: "Indonesia",
+    location: "Surabaya, Indonesia",
     email: "ezrakonterliem@gmail.com",
     phone: "+62-8788-456-7890",
-    avatar: "https://avatars.githubusercontent.com/u/64943463?v=4",
+    avatar: "/avatar.jpg",
     resume: "/resume.pdf"
   },
 
@@ -99,28 +99,12 @@ export const portfolioConfig = {
   education: [
     {
       id: 1,
-      institution: "Petra Christian University",
-      degree: "Bachelor of Business Information Systems",
-      field: "Business Intelligence",
-      startDate: "2022-09",
-      endDate: "2026-06",
-      gpa: "3.14/4.0",
-      description: "Focused on business information systems, business intelligence, data analytics, and digital business transformation for modern enterprise solutions.",
-      achievements: [
-        "Maintained GPA of 3.14/4.0",
-        "Specializing in Business Intelligence and Information Systems",
-        "Active in business case competitions and technology innovation projects",
-        "Completed coursework in Business Analytics, Enterprise Systems, and Data Warehousing",
-        "Participated in various business intelligence and technology communities"
-      ]
-    },
-    {
-      id: 2,
       institution: "Bangkit Academy",
       degree: "Mobile Development Learning Path",
       field: "Mobile Development",
       startDate: "2024-09",
       endDate: "2025-01",
+      location: "Remote",
       gpa: "Top Graduate",
       description: "Intensive program by Google, Tokopedia, Gojek, and Traveloka focusing on mobile development, Android programming, and modern app architecture.",
       achievements: [
@@ -130,7 +114,24 @@ export const portfolioConfig = {
         "Completed capstone project with excellent mobile app",
         "Recognized for outstanding performance and leadership"
       ]
-    }
+    },
+    {
+      id: 2,
+      institution: "Petra Christian University",
+      degree: "Bachelor of Business Information Systems",
+      field: "Business Intelligence",
+      startDate: "2022-09",
+      endDate: "2026-06",
+      gpa: "3.14/4.0",
+      location: "Surabaya, Indonesia",
+      description: "Focused on business information systems, business intelligence, data analytics, and digital business transformation for modern enterprise solutions.",
+      achievements: [
+        "Specializing in Business Intelligence and Information Systems",
+        "Active in business case competitions and technology innovation projects",
+        "Completed coursework in Business Analytics, Enterprise Systems, and Data Warehousing",
+        "Participated in various business intelligence and technology communities"
+      ]
+    },
   ],
 
   // Projects

@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion"
 import { useInView } from "react-intersection-observer"
-import { Code, Server, Smartphone, BarChart3, Users, TrendingUp, Database, Settings } from "lucide-react"
+import { Code, Server, Smartphone, BarChart3, TrendingUp, Database, Settings } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { portfolioConfig } from "../config/portfolio"
 import { use3DCard } from '@/hooks/use3DCard'
@@ -183,12 +183,14 @@ export default function About() {
                     boxShadow: "0 25px 50px rgba(0,0,0,0.2)",
                   }}
                 >
-                  <div className="w-full h-full bg-muted/20 flex items-center justify-center">
-                    <Users className="h-32 w-32 text-muted-foreground/50" />
-                  </div>
+                  <img 
+                    src={portfolioConfig.personal.avatar}
+                    alt={portfolioConfig.personal.fullName}
+                    className="w-full h-full object-cover"
+                  />
                   {/* Overlay text */}
                   <div className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                    <span className="text-white font-semibold text-lg">Ezra Brilliant</span>
+                    <span className="text-white font-semibold text-lg">{portfolioConfig.personal.fullName}</span>
                   </div>
                 </motion.div>
               </motion.div>

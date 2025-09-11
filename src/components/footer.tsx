@@ -79,7 +79,7 @@ export default function Footer() {
                 transition={{ duration: 0.8, ease: "easeInOut" }}
               >
                 <div className="w-10 h-10 bg-gradient-to-br from-primary to-secondary rounded-xl flex items-center justify-center shadow-lg">
-                  <Code2 className="h-5 w-5 text-white" />
+                  <Code2 className="h-5 w-5 text-primary-foreground" />
                 </div>
                 <motion.div 
                   className="absolute inset-0 bg-gradient-to-br from-primary to-secondary rounded-xl blur opacity-50"
@@ -94,7 +94,7 @@ export default function Footer() {
                 >
                   {portfolioConfig.personal.name}
                 </motion.h3>
-                <p className="text-xs text-muted-foreground">Full Stack Developer</p>
+                <p className="text-xs text-muted-foreground">Mobile App Developer</p>
               </div>
             </motion.div>
 

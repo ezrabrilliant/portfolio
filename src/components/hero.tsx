@@ -135,11 +135,54 @@ export default function Hero() {
           variants={containerVariants}
           className="max-w-4xl"
         >
+          {/* Avatar */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.5 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.8, type: "spring", stiffness: 100 }}
+            className="mb-8 flex justify-center"
+          >
+            <motion.div 
+              className="relative group"
+              whileHover={{ 
+                scale: 1.05,
+                transition: { type: "spring", stiffness: 400, damping: 10 }
+              }}
+            >
+              {/* Glowing background */}
+              <motion.div 
+                className="absolute inset-0 bg-gradient-to-br from-blue-500/30 to-purple-500/30 rounded-full blur-xl"
+                animate={{
+                  scale: [1, 1.2, 1],
+                  opacity: [0.3, 0.6, 0.3],
+                }}
+                transition={{
+                  duration: 3,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                }}
+              />
+              
+              <motion.div 
+                className="relative w-32 h-32 md:w-40 md:h-40 rounded-full overflow-hidden border-4 border-border shadow-2xl bg-gradient-to-br from-blue-500/10 to-purple-500/10 backdrop-blur-sm"
+                whileHover={{
+                  boxShadow: "0 20px 40px rgba(0,0,0,0.2)",
+                }}
+              >
+                <img 
+                  src={portfolioConfig.personal.avatar}
+                  alt={portfolioConfig.personal.fullName}
+                  className="w-full h-full object-cover"
+                />
+              </motion.div>
+            </motion.div>
+          </motion.div>
+
           {/* Greeting */}
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
             className="mb-4"
           >
             <span className="text-lg text-muted-foreground font-medium">👋 Hello, I'm</span>
