@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { ThemeProvider } from "@/components/theme-provider"
 import { AnalyticsProvider } from "@/components/analytics-provider"
+import IntroAnimation from "@/components/intro-animation"
 import AnimatedBackground from "@/components/animated-background"
 import Navbar from "@/components/navbar"
 import Hero from "@/components/hero"
@@ -13,10 +14,15 @@ import BackToTop from "@/components/ui/back-to-top"
 
 function App() {
   const [forceUpdate, setForceUpdate] = useState(0)
+  const [showIntro, setShowIntro] = useState(true)
 
   // Force re-render when privacy settings change
   const handlePrivacyToggle = (hideContact: boolean) => {
     setForceUpdate(prev => prev + 1)
+  }
+
+  const handleIntroComplete = () => {
+    setShowIntro(false)
   }
 
   return (
@@ -27,19 +33,23 @@ function App() {
       disableTransitionOnChange
     >
       <AnalyticsProvider>
-        <div className="min-h-screen relative" key={forceUpdate}>
-          <AnimatedBackground />
-          <Navbar />
-          <main>
-            <Hero />
-            <About />
-            <Projects />
-            <Experience />
-            <Contact />
-          </main>
-          <Footer />
-          <BackToTop onPrivacyToggle={handlePrivacyToggle} />
-        </div>
+        {showIntro ? (
+          <IntroAnimation onComplete={handleIntroComplete} />
+        ) : (
+          <div className="min-h-screen relative" key={forceUpdate}>
+            <AnimatedBackground introComplete={!showIntro} />
+            <Navbar />
+            <main>
+              <Hero />
+              <About />
+              <Projects />
+              <Experience />
+              <Contact />
+            </main>
+            <Footer />
+            <BackToTop onPrivacyToggle={handlePrivacyToggle} />
+          </div>
+        )}
       </AnalyticsProvider>
     </ThemeProvider>
   )
