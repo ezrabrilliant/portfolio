@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react"
 import { useTheme } from "next-themes"
+import { gsap } from "gsap"
 
 interface Particle {
   x: number
@@ -13,9 +14,29 @@ interface Particle {
   hue: number
 }
 
-export default function AnimatedBackground() {
+interface AnimatedBackgroundProps {
+  introComplete?: boolean
+}
+
+export default function AnimatedBackground({ introComplete = false }: AnimatedBackgroundProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const { theme, systemTheme } = useTheme()
+  const fadeOpacityRef = useRef(0) // For controlling fade-in
+
+  // Handle fade-in when intro is complete
+  useEffect(() => {
+    if (introComplete) {
+      // Smooth fade-in animation
+      gsap.to(fadeOpacityRef, {
+        current: 1,
+        duration: 1.2,
+        ease: "power2.out"
+      })
+    } else {
+      // Keep hidden during intro
+      fadeOpacityRef.current = 0
+    }
+  }, [introComplete])
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -53,6 +74,7 @@ export default function AnimatedBackground() {
 
     const drawGradientBackground = () => {
       const isDark = theme === "dark" || (theme === "system" && systemTheme === "dark")
+      const fadeOpacity = fadeOpacityRef.current
       
       // Create main gradient
       const gradient = ctx.createRadialGradient(
@@ -65,19 +87,19 @@ export default function AnimatedBackground() {
       )
 
       if (isDark) {
-        // Dark theme
-        gradient.addColorStop(0, "rgba(59, 130, 246, 0.15)")
-        gradient.addColorStop(0.3, "rgba(99, 102, 241, 0.08)")
-        gradient.addColorStop(0.6, "rgba(139, 92, 246, 0.05)")
+        // Dark theme with fade
+        gradient.addColorStop(0, `rgba(59, 130, 246, ${0.15 * fadeOpacity})`)
+        gradient.addColorStop(0.3, `rgba(99, 102, 241, ${0.08 * fadeOpacity})`)
+        gradient.addColorStop(0.6, `rgba(139, 92, 246, ${0.05 * fadeOpacity})`)
         gradient.addColorStop(1, "rgba(15, 23, 42, 0)")
         
         ctx.fillStyle = "#0f172a" // slate-900
         ctx.fillRect(0, 0, canvas.width, canvas.height)
       } else {
-        // Light theme
-        gradient.addColorStop(0, "rgba(59, 130, 246, 0.1)")
-        gradient.addColorStop(0.3, "rgba(99, 102, 241, 0.06)")
-        gradient.addColorStop(0.6, "rgba(139, 92, 246, 0.04)")
+        // Light theme with fade
+        gradient.addColorStop(0, `rgba(59, 130, 246, ${0.1 * fadeOpacity})`)
+        gradient.addColorStop(0.3, `rgba(99, 102, 241, ${0.06 * fadeOpacity})`)
+        gradient.addColorStop(0.6, `rgba(139, 92, 246, ${0.04 * fadeOpacity})`)
         gradient.addColorStop(1, "rgba(255, 255, 255, 0)")
         
         ctx.fillStyle = "#ffffff"
@@ -87,7 +109,7 @@ export default function AnimatedBackground() {
       ctx.fillStyle = gradient
       ctx.fillRect(0, 0, canvas.width, canvas.height)
 
-      // Add pulsing effect
+      // Add pulsing effect with fade
       const pulse = Math.sin(time * 0.002) * 0.5 + 0.5
       const pulseGradient = ctx.createRadialGradient(
         canvas.width * 0.7 + Math.sin(time * 0.001) * 100,
@@ -99,10 +121,10 @@ export default function AnimatedBackground() {
       )
 
       if (isDark) {
-        pulseGradient.addColorStop(0, `rgba(168, 85, 247, ${0.1 * pulse})`)
+        pulseGradient.addColorStop(0, `rgba(168, 85, 247, ${0.1 * pulse * fadeOpacity})`)
         pulseGradient.addColorStop(1, "rgba(168, 85, 247, 0)")
       } else {
-        pulseGradient.addColorStop(0, `rgba(168, 85, 247, ${0.05 * pulse})`)
+        pulseGradient.addColorStop(0, `rgba(168, 85, 247, ${0.05 * pulse * fadeOpacity})`)
         pulseGradient.addColorStop(1, "rgba(168, 85, 247, 0)")
       }
 
@@ -117,6 +139,7 @@ export default function AnimatedBackground() {
       drawGradientBackground()
 
       const isDark = theme === "dark" || (theme === "system" && systemTheme === "dark")
+      const fadeOpacity = fadeOpacityRef.current
 
       particles.forEach((particle, index) => {
         // Update position
@@ -141,12 +164,12 @@ export default function AnimatedBackground() {
         )
 
         if (isDark) {
-          glowGradient.addColorStop(0, `hsla(${particle.hue}, 70%, 60%, ${particle.opacity})`)
-          glowGradient.addColorStop(0.4, `hsla(${particle.hue}, 70%, 60%, ${particle.opacity * 0.3})`)
+          glowGradient.addColorStop(0, `hsla(${particle.hue}, 70%, 60%, ${particle.opacity * fadeOpacity})`)
+          glowGradient.addColorStop(0.4, `hsla(${particle.hue}, 70%, 60%, ${particle.opacity * 0.3 * fadeOpacity})`)
           glowGradient.addColorStop(1, `hsla(${particle.hue}, 70%, 60%, 0)`)
         } else {
-          glowGradient.addColorStop(0, `hsla(${particle.hue}, 50%, 50%, ${particle.opacity * 0.7})`)
-          glowGradient.addColorStop(0.4, `hsla(${particle.hue}, 50%, 50%, ${particle.opacity * 0.2})`)
+          glowGradient.addColorStop(0, `hsla(${particle.hue}, 50%, 50%, ${particle.opacity * 0.7 * fadeOpacity})`)
+          glowGradient.addColorStop(0.4, `hsla(${particle.hue}, 50%, 50%, ${particle.opacity * 0.2 * fadeOpacity})`)
           glowGradient.addColorStop(1, `hsla(${particle.hue}, 50%, 50%, 0)`)
         }
 
@@ -159,8 +182,8 @@ export default function AnimatedBackground() {
         ctx.beginPath()
         ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2)
         ctx.fillStyle = isDark 
-          ? `hsla(${particle.hue}, 70%, 70%, ${particle.opacity * 0.8})`
-          : `hsla(${particle.hue}, 60%, 40%, ${particle.opacity * 0.6})`
+          ? `hsla(${particle.hue}, 70%, 70%, ${particle.opacity * 0.8 * fadeOpacity})`
+          : `hsla(${particle.hue}, 60%, 40%, ${particle.opacity * 0.6 * fadeOpacity})`
         ctx.fill()
 
         // Connect nearby particles
@@ -174,7 +197,7 @@ export default function AnimatedBackground() {
             ctx.moveTo(particle.x, particle.y)
             ctx.lineTo(particles[j].x, particles[j].y)
             
-            const connectionOpacity = (1 - distance / 120) * 0.1
+            const connectionOpacity = (1 - distance / 120) * 0.1 * fadeOpacity
             ctx.strokeStyle = isDark
               ? `rgba(147, 197, 253, ${connectionOpacity})`
               : `rgba(59, 130, 246, ${connectionOpacity * 0.7})`
