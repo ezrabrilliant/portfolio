@@ -52,42 +52,42 @@ export default function About() {
 
   useEffect(() => {
     const ctx = gsap.context(() => {
-      // Floating orbs animation
+      // Floating orbs - MORE DRAMATIC movement
       if (orb1Ref.current) {
         gsap.to(orb1Ref.current, {
-          scale: 1.2,
+          scale: 1.4,
           rotate: 360,
-          duration: 20,
+          duration: 15,
           repeat: -1,
           yoyo: true,
-          ease: "none"
+          ease: "power1.inOut"
         })
       }
 
       if (orb2Ref.current) {
         gsap.to(orb2Ref.current, {
-          scale: 0.8,
+          scale: 0.6,
           rotate: -360,
-          duration: 15,
+          duration: 12,
           repeat: -1,
           yoyo: true,
-          ease: "none"
+          ease: "power1.inOut"
         })
       }
 
-      // Image glow pulse
+      // Image glow - MORE INTENSE pulse
       if (imageGlowRef.current) {
         gsap.to(imageGlowRef.current, {
-          scale: 1.1,
-          opacity: 0.5,
-          duration: 4,
+          scale: 1.2,
+          opacity: 0.6,
+          duration: 3,
           repeat: -1,
           yoyo: true,
-          ease: "sine.inOut"
+          ease: "power2.inOut"
         })
       }
 
-      // Section entrance animations with ScrollTrigger
+      // Section entrance animations - MORE KINETIC AND BOLD
       const tl = gsap.timeline({
         scrollTrigger: {
           trigger: sectionRef.current,
@@ -97,53 +97,64 @@ export default function About() {
         }
       })
 
+      // Title - dramatic entrance with rotation
       tl.from(titleRef.current, {
         opacity: 0,
-        y: -30,
+        y: -50,
+        scale: 0.7,
+        rotation: -10,
         duration: 0.8,
-        ease: "power3.out"
+        ease: "back.out(2)"
       })
+      // Subtitle - quick pop
       .from(subtitleRef.current, {
         opacity: 0,
-        y: 20,
+        y: 30,
+        scale: 0.9,
         duration: 0.6,
-        ease: "power3.out"
+        ease: "back.out(1)"
       }, "-=0.4")
+      // Underline - fast sweep
       .to(underlineRef.current, {
         width: "100%",
-        duration: 0.8,
+        duration: 0.6,
         ease: "power3.out"
       }, "-=0.3")
+      // Image - dramatic slide with rotation
       .from(imageContainerRef.current, {
         opacity: 0,
-        x: -50,
+        x: -100,
+        scale: 0.6,
+        rotation: -15,
+        duration: 0.9,
+        ease: "back.out(2)"
+      }, "-=0.4")
+      // Content - slide from right with scale
+      .from(contentRef.current, {
+        opacity: 0,
+        x: 100,
         scale: 0.9,
         duration: 0.8,
         ease: "back.out(1.7)"
-      }, "-=0.5")
-      .from(contentRef.current, {
-        opacity: 0,
-        x: 50,
-        duration: 0.8,
-        ease: "power3.out"
-      }, "-=0.6")
+      }, "-=0.7")
 
-      // Highlights stagger animation
+      // Highlights - kinetic stagger
       if (highlightsRef.current.length > 0) {
         gsap.from(highlightsRef.current.filter(Boolean), {
           scrollTrigger: {
             trigger: contentRef.current,
-            start: "top 70%",
+            start: "top 90%",
           },
           opacity: 0,
-          x: -20,
-          stagger: 0.1,
-          duration: 0.6,
-          ease: "power3.out"
+          x: -30,
+          rotation: -5,
+          stagger: 0.08,
+          duration: 0.5,
+          ease: "back.out(2)"
         })
       }
 
-      // Skill cards animation
+      // Skill cards - dramatic pop-in
       if (skillCardsRef.current.length > 0) {
         skillCardsRef.current.filter(Boolean).forEach((card, index) => {
           gsap.from(card, {
@@ -153,10 +164,12 @@ export default function About() {
               toggleActions: "play none none none"
             },
             opacity: 0,
-            y: 50,
-            duration: 0.6,
-            delay: index * 0.1,
-            ease: "back.out(1.7)"
+            y: 80,
+            scale: 0.5,
+            rotation: -10,
+            duration: 0.7,
+            delay: index * 0.08,
+            ease: "back.out(2)"
           })
         })
       }
@@ -184,8 +197,8 @@ export default function About() {
             <h2
               ref={titleRef}
               className="text-4xl md:text-5xl font-bold mb-4 relative inline-block cursor-pointer"
-              onMouseEnter={(e) => gsap.to(e.currentTarget, { scale: 1.05, duration: 0.3 })}
-              onMouseLeave={(e) => gsap.to(e.currentTarget, { scale: 1, duration: 0.3 })}
+              onMouseEnter={(e) => gsap.to(e.currentTarget, { scale: 1.1, y: -5, rotation: 2, duration: 0.3, ease: "back.out(2)" })}
+              onMouseLeave={(e) => gsap.to(e.currentTarget, { scale: 1, y: 0, rotation: 0, duration: 0.3, ease: "power2.out" })}
             >
               About <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Me</span>
               <div
@@ -209,8 +222,8 @@ export default function About() {
               <div
                 ref={imageContainerRef}
                 className="relative group cursor-pointer"
-                onMouseEnter={(e) => gsap.to(e.currentTarget, { scale: 1.05, rotate: 2, duration: 0.3 })}
-                onMouseLeave={(e) => gsap.to(e.currentTarget, { scale: 1, rotate: 0, duration: 0.3 })}
+                onMouseEnter={(e) => gsap.to(e.currentTarget, { scale: 1.1, rotate: 5, duration: 0.4, ease: "back.out(2)" })}
+                onMouseLeave={(e) => gsap.to(e.currentTarget, { scale: 1, rotate: 0, duration: 0.4, ease: "power2.out" })}
               >
                 {/* Glowing background */}
                 <div
@@ -304,10 +317,10 @@ function SkillCard({ skill, cardRef }: SkillCardProps) {
     handleMouseMove(e)
     if (iconRef.current) {
       gsap.to(iconRef.current, {
-        scale: 1.1,
-        rotate: 5,
-        duration: 0.3,
-        ease: "back.out(1.7)"
+        scale: 1.3,
+        rotate: 15,
+        duration: 0.4,
+        ease: "back.out(2)"
       })
     }
   }
@@ -318,7 +331,7 @@ function SkillCard({ skill, cardRef }: SkillCardProps) {
       gsap.to(iconRef.current, {
         scale: 1,
         rotate: 0,
-        duration: 0.3,
+        duration: 0.4,
         ease: "power2.out"
       })
     }

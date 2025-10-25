@@ -57,104 +57,127 @@ export default function Hero() {
     }
   }, [typedText, currentIndex, typingComplete, titles])
 
-  // GSAP Animations on mount
+  // GSAP Animations on mount - More kinetic and bold like intro
   useEffect(() => {
     const ctx = gsap.context(() => {
-      const tl = gsap.timeline({ defaults: { ease: "power3.out" } })
-
-      // Animate floating orbs
+      // Animate floating orbs - more dramatic movement
       if (orb1Ref.current) {
         gsap.to(orb1Ref.current, {
-          scale: 1.2,
+          scale: 1.5,
           rotate: 360,
-          x: 50,
-          duration: 20,
+          x: 100,
+          duration: 15,
           repeat: -1,
           yoyo: true,
-          ease: "none"
+          ease: "power1.inOut"
         })
       }
 
       if (orb2Ref.current) {
         gsap.to(orb2Ref.current, {
-          scale: 0.8,
+          scale: 0.7,
           rotate: -360,
-          y: -30,
-          duration: 15,
+          y: -50,
+          duration: 12,
           repeat: -1,
           yoyo: true,
-          ease: "none"
+          ease: "power1.inOut"
         })
       }
 
-      // Avatar glow pulse
+      // Avatar glow - more intense pulse
       if (glowRef.current) {
         gsap.to(glowRef.current, {
-          scale: 1.2,
-          opacity: 0.6,
-          duration: 3,
-          repeat: -1,
-          yoyo: true,
-          ease: "sine.inOut"
-        })
-      }
-
-      // Main entrance animation timeline
-      tl.from(avatarRef.current, {
-        opacity: 0,
-        scale: 0.5,
-        duration: 0.8,
-        ease: "back.out(1.7)"
-      })
-      .from(greetingRef.current, {
-        opacity: 0,
-        y: -20,
-        duration: 0.6
-      }, "-=0.3")
-      .from(nameWordsRef.current.filter(Boolean), {
-        opacity: 0,
-        y: 50,
-        rotationX: -90,
-        stagger: 0.1,
-        duration: 0.8,
-        ease: "back.out(1.7)"
-      }, "-=0.3")
-      .from(subtitleRef.current, {
-        opacity: 0,
-        duration: 0.8
-      }, "-=0.3")
-      .from(descriptionRef.current, {
-        opacity: 0,
-        y: 20,
-        duration: 0.8
-      }, "-=0.5")
-      .from(buttonsRef.current.filter(Boolean), {
-        opacity: 0,
-        scale: 0.8,
-        stagger: 0.1,
-        duration: 0.5,
-        ease: "back.out(1.7)"
-      }, "-=0.4")
-      .from(socialLinksRef.current.filter(Boolean), {
-        opacity: 0,
-        y: 20,
-        stagger: 0.08,
-        duration: 0.5,
-        ease: "back.out(1.7)"
-      }, "-=0.3")
-      .from(scrollRef.current, {
-        opacity: 0,
-        duration: 1
-      }, "-=0.2")
-
-      // Scroll indicator bounce
-      if (scrollRef.current) {
-        gsap.to(scrollRef.current, {
-          y: 10,
+          scale: 1.3,
+          opacity: 0.7,
           duration: 2,
           repeat: -1,
           yoyo: true,
-          ease: "sine.inOut"
+          ease: "power2.inOut"
+        })
+      }
+
+      // Main entrance animation - BOLD and KINETIC like intro
+      const tl = gsap.timeline({ defaults: { ease: "power3.out" } })
+
+      // Avatar - dramatic entrance with rotation
+      tl.from(avatarRef.current, {
+        opacity: 0,
+        scale: 0.3,
+        rotation: -180,
+        duration: 1,
+        ease: "back.out(2)"
+      })
+      // Greeting - quick fade with slide
+      .from(greetingRef.current, {
+        opacity: 0,
+        y: -30,
+        scale: 0.8,
+        duration: 0.5,
+        ease: "power3.out"
+      }, "-=0.5")
+      // Name words - LESS dramatic entrance to avoid collision
+      .from(nameWordsRef.current.filter(Boolean), {
+        opacity: 0,
+        y: 50,
+        rotationX: -20,
+        scale: 0.9,
+        stagger: 0.08,
+        duration: 0.6,
+        ease: "power3.out"
+      }, "-=0.4")
+      // Subtitle - fade in
+      .from(subtitleRef.current, {
+        opacity: 0,
+        scale: 0.9,
+        duration: 0.6
+      }, "-=0.5")
+      // Description - slide up with scale
+      .from(descriptionRef.current, {
+        opacity: 0,
+        y: 30,
+        scale: 0.95,
+        duration: 0.7
+      }, "-=0.4")
+      // Buttons - pop in with scale
+      .from(buttonsRef.current.filter(Boolean), {
+        opacity: 0,
+        scale: 0.5,
+        rotation: -10,
+        stagger: 0.1,
+        duration: 0.6,
+        ease: "back.out(2)"
+      }, "-=0.5")
+      // Social links - stagger with rotation
+      .fromTo(socialLinksRef.current.filter(Boolean), {
+        opacity: 0,
+        y: 30,
+        rotation: -20,
+        scale: 0.5
+      }, {
+        opacity: 1,
+        y: 0,
+        rotation: 0,
+        scale: 1,
+        stagger: 0.06,
+        duration: 0.5,
+        ease: "back.out(2)"
+      }, "-=0.4")
+      // Scroll indicator
+      .from(scrollRef.current, {
+        opacity: 0,
+        y: -20,
+        duration: 0.8
+      }, "-=0.3")
+
+      // Scroll indicator - kinetic bounce
+      if (scrollRef.current) {
+        gsap.to(scrollRef.current, {
+          y: 15,
+          duration: 1.5,
+          repeat: -1,
+          yoyo: true,
+          ease: "power1.inOut"
         })
       }
     }, containerRef)
@@ -164,17 +187,20 @@ export default function Hero() {
 
   const nameWords = portfolioConfig.personal.fullName.split(" ")
 
+  // More dramatic hover effects
   const handleButtonHover = (e: React.MouseEvent<HTMLDivElement>) => {
     gsap.to(e.currentTarget, {
-      scale: 1.05,
+      scale: 1.1,
+      rotation: 2,
       duration: 0.3,
-      ease: "back.out(1.7)"
+      ease: "back.out(2)"
     })
   }
 
   const handleButtonLeave = (e: React.MouseEvent<HTMLDivElement>) => {
     gsap.to(e.currentTarget, {
       scale: 1,
+      rotation: 0,
       duration: 0.3,
       ease: "power2.out"
     })
@@ -182,15 +208,17 @@ export default function Hero() {
 
   const handleSocialHover = (e: React.MouseEvent<HTMLAnchorElement>) => {
     gsap.to(e.currentTarget, {
-      scale: 1.1,
+      scale: 1.2,
+      rotation: 10,
       duration: 0.3,
-      ease: "back.out(1.7)"
+      ease: "back.out(2)"
     })
   }
 
   const handleSocialLeave = (e: React.MouseEvent<HTMLAnchorElement>) => {
     gsap.to(e.currentTarget, {
       scale: 1,
+      rotation: 0,
       duration: 0.3,
       ease: "power2.out"
     })
@@ -221,8 +249,8 @@ export default function Hero() {
           >
             <div 
               className="relative group cursor-pointer"
-              onMouseEnter={(e) => gsap.to(e.currentTarget, { scale: 1.05, duration: 0.3 })}
-              onMouseLeave={(e) => gsap.to(e.currentTarget, { scale: 1, duration: 0.3 })}
+              onMouseEnter={(e) => gsap.to(e.currentTarget, { scale: 1.15, rotation: 5, duration: 0.4, ease: "back.out(2)" })}
+              onMouseLeave={(e) => gsap.to(e.currentTarget, { scale: 1, rotation: 0, duration: 0.4, ease: "power2.out" })}
             >
               {/* Glowing background */}
               <div 
@@ -262,8 +290,8 @@ export default function Hero() {
                       ? "bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600 bg-clip-text text-transparent"
                       : "text-foreground"
                   }`}
-                  onMouseEnter={(e) => gsap.to(e.currentTarget, { scale: 1.05, duration: 0.2 })}
-                  onMouseLeave={(e) => gsap.to(e.currentTarget, { scale: 1, duration: 0.2 })}
+                  onMouseEnter={(e) => gsap.to(e.currentTarget, { scale: 1.08, y: -3, rotation: 1, duration: 0.3, ease: "back.out(1.7)" })}
+                  onMouseLeave={(e) => gsap.to(e.currentTarget, { scale: 1, y: 0, rotation: 0, duration: 0.3, ease: "power2.out" })}
                 >
                   {word}
                 </span>
@@ -354,7 +382,7 @@ export default function Hero() {
                 href={href}
                 target={href.startsWith('http') ? "_blank" : undefined}
                 rel={href.startsWith('http') ? "noopener noreferrer" : undefined}
-                className="p-3 rounded-full bg-background/50 backdrop-blur-sm border border-border/50 hover:border-primary/50 transition-all duration-300 group"
+                className="p-3 rounded-full bg-background/50 backdrop-blur-sm border border-border/50 hover:border-primary/50 transition-all duration-300 group opacity-0"
                 onMouseEnter={handleSocialHover}
                 onMouseLeave={handleSocialLeave}
               >
