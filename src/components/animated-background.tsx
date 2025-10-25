@@ -16,27 +16,25 @@ interface Particle {
 
 interface AnimatedBackgroundProps {
   introComplete?: boolean
+  introOpacity?: number
 }
 
-export default function AnimatedBackground({ introComplete = false }: AnimatedBackgroundProps) {
+export default function AnimatedBackground({ introComplete = false, introOpacity = 0.35 }: AnimatedBackgroundProps) {
+  const initialOpacity = introComplete ? 1 : introOpacity
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const { theme, systemTheme } = useTheme()
-  const fadeOpacityRef = useRef(0) // For controlling fade-in
+  const fadeOpacityRef = useRef(initialOpacity) // For controlling fade-in
 
   // Handle fade-in when intro is complete
   useEffect(() => {
-    if (introComplete) {
-      // Smooth fade-in animation
-      gsap.to(fadeOpacityRef, {
-        current: 1,
-        duration: 1.2,
-        ease: "power2.out"
-      })
-    } else {
-      // Keep hidden during intro
-      fadeOpacityRef.current = 0
-    }
-  }, [introComplete])
+    const targetOpacity = introComplete ? 1 : introOpacity
+
+    gsap.to(fadeOpacityRef, {
+      current: targetOpacity,
+      duration: 1.2,
+      ease: "power2.out"
+    })
+  }, [introComplete, introOpacity])
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -74,7 +72,7 @@ export default function AnimatedBackground({ introComplete = false }: AnimatedBa
 
     const drawGradientBackground = () => {
       const isDark = theme === "dark" || (theme === "system" && systemTheme === "dark")
-      const fadeOpacity = fadeOpacityRef.current
+  const fadeOpacity = fadeOpacityRef.current
       
       // Create main gradient
       const gradient = ctx.createRadialGradient(
@@ -139,7 +137,7 @@ export default function AnimatedBackground({ introComplete = false }: AnimatedBa
       drawGradientBackground()
 
       const isDark = theme === "dark" || (theme === "system" && systemTheme === "dark")
-      const fadeOpacity = fadeOpacityRef.current
+  const fadeOpacity = fadeOpacityRef.current
 
       particles.forEach((particle, index) => {
         // Update position

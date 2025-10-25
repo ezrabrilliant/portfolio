@@ -33,11 +33,11 @@ function App() {
       disableTransitionOnChange
     >
       <AnalyticsProvider>
+        <AnimatedBackground introComplete={!showIntro} introOpacity={0.35} />
         {showIntro ? (
           <IntroAnimation onComplete={handleIntroComplete} />
         ) : (
           <div className="min-h-screen relative" key={forceUpdate}>
-            <AnimatedBackground introComplete={!showIntro} />
             <Navbar />
             <main>
               <Hero />
