@@ -59,7 +59,11 @@ export default function IntroAnimation({ onComplete }: IntroAnimationProps) {
       line.style.cssText = `
         font-size: ${responsiveFontSize};
         font-weight: bold;
-        color: currentColor;
+        background: linear-gradient(90deg, hsl(220, 80%, 60%), hsl(270, 70%, 65%), hsl(220, 80%, 60%));
+        background-size: 200% auto;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
         opacity: 0.015;
         white-space: nowrap;
         line-height: 1;
@@ -67,6 +71,7 @@ export default function IntroAnimation({ onComplete }: IntroAnimationProps) {
         display: block;
         width: max-content;
         overflow: visible;
+        animation: gradient-shift 3s ease infinite;
       `
       
       typeLines.push(line)
@@ -141,7 +146,7 @@ export default function IntroAnimation({ onComplete }: IntroAnimationProps) {
       // All lines appear simultaneously
       // Instant appearance for all lines
       entranceTl.to(typeLines, {
-        opacity: 0.9,
+        opacity: 1,
         duration: 0.2,
         ease: "power1.out"
       })
@@ -166,7 +171,7 @@ export default function IntroAnimation({ onComplete }: IntroAnimationProps) {
       
       // Final opacity increase before kinetic
       .to(typeLines, {
-        opacity: 0.85,
+        opacity: 1,
         duration: 0.4,
         ease: "power1.out"
       }, "+=0.2")
@@ -237,11 +242,28 @@ export default function IntroAnimation({ onComplete }: IntroAnimationProps) {
       startKineticAnimation("EZRA BRILLIANT •")
     }, 200)
 
-    // Exit animation - INSTANT transition
+    // Exit animation - Smooth fade transition
     const exitAnimation = () => {
-      // No animation timeline - direct instant transition
-      setIsVisible(false)
-      onComplete() // Instant call to main page
+      // Animate container fade out with scale
+      gsap.to(containerRef.current, {
+        opacity: 0,
+        scale: 1.05,
+        duration: 0.8,
+        ease: "power2.inOut",
+        onComplete: () => {
+          setIsVisible(false)
+          onComplete() // Call to main page after fade
+        }
+      })
+
+      // Animate kinetic type out
+      gsap.to(kineticTypeRef.current, {
+        opacity: 0,
+        scale: 0.95,
+        rotation: 5,
+        duration: 0.8,
+        ease: "power2.inOut"
+      })
     }
 
     // Auto exit after animation - align + kinetic timing
@@ -271,10 +293,37 @@ export default function IntroAnimation({ onComplete }: IntroAnimationProps) {
       ref={containerRef}
       className="fixed inset-0 z-50 bg-background flex items-center justify-center cursor-pointer overflow-hidden"
     >
+      {/* Animated Background - match dengan main page */}
+      <div className="absolute inset-0 z-0">
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-purple-500/5 to-blue-500/5" />
+        
+        {/* Floating orbs - subtle animation */}
+        <div className="absolute top-1/4 left-1/4 w-64 h-64 rounded-full bg-blue-500/10 blur-3xl animate-pulse" 
+             style={{ animationDuration: '4s' }} />
+        <div className="absolute bottom-1/4 right-1/4 w-48 h-48 rounded-full bg-purple-500/10 blur-2xl animate-pulse" 
+             style={{ animationDuration: '3s', animationDelay: '1s' }} />
+        
+        {/* Subtle particles */}
+        <div className="absolute inset-0 overflow-hidden">
+          {[...Array(20)].map((_, i) => (
+            <div
+              key={i}
+              className="absolute w-1 h-1 bg-blue-400/30 rounded-full"
+              style={{
+                left: `${Math.random() * 100}%`,
+                top: `${Math.random() * 100}%`,
+                animation: `float ${3 + Math.random() * 4}s ease-in-out infinite`,
+                animationDelay: `${Math.random() * 2}s`
+              }}
+            />
+          ))}
+        </div>
+      </div>
+
       {/* Kinetic type overlay - responsive container untuk seamless marquee */}
       <div 
         ref={kineticTypeRef}
-        className="fixed inset-0 flex flex-col justify-center items-center pointer-events-none text-foreground"
+        className="fixed inset-0 flex flex-col justify-center items-center pointer-events-none text-foreground z-10"
         style={{
           zIndex: 200,
           display: 'block',
@@ -287,11 +336,34 @@ export default function IntroAnimation({ onComplete }: IntroAnimationProps) {
       />
 
       {/* Skip indicator - responsive positioning */}
-      <div className="absolute bottom-4 right-4 md:bottom-8 md:right-8 text-muted-foreground text-xs md:text-sm hover:text-foreground transition-colors flex items-center gap-1 md:gap-2">
+      <div className="absolute bottom-4 right-4 md:bottom-8 md:right-8 text-muted-foreground text-xs md:text-sm hover:text-foreground transition-colors flex items-center gap-1 md:gap-2 z-50">
         <div className="w-1.5 h-1.5 md:w-2 md:h-2 bg-primary rounded-full animate-pulse" />
         <span className="hidden sm:inline">Click to skip</span>
         <span className="sm:hidden">Tap to skip</span>
       </div>
+
+      {/* Add keyframes for animations */}
+      <style>{`
+        @keyframes float {
+          0%, 100% {
+            transform: translateY(0) translateX(0);
+            opacity: 0.3;
+          }
+          50% {
+            transform: translateY(-20px) translateX(10px);
+            opacity: 1;
+          }
+        }
+        
+        @keyframes gradient-shift {
+          0%, 100% {
+            background-position: 0% center;
+          }
+          50% {
+            background-position: 100% center;
+          }
+        }
+      `}</style>
     </div>
   )
 }
