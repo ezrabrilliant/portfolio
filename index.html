@@ -1,17 +1,50 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" class="dark">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="alternate icon" href="/favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Ezra Brilliant - Business Intelligence Specialist & Mobile Developer. Portfolio showcasing modern web applications, mobile development, and data-driven solutions." />
-    <meta name="keywords" content="Ezra Brilliant, Business Intelligence, Mobile Developer, React, Android, Portfolio" />
+    <meta name="description" content="Ezra Brilliant - Business Information Systems Student & Mobile App Developer. Building innovative digital solutions through mobile apps and data-driven systems." />
+    <meta name="keywords" content="Ezra Brilliant, Business Intelligence, Mobile Developer, React, Android, Kotlin, Portfolio" />
     <meta name="author" content="Ezra Brilliant" />
-    <title>Ezra Brilliant - Portfolio</title>
+    <meta name="theme-color" content="#050505" />
+    <!-- Open Graph / Social Media -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://ezrabrilliant.com/" />
+    <meta property="og:title" content="Ezra Brilliant | Portfolio" />
+    <meta property="og:description" content="Business Information Systems Student &amp; Mobile App Developer. Building innovative digital solutions through mobile apps and data-driven systems." />
+    <meta property="og:image" content="https://ezrabrilliant.com/avatar.jpg" />
+    <meta property="og:site_name" content="Ezra Brilliant Portfolio" />
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Ezra Brilliant | Portfolio" />
+    <meta name="twitter:description" content="Business Information Systems Student &amp; Mobile App Developer. Building innovative digital solutions." />
+    <meta name="twitter:image" content="https://ezrabrilliant.com/avatar.jpg" />
+    <!-- Canonical -->
+    <link rel="canonical" href="https://ezrabrilliant.com/" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="preconnect" href="https://res.cloudinary.com" />
+    <link rel="preload" href="https://res.cloudinary.com/dfyo520kj/image/upload/f_auto,q_auto,w_320,h_320,c_fill,g_face/avatar_h5ijl9" as="image" media="(min-width: 1024px)" />
+    <title>Ezra Brilliant | Portfolio</title>
+    <!-- Inline critical font-face declarations to avoid render-blocking -->
+    <style>
+      @font-face {
+        font-family: 'Space Grotesk';
+        font-style: normal;
+        font-weight: 300 700;
+        font-display: swap;
+        src: url(https://fonts.gstatic.com/s/spacegrotesk/v16/V8mDoQDjQSkFtoMM3T6r8E7mPbF4Cw.woff2) format('woff2');
+        unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+      }
+    </style>
   </head>
-  <body>
+  <body class="bg-[#050505] text-neutral-200 antialiased">
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <!-- Load Google Fonts async (non-render-blocking) -->
+    <link rel="preload" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&family=Space+Grotesk:wght@300..700&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'" />
+    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&family=Space+Grotesk:wght@300..700&display=swap" /></noscript>
   </body>
 </html>
