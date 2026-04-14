@@ -1,86 +1,369 @@
-import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+"use client"
 
-const isMobile = typeof window !== "undefined" && window.innerWidth < 640;
+import { useEffect, useRef, useState } from "react"
+import { gsap } from "gsap"
 
-export function IntroAnimation({ onComplete }: { onComplete: () => void }) {
-  const [phase, setPhase] = useState<"logo" | "expand" | "done">("logo");
+interface IntroAnimationProps {
+  onComplete: () => void
+}
+
+export default function IntroAnimation({ onComplete }: IntroAnimationProps) {
+  const containerRef = useRef<HTMLDivElement>(null)
+  const kineticTypeRef = useRef<HTMLDivElement>(null)
+  const [isVisible, setIsVisible] = useState(true)
 
   useEffect(() => {
-    const expandDelay = isMobile ? 350 : 600;
-    const doneDelay = isMobile ? 600 : 1000;
-    const t1 = setTimeout(() => setPhase("expand"), expandDelay);
-    const t2 = setTimeout(() => {
-      setPhase("done");
-      onComplete();
-    }, doneDelay);
+    const container = containerRef.current
+    const kineticType = kineticTypeRef.current
+
+    if (!container || !kineticType) return
+
+    // Handle resize untuk responsive behavior
+    const handleResize = () => {
+      // Update font size on resize
+      const newFontSize = getResponsiveFontSize()
+      typeLines.forEach(line => {
+        line.style.fontSize = newFontSize
+      })
+      
+      // Update container width on resize
+      const isMobile = window.innerWidth < 768
+      kineticType.style.width = isMobile ? '150vw' : '200vw'
+      kineticType.style.left = isMobile ? '-25vw' : '-50vw'
+    }
+
+    // Create custom ease like CodePen
+    const customEase = "power3.out" // Equivalent to CodePen's customEase
+
+    // Create type lines exactly like CodePen
+    const typeLines: HTMLElement[] = []
+    const oddLines: HTMLElement[] = []
+    const evenLines: HTMLElement[] = []
+
+    // Get responsive font size based on screen width
+    const getResponsiveFontSize = () => {
+      const width = window.innerWidth
+      if (width < 640) return '3rem'      // Mobile: 48px
+      if (width < 768) return '4rem'      // Small tablet: 64px
+      if (width < 1024) return '5rem'     // Tablet: 80px
+      if (width < 1280) return '6rem'     // Small desktop: 96px
+      return '8rem'                       // Large desktop: 128px
+    }
+
+    const responsiveFontSize = getResponsiveFontSize()
+
+    // Create 12 lines like in CodePen with responsive sizing
+    for (let i = 0; i < 12; i++) {
+      const line = document.createElement('div')
+      line.className = `type-line ${i % 2 === 0 ? 'odd' : 'even'}`
+      line.style.cssText = `
+        font-size: ${responsiveFontSize};
+        font-weight: bold;
+        background: linear-gradient(90deg, hsl(220, 80%, 60%), hsl(270, 70%, 65%), hsl(220, 80%, 60%));
+        background-size: 200% auto;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        opacity: 0.015;
+        white-space: nowrap;
+        line-height: 1;
+        transform: translateX(0%);
+        display: block;
+        width: max-content;
+        overflow: visible;
+        animation: gradient-shift 3s ease infinite;
+      `
+      
+      typeLines.push(line)
+      if (i % 2 === 0) {
+        oddLines.push(line)
+      } else {
+        evenLines.push(line)
+      }
+      
+      kineticType.appendChild(line)
+    }
+
+    // Set initial state like CodePen
+    gsap.set(kineticType, {
+      display: "block",
+      scale: 1,
+      rotation: 0,
+      opacity: 1,
+      visibility: "visible"
+    })
+
+    gsap.set(typeLines, {
+      opacity: 0.015,
+      x: "0%"
+    })
+
+    // EXACT startKineticAnimation function from CodePen
+    const startKineticAnimation = (text: string) => {
+      // Reset everything first
+      gsap.killTweensOf([kineticType, typeLines, oddLines, evenLines])
+
+      // Set kinetic type visible (like CodePen)
+      kineticType.style.display = "block"
+      kineticType.style.opacity = "1"
+      kineticType.style.visibility = "visible"
+
+      // Create repeated text like CodePen
+      const repeatedText = `${text} ${text} ${text}`
+
+      // Set text content for all lines dengan multiple repetitions untuk seamless wrap
+      typeLines.forEach((line, index) => {
+        // Create seamless repeating text untuk marquee effect yang panjang
+        const seamlessText = Array(8).fill(repeatedText).join(' ') // 8x repetition
+        line.textContent = seamlessText
+        
+        // Set initial positioning untuk seamless loop
+        const isEven = index % 2 === 0
+        line.style.whiteSpace = 'nowrap'
+        line.style.width = 'max-content'
+        
+        // Responsive starting position
+        const isMobile = window.innerWidth < 768
+        const startDistance = isMobile ? "30vw" : "50vw"
+        
+        // Set starting position agar teks selalu terlihat
+        gsap.set(line, {
+          x: isEven ? startDistance : `-${startDistance}` // Start from opposite side
+        })
+      })
+
+      // Initial state - text invisible, positioned for marquee
+      gsap.set(typeLines, {
+        opacity: 0,
+        scale: 1,
+        rotation: 0
+        // x position already set above untuk marquee starting position
+      })
+
+      // Dynamic entrance animation with align movement - ALL AT ONCE
+      const entranceTl = gsap.timeline()
+      
+      // All lines appear simultaneously
+      // Instant appearance for all lines
+      entranceTl.to(typeLines, {
+        opacity: 1,
+        duration: 0.2,
+        ease: "power1.out"
+      })
+      
+      // Align animation - all lines move to center smoothly (no left-right movement)
+      .to(typeLines, {
+        x: "0%", // All lines align to center
+        duration: 0.6,
+        ease: "power2.out",
+        stagger: 0.05 // Slight stagger for organic feel
+      }, "+=0.2")
+      
+      // Optional: subtle breathing/scaling while aligned
+      .to(typeLines, {
+        scale: 1.02,
+        duration: 0.6,
+        ease: "sine.inOut",
+        yoyo: true,
+        repeat: 1,
+        stagger: 0.03
+      }, "+=0.1")
+      
+      // Final opacity increase before kinetic
+      .to(typeLines, {
+        opacity: 1,
+        duration: 0.4,
+        ease: "power1.out"
+      }, "+=0.2")
+
+      // Wait for align animation to complete, then start kinetic animation
+      setTimeout(() => {
+        // No need to kill tweens since align animation is finite
+        // Lines are already centered and ready for kinetic animation
+        
+        // Reset container to normal size untuk kinetic animation
+        gsap.set(kineticType, {
+          width: '100vw',
+          left: '0'
+        })
+        
+        // Reset text content to original untuk kinetic animation
+        typeLines.forEach((line) => {
+          line.textContent = repeatedText // Back to original repeated text
+        })
+        
+        // Start kinetic animation langsung tanpa reset position (keep random positions)
+        const timeline = gsap.timeline({
+          onComplete: () => {
+            console.log('Kinetic animation complete')
+          }
+        })
+
+        // EXACT animation from CodePen lines 372-416
+        timeline.to(kineticType, {
+          duration: 1.4,
+          ease: customEase,
+          scale: 2.7,
+          rotation: -90
+        })
+
+        // Odd lines animation
+        timeline.to(oddLines, {
+          keyframes: [
+            { x: "20%", duration: 1, ease: customEase },
+            { x: "-200%", duration: 1.5, ease: customEase }
+          ],
+          stagger: 0.08
+        }, 0)
+
+        // Even lines animation
+        timeline.to(evenLines, {
+          keyframes: [
+            { x: "-20%", duration: 1, ease: customEase },
+            { x: "200%", duration: 1.5, ease: customEase }
+          ],
+          stagger: 0.08
+        }, 0)
+
+        // Type lines opacity animation
+        timeline.to(typeLines, {
+          keyframes: [
+            { opacity: 1, duration: 1, ease: customEase },
+            { opacity: 0, duration: 1.5, ease: customEase }
+          ],
+          stagger: 0.05
+        }, 0)
+
+      }, 1500) // 2 seconds delay - wait for complete align animation sequence
+    }
+
+    // Start the animation
+    setTimeout(() => {
+      startKineticAnimation("EZRA BRILLIANT •")
+    }, 200)
+
+    // Exit animation - Smooth fade transition
+    const exitAnimation = () => {
+      // Animate container fade out with scale
+      gsap.to(containerRef.current, {
+        opacity: 0,
+        scale: 1.05,
+        duration: 0.8,
+        ease: "power2.inOut",
+        onComplete: () => {
+          setIsVisible(false)
+          onComplete() // Call to main page after fade
+        }
+      })
+
+      // Animate kinetic type out
+      gsap.to(kineticTypeRef.current, {
+        opacity: 0,
+        scale: 0.95,
+        rotation: 5,
+        duration: 0.8,
+        ease: "power2.inOut"
+      })
+    }
+
+    // Auto exit after animation - align + kinetic timing
+    setTimeout(() => {
+      exitAnimation()
+    }, 5500) // 0.2s start + 1.5s align + 2.5s kinetic + buffer
+
+    // Skip animation on click
+    const handleSkip = () => {
+      exitAnimation()
+    }
+
+    // Add event listeners
+    container.addEventListener('click', handleSkip)
+    window.addEventListener('resize', handleResize)
+
     return () => {
-      clearTimeout(t1);
-      clearTimeout(t2);
-    };
-  }, [onComplete]);
+      container.removeEventListener('click', handleSkip)
+      window.removeEventListener('resize', handleResize)
+    }
+  }, [onComplete])
+
+  if (!isVisible) return null
 
   return (
-    <AnimatePresence>
-      {phase !== "done" && (
-        <motion.div
-          initial={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.5, ease: "easeInOut" }}
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-[#050505]"
-        >
-          {/* Ambient glow behind logo */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.5 }}
-            animate={{ opacity: 0.15, scale: 1.5 }}
-            transition={{ duration: 1.5, ease: "easeOut" }}
-            className="absolute h-64 w-64 rounded-full bg-teal-glow blur-[100px]"
-          />
+    <div 
+      ref={containerRef}
+      className="fixed inset-0 z-50 bg-background flex items-center justify-center cursor-pointer overflow-hidden"
+    >
+      {/* Animated Background - match dengan main page */}
+      <div className="absolute inset-0 z-0">
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-purple-500/5 to-blue-500/5" />
+        
+        {/* Floating orbs - subtle animation */}
+        <div className="absolute top-1/4 left-1/4 w-64 h-64 rounded-full bg-blue-500/10 blur-3xl animate-pulse" 
+             style={{ animationDuration: '4s' }} />
+        <div className="absolute bottom-1/4 right-1/4 w-48 h-48 rounded-full bg-purple-500/10 blur-2xl animate-pulse" 
+             style={{ animationDuration: '3s', animationDelay: '1s' }} />
+        
+        {/* Subtle particles */}
+        <div className="absolute inset-0 overflow-hidden">
+          {[...Array(20)].map((_, i) => (
+            <div
+              key={i}
+              className="absolute w-1 h-1 bg-blue-400/30 rounded-full"
+              style={{
+                left: `${Math.random() * 100}%`,
+                top: `${Math.random() * 100}%`,
+                animation: `float ${3 + Math.random() * 4}s ease-in-out infinite`,
+                animationDelay: `${Math.random() * 2}s`
+              }}
+            />
+          ))}
+        </div>
+      </div>
 
-          {/* Logo container */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={
-              phase === "logo"
-                ? { opacity: 1, scale: 1 }
-                : { opacity: 0, scale: 1.5 }
-            }
-            transition={{
-              duration: phase === "logo" ? 0.8 : 0.6,
-              ease: [0.25, 0.46, 0.45, 0.94],
-            }}
-            className="relative z-10 flex items-center gap-1"
-          >
-            {/* Logo icon */}
-            <motion.div
-              initial={{ rotate: -180, opacity: 0 }}
-              animate={{ rotate: 0, opacity: 1 }}
-              transition={{ duration: 0.8, delay: 0.2, ease: [0.25, 0.46, 0.45, 0.94] }}
-              className="flex h-14 w-14 items-center justify-center rounded-2xl border border-teal-primary/30 bg-teal-primary/10"
-            >
-              <span className="font-display text-2xl font-bold text-teal-glow">E</span>
-            </motion.div>
+      {/* Kinetic type overlay - responsive container untuk seamless marquee */}
+      <div 
+        ref={kineticTypeRef}
+        className="fixed inset-0 flex flex-col justify-center items-center pointer-events-none text-foreground z-10"
+        style={{
+          zIndex: 200,
+          display: 'block',
+          visibility: 'visible',
+          opacity: 1,
+          overflow: 'visible', // Allow text to flow beyond container
+          width: window.innerWidth < 768 ? '150vw' : '200vw', // Smaller container on mobile
+          left: window.innerWidth < 768 ? '-25vw' : '-50vw' // Adjusted centering for mobile
+        }}
+      />
 
-            {/* Text */}
-            <motion.span
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.5, delay: 0.5 }}
-              className="font-display text-4xl font-bold text-white"
-            >
-              B<span className="text-teal-glow">.</span>
-            </motion.span>
-          </motion.div>
+      {/* Skip indicator - responsive positioning */}
+      <div className="absolute bottom-4 right-4 md:bottom-8 md:right-8 text-muted-foreground text-xs md:text-sm hover:text-foreground transition-colors flex items-center gap-1 md:gap-2 z-50">
+        <div className="w-1.5 h-1.5 md:w-2 md:h-2 bg-primary rounded-full animate-pulse" />
+        <span className="hidden sm:inline">Click to skip</span>
+        <span className="sm:hidden">Tap to skip</span>
+      </div>
 
-          {/* Loading line */}
-          <motion.div
-            initial={{ scaleX: 0 }}
-            animate={{ scaleX: 1 }}
-            transition={{ duration: 1.6, ease: "easeInOut", delay: 0.3 }}
-            className="absolute bottom-1/3 h-px w-32 origin-left bg-gradient-to-r from-transparent via-teal-glow/50 to-transparent"
-          />
-        </motion.div>
-      )}
-    </AnimatePresence>
-  );
+      {/* Add keyframes for animations */}
+      <style>{`
+        @keyframes float {
+          0%, 100% {
+            transform: translateY(0) translateX(0);
+            opacity: 0.3;
+          }
+          50% {
+            transform: translateY(-20px) translateX(10px);
+            opacity: 1;
+          }
+        }
+        
+        @keyframes gradient-shift {
+          0%, 100% {
+            background-position: 0% center;
+          }
+          50% {
+            background-position: 100% center;
+          }
+        }
+      `}</style>
+    </div>
+  )
 }

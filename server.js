@@ -11,20 +11,21 @@ const PORT = process.env.PORT || 3001;
 const GITHUB_USERNAME = "ezrabrilliant";
 const CACHE_TTL = 60 * 60 * 1000; // 1 jam
 
-// In-memory cache
-let cache = {
-  data: null,
-  timestamp: 0,
-};
+// In-memory cache (per year key)
+const cache = new Map(); // key: year string, value: { data, timestamp }
 
 // CORS for dev mode
 app.use(cors());
 
 // API endpoint - GitHub data with server-side cache
-app.get("/api/github", async (_req, res) => {
+app.get("/api/github", async (req, res) => {
+  const year = req.query.y || "last"; // "last", "2024", "2025", etc.
+  const cacheKey = `github_${year}`;
+
   // Return cache if still fresh
-  if (cache.data && Date.now() - cache.timestamp < CACHE_TTL) {
-    return res.json(cache.data);
+  const cached = cache.get(cacheKey);
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+    return res.json(cached.data);
   }
 
   try {
@@ -32,7 +33,7 @@ app.get("/api/github", async (_req, res) => {
       fetch(
         `https://api.github.com/users/${GITHUB_USERNAME}/repos?per_page=100&sort=updated`
       ).then((r) => (r.ok ? r.json() : Promise.reject())),
-      fetchContributions(),
+      fetchContributions(year),
     ]);
 
     let totalRepos = 0,
@@ -60,11 +61,11 @@ app.get("/api/github", async (_req, res) => {
       contributions,
     };
 
-    // Update cache
-    cache = { data, timestamp: Date.now() };
+    // Update cache for this year
+    cache.set(cacheKey, { data, timestamp: Date.now() });
 
     console.log(
-      `[GitHub Cache] Fresh data fetched at ${new Date().toLocaleString("id-ID", { timeZone: "Asia/Jakarta" })}`
+      `[GitHub Cache] Fresh data (y=${year}) fetched at ${new Date().toLocaleString("id-ID", { timeZone: "Asia/Jakarta" })}`
     );
 
     res.json(data);
@@ -72,8 +73,8 @@ app.get("/api/github", async (_req, res) => {
     console.error("[GitHub Cache] Fetch error:", err);
 
     // Return stale cache if available
-    if (cache.data) {
-      return res.json(cache.data);
+    if (cached) {
+      return res.json(cached.data);
     }
 
     res.status(500).json({ error: "Failed to fetch GitHub data" });
@@ -94,10 +95,10 @@ app.listen(PORT, () => {
 });
 
 // --- Helper: fetch contributions from GitHub ---
-async function fetchContributions() {
+async function fetchContributions(year = "last") {
   try {
     const res = await fetch(
-      `https://github-contributions-api.jogruber.de/v4/${GITHUB_USERNAME}?y=last`
+      `https://github-contributions-api.jogruber.de/v4/${GITHUB_USERNAME}?y=${year}`
     );
 
     if (!res.ok) throw new Error("contributions api failed");
@@ -118,7 +119,12 @@ async function fetchContributions() {
       }
     }
 
-    return { levels: contributions, total: data.total?.lastYear || total };
+    // For specific years, use the year key from total object
+    const totalCount = year === "last"
+      ? (data.total?.lastYear || total)
+      : (data.total?.[year] || total);
+
+    return { levels: contributions, total: totalCount };
   } catch {
     return { levels: [], total: 0 };
   }
