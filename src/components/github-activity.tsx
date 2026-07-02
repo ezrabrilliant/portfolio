@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, useInView } from "framer-motion";
 import { Github, GitCommit, Star, GitFork, Activity } from "lucide-react";
 
@@ -21,6 +21,16 @@ const LEVEL_COLORS = [
   "bg-teal-glow",
 ];
 
+// Generate year options: current year down to 2024 + "Last Year"
+function getYearOptions(): { label: string; value: string }[] {
+  const currentYear = new Date().getFullYear();
+  const options = [{ label: "Last Year", value: "last" }];
+  for (let y = currentYear; y >= 2024; y--) {
+    options.push({ label: String(y), value: String(y) });
+  }
+  return options;
+}
+
 export function GitHubActivity() {
   const [stats, setStats] = useState<GitHubStats>({
     totalRepos: 0,
@@ -30,34 +40,35 @@ export function GitHubActivity() {
     contributions: [],
     loading: true,
   });
+  const [selectedYear, setSelectedYear] = useState("last");
 
   const ref = useRef<HTMLDivElement>(null);
   const isInView = useInView(ref, { once: true, margin: "-100px" });
 
+  const fetchData = useCallback(async (year: string) => {
+    setStats((s) => ({ ...s, loading: true }));
+    try {
+      const res = await fetch(`/api/github?y=${year}`);
+      if (!res.ok) throw new Error("API failed");
+      const data = await res.json();
+
+      setStats({
+        totalRepos: data.totalRepos,
+        totalStars: data.totalStars,
+        totalForks: data.totalForks,
+        totalContributions: data.totalContributions,
+        contributions: data.contributions,
+        loading: false,
+      });
+    } catch {
+      setStats((s) => ({ ...s, loading: false }));
+    }
+  }, []);
+
   useEffect(() => {
     if (!isInView) return;
-
-    const fetchData = async () => {
-      try {
-        const res = await fetch("/api/github");
-        if (!res.ok) throw new Error("API failed");
-        const data = await res.json();
-
-        setStats({
-          totalRepos: data.totalRepos,
-          totalStars: data.totalStars,
-          totalForks: data.totalForks,
-          totalContributions: data.totalContributions,
-          contributions: data.contributions,
-          loading: false,
-        });
-      } catch {
-        setStats((s) => ({ ...s, loading: false }));
-      }
-    };
-
-    fetchData();
-  }, [isInView]);
+    fetchData(selectedYear);
+  }, [isInView, selectedYear, fetchData]);
 
   // Organize contributions into weeks (7 days per column)
   const weeks: number[][] = [];
@@ -66,6 +77,7 @@ export function GitHubActivity() {
   }
 
   const hasContributions = weeks.length > 0;
+  const yearOptions = getYearOptions();
 
   return (
     <motion.div
@@ -107,6 +119,23 @@ export function GitHubActivity() {
         )}
       </div>
 
+      {/* Year Selector */}
+      <div className="mb-3 flex gap-1 sm:mb-4 sm:gap-1.5">
+        {yearOptions.map((opt) => (
+          <button
+            key={opt.value}
+            onClick={() => setSelectedYear(opt.value)}
+            className={`rounded-md px-2.5 py-1 text-[10px] font-medium transition-all sm:text-xs ${
+              selectedYear === opt.value
+                ? "bg-teal-primary/20 text-teal-glow ring-1 ring-teal-primary/40"
+                : "text-text-muted hover:bg-surface/60 hover:text-text-secondary"
+            }`}
+          >
+            {opt.label}
+          </button>
+        ))}
+      </div>
+
       {/* Contribution Graph */}
       {stats.loading ? (
         <div className="flex h-24 items-center justify-center">
@@ -142,7 +171,7 @@ export function GitHubActivity() {
       ) : (
         /* Fallback: show stats only without graph */
         <p className="text-center text-xs text-text-muted">
-          Visit my{" "}
+          No contributions found for this period. Visit my{" "}
           <a
             href={`https://github.com/${GITHUB_USERNAME}`}
             target="_blank"

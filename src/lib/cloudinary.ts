@@ -11,6 +11,9 @@ const UPLOADED: Record<string, string> = {
   "pay2win": "projects/Pay2Win",
   "pedulipasal": "projects/PeduliPasal",
   "qris": "projects/QRIS",
+  "posmonosuko": "POS_nawals",
+  "gtid": "GTID_milsnr",
+  "petakumpet": "PETAK_UMPET_r0ycfa",
 };
 
 function cloudinaryUrl(
