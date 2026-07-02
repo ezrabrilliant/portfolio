@@ -1,7 +1,9 @@
-import { motion } from "framer-motion";
+import { useRef } from "react";
+import { motion, useScroll, useSpring } from "framer-motion";
 import { Briefcase, GraduationCap, MapPin, Award, Calendar, ChevronRight } from "lucide-react";
 import { config } from "@/config/portfolio";
 import { formatDate } from "@/lib/utils";
+import { SectionHeading } from "@/components/section-heading";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 30, filter: "blur(8px)" },
@@ -14,37 +16,31 @@ const fadeUp = {
 };
 
 export function Experience() {
+  const timelineRef = useRef<HTMLDivElement>(null);
+  const { scrollYProgress } = useScroll({
+    target: timelineRef,
+    offset: ["start 80%", "end 60%"],
+  });
+  const lineScale = useSpring(scrollYProgress, { stiffness: 80, damping: 20 });
+
   return (
     <section id="experience" className="relative py-16 px-4 sm:py-28 sm:px-6">
       <div className="mx-auto max-w-5xl">
         {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-80px" }}
-          transition={{ duration: 0.5 }}
-          className="mb-10 sm:mb-16"
-        >
-          <p className="font-mono text-xs font-medium text-teal-glow sm:text-sm">
-            {'// experience & education'}
-          </p>
-          <h2 className="mt-2 font-display text-3xl font-bold text-white sm:mt-3 sm:text-4xl md:text-5xl">
-            My journey
-            <br />
-            <span className="gradient-text">so far</span>
-          </h2>
-        </motion.div>
+        <div className="mb-10 sm:mb-16">
+          <SectionHeading label="// experience & education" top="My journey" bottom="so far" />
+        </div>
 
         {/* Timeline */}
-        <div className="relative">
-          {/* Animated vertical line */}
+        <div ref={timelineRef} className="relative">
+          {/* Scroll-linked vertical line */}
           <div className="absolute left-[23px] top-0 bottom-0 w-px md:left-1/2 md:-translate-x-px">
+            {/* faint base track */}
+            <div className="absolute inset-0 bg-border-subtle/40" />
+            {/* teal fill that follows scroll */}
             <motion.div
-              initial={{ scaleY: 0 }}
-              whileInView={{ scaleY: 1 }}
-              viewport={{ once: true, margin: "-100px" }}
-              transition={{ duration: 1.5, ease: "easeOut" }}
-              className="h-full w-full origin-top bg-gradient-to-b from-teal-glow/40 via-teal-primary/20 to-transparent"
+              style={{ scaleY: lineScale }}
+              className="absolute inset-0 origin-top bg-gradient-to-b from-teal-glow/60 via-teal-primary/30 to-transparent"
             />
           </div>
 

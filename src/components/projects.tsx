@@ -1,16 +1,47 @@
-import { useState, useRef, useCallback, useEffect } from "react";
-import { motion, AnimatePresence, useMotionValue } from "framer-motion";
+import { useState, useRef, useCallback, useEffect, type MouseEvent } from "react";
+import { motion, AnimatePresence, useMotionValue, useSpring } from "framer-motion";
 import { ExternalLink, Github, ChevronLeft, ChevronRight, ArrowUpRight, Star } from "lucide-react";
 import { config } from "@/config/portfolio";
 import { projectImageUrl } from "@/lib/cloudinary";
 import { cn } from "@/lib/utils";
 import { CardSpotlight } from "@/components/card-spotlight";
+import { SectionHeading } from "@/components/section-heading";
 
 const ITEMS_PER_PAGE = 4;
 
+/** Most-recent year mentioned in a date string ("2024 – 2025" -> 2025). */
+function projectYear(date: string): number {
+  const years = date.match(/\d{4}/g);
+  return years ? Math.max(...years.map(Number)) : 0;
+}
+
+/** Pointer-driven 3D tilt for a card (spring-smoothed, resets on leave). */
+function useTilt(max = 8) {
+  const rx = useMotionValue(0);
+  const ry = useMotionValue(0);
+  const rotateX = useSpring(rx, { stiffness: 150, damping: 15 });
+  const rotateY = useSpring(ry, { stiffness: 150, damping: 15 });
+  const onMouseMove = (e: MouseEvent<HTMLDivElement>) => {
+    const r = e.currentTarget.getBoundingClientRect();
+    const px = (e.clientX - r.left) / r.width - 0.5;
+    const py = (e.clientY - r.top) / r.height - 0.5;
+    ry.set(px * max);
+    rx.set(-py * max);
+  };
+  const onMouseLeave = () => {
+    rx.set(0);
+    ry.set(0);
+  };
+  return { rotateX, rotateY, onMouseMove, onMouseLeave };
+}
+
 export function Projects() {
   const [page, setPage] = useState(0);
-  const projects = config.projects;
+  // Sort newest-first by year; Array.sort is stable so same-year projects
+  // keep their config order (keeps POS Monosuko pinned as the featured one).
+  const projects = [...config.projects].sort(
+    (a, b) => projectYear(b.date) - projectYear(a.date)
+  );
   const featuredProject = projects[0];
   const remainingProjects = projects.slice(1);
   const totalPages = Math.ceil(remainingProjects.length / ITEMS_PER_PAGE);
@@ -66,23 +97,8 @@ export function Projects() {
     <section id="projects" className="relative py-16 px-4 sm:py-28 sm:px-6">
       <div className="mx-auto max-w-6xl">
         {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-80px" }}
-          transition={{ duration: 0.5 }}
-          className="mb-10 flex flex-col gap-4 sm:mb-16 sm:flex-row sm:items-end sm:justify-between"
-        >
-          <div>
-            <p className="font-mono text-xs font-medium text-teal-glow sm:text-sm">
-              {'// featured work'}
-            </p>
-            <h2 className="mt-2 font-display text-3xl font-bold text-white sm:mt-3 sm:text-4xl md:text-5xl">
-              Things I've
-              <br />
-              <span className="gradient-text">built</span>
-            </h2>
-          </div>
+        <div className="mb-10 flex flex-col gap-4 sm:mb-16 sm:flex-row sm:items-end sm:justify-between">
+          <SectionHeading label="// featured work" top="Things I've" bottom="built" />
 
           {/* Pagination */}
           {totalPages > 1 && (
@@ -126,7 +142,7 @@ export function Projects() {
               </button>
             </div>
           )}
-        </motion.div>
+        </div>
 
         {/* Featured Project - Desktop only (full width horizontal card) */}
         <motion.div
@@ -312,6 +328,7 @@ function ProjectCard({
   index: number;
 }) {
   const [imgError, setImgError] = useState(false);
+  const tilt = useTilt(8);
 
   return (
     <motion.div
@@ -319,13 +336,24 @@ function ProjectCard({
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-40px" }}
       transition={{ delay: index * 0.1, duration: 0.5 }}
+      onMouseMove={tilt.onMouseMove}
+      onMouseLeave={tilt.onMouseLeave}
+      style={{
+        rotateX: tilt.rotateX,
+        rotateY: tilt.rotateY,
+        transformPerspective: 900,
+      }}
     >
       <CardSpotlight className="glass-card group rounded-2xl">
         <article className="overflow-hidden">
           {/* Image */}
           <div className="relative aspect-[16/10] overflow-hidden bg-surface">
             {!imgError ? (
-              <img
+              <motion.img
+                initial={{ scale: 1.15 }}
+                whileInView={{ scale: 1 }}
+                viewport={{ once: true, margin: "-40px" }}
+                transition={{ duration: 1, ease: [0.25, 0.46, 0.45, 0.94] }}
                 src={projectImageUrl(
                   project.image.replace("/projects/", ""),
                   400
@@ -335,7 +363,7 @@ function ProjectCard({
                 alt={project.title}
                 loading="lazy"
                 onError={() => setImgError(true)}
-                className="h-full w-full object-cover transition-all duration-700 group-hover:scale-105 group-hover:brightness-75"
+                className="h-full w-full object-cover transition-[filter] duration-500 group-hover:brightness-110"
               />
             ) : (
               <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-surface to-surface-raised">

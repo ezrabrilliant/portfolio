@@ -221,7 +221,7 @@ export function Hero() {
                   <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/20">
                     <span className="text-sm font-bold text-emerald-400">A+</span>
                   </div>
-                  <span className="text-xs text-text-muted">Top Graduate</span>
+                  <span className="text-xs text-text-muted">Distinction Graduate</span>
                 </div>
               </motion.div>
 

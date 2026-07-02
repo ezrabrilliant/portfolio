@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import { config } from "@/config/portfolio";
 import { CardSpotlight } from "@/components/card-spotlight";
+import { SectionHeading } from "@/components/section-heading";
 import { cn } from "@/lib/utils";
 
 const categoryIcons: Record<string, typeof Monitor> = {
@@ -34,6 +35,21 @@ const cardVariants = {
   },
 };
 
+const tagsContainer = {
+  hidden: {},
+  visible: { transition: { staggerChildren: 0.035, delayChildren: 0.15 } },
+};
+
+const tagVariant = {
+  hidden: { opacity: 0, scale: 0.8, y: 6 },
+  visible: {
+    opacity: 1,
+    scale: 1,
+    y: 0,
+    transition: { type: "spring", stiffness: 500, damping: 24 } as const,
+  },
+};
+
 function SkillCard({ group }: { group: (typeof config.skills)[number] }) {
   const Icon = categoryIcons[group.category] || Wrench;
   return (
@@ -52,16 +68,24 @@ function SkillCard({ group }: { group: (typeof config.skills)[number] }) {
           </h3>
         </div>
 
-        <div className="flex flex-wrap gap-1.5 sm:gap-2">
+        <motion.div
+          variants={tagsContainer}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-40px" }}
+          className="flex flex-wrap gap-1.5 sm:gap-2"
+        >
           {group.items.map((skill) => (
-            <span
+            <motion.span
               key={skill}
-              className="rounded-lg border border-border-subtle/60 bg-surface/40 px-2.5 py-1 text-[11px] font-medium text-text-secondary transition-all hover:border-teal-primary/30 hover:bg-teal-primary/5 hover:text-teal-glow sm:px-3 sm:py-1.5 sm:text-xs"
+              variants={tagVariant}
+              whileHover={{ scale: 1.08, y: -2 }}
+              className="cursor-default rounded-lg border border-border-subtle/60 bg-surface/40 px-2.5 py-1 text-[11px] font-medium text-text-secondary transition-colors hover:border-teal-primary/30 hover:bg-teal-primary/5 hover:text-teal-glow sm:px-3 sm:py-1.5 sm:text-xs"
             >
               {skill}
-            </span>
+            </motion.span>
           ))}
-        </div>
+        </motion.div>
       </div>
     </CardSpotlight>
   );
@@ -124,22 +148,9 @@ export function Skills() {
     <section id="skills" className="relative py-16 px-4 sm:py-28 sm:px-6">
       <div className="mx-auto max-w-6xl">
         {/* Section header */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-80px" }}
-          transition={{ duration: 0.5 }}
-          className="mb-10 sm:mb-16"
-        >
-          <p className="font-mono text-xs font-medium text-teal-glow sm:text-sm">
-            {'// skills & tools'}
-          </p>
-          <h2 className="mt-2 font-display text-3xl font-bold text-white sm:mt-3 sm:text-4xl md:text-5xl">
-            My tech
-            <br />
-            <span className="gradient-text">arsenal</span>
-          </h2>
-        </motion.div>
+        <div className="mb-10 sm:mb-16">
+          <SectionHeading label="// skills & tools" top="My tech" bottom="arsenal" />
+        </div>
 
         {/* Mobile: Horizontal carousel */}
         <div className="sm:hidden">

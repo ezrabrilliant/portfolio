@@ -4,6 +4,7 @@ import { config } from "@/config/portfolio";
 import { avatarUrl } from "@/lib/cloudinary";
 import { useRef, useEffect, useState } from "react";
 import { GitHubActivity } from "@/components/github-activity";
+import { SectionHeading } from "@/components/section-heading";
 
 function AnimatedCounter({ value, label }: { value: string; label: string }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -38,16 +39,6 @@ function AnimatedCounter({ value, label }: { value: string; label: string }) {
   );
 }
 
-const fadeUp = {
-  hidden: { opacity: 0, y: 30, filter: "blur(8px)" },
-  visible: (i: number) => ({
-    opacity: 1,
-    y: 0,
-    filter: "blur(0px)",
-    transition: { delay: i * 0.1, duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] as const },
-  }),
-};
-
 const icons = [Code2, Coffee, Rocket, GitBranch];
 
 export function About() {
@@ -55,29 +46,9 @@ export function About() {
     <section id="about" className="relative py-16 px-4 sm:py-28 sm:px-6">
       <div className="mx-auto max-w-6xl">
         {/* Section header */}
-        <motion.div
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: "-80px" }}
-          className="mb-10 sm:mb-14"
-        >
-          <motion.p
-            variants={fadeUp}
-            custom={0}
-            className="font-mono text-xs font-medium text-teal-glow sm:text-sm"
-          >
-            {'// about me'}
-          </motion.p>
-          <motion.h2
-            variants={fadeUp}
-            custom={1}
-            className="mt-2 font-display text-3xl font-bold text-white sm:mt-3 sm:text-4xl md:text-5xl"
-          >
-            Building digital
-            <br />
-            <span className="gradient-text">experiences</span>
-          </motion.h2>
-        </motion.div>
+        <div className="mb-10 sm:mb-14">
+          <SectionHeading label="// about me" top="Building digital" bottom="experiences" />
+        </div>
 
         {/* Main layout: 2 columns on desktop */}
         <div className="grid gap-4 sm:gap-6 lg:grid-cols-[320px_1fr]">
