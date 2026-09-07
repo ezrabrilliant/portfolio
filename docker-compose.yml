@@ -1,0 +1,29 @@
+services:
+  portfolio:
+    build:
+      context: .
+      args:
+        VITE_EMAILJS_SERVICE_ID: ${VITE_EMAILJS_SERVICE_ID}
+        VITE_EMAILJS_TEMPLATE_ID: ${VITE_EMAILJS_TEMPLATE_ID}
+        VITE_EMAILJS_PUBLIC_KEY: ${VITE_EMAILJS_PUBLIC_KEY}
+    image: portfolio:latest
+    container_name: portfolio
+    restart: unless-stopped
+
+    # Hanya dengarkan localhost - Caddy yang menghadap internet.
+    ports:
+      - "127.0.0.1:3002:3000"
+
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+
+    # VPS hanya 1 GB RAM, batasi agar container tidak menghabiskan memori server.
+    mem_limit: 320m
+    memswap_limit: 512m
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"

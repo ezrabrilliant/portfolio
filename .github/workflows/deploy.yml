@@ -2,40 +2,45 @@ name: Deploy Portfolio to Server
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   workflow_dispatch:
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    
+
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '18'
-        cache: 'npm'
-        
-    - name: Install dependencies
-      run: npm ci
-      
-    - name: Build project
-      run: npm run build
-      
-    - name: Deploy to server
-      uses: appleboy/ssh-action@v1.0.3
-      with:
-        host: ${{ secrets.SERVER_HOST }}
-        username: ${{ secrets.SERVER_USER }}
-        key: ${{ secrets.SERVER_SSH_KEY }}
-        script: |
-          cd /var/www/portfolio
-          git pull origin main
-          npm install
-          npm run build
-          cp -r dist/* /var/www/html/
-          systemctl reload nginx
-          echo "Deployment completed successfully!"
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          script_stop: true
+          script: |
+            set -e
+            cd /root/portfolio
+
+            # Ambil kode terbaru
+            git fetch origin main
+            git reset --hard origin/main
+
+            # Build ulang image dan jalankan container
+            docker compose up -d --build
+
+            # Bersihkan image lama agar disk tidak penuh
+            docker image prune -f
+
+            # Tunggu healthcheck hijau sebelum menyatakan sukses
+            for i in $(seq 1 36); do
+              status=$(docker inspect -f '{{.State.Health.Status}}' portfolio 2>/dev/null || echo starting)
+              if [ "$status" = "healthy" ]; then
+                echo "Deploy sukses - container healthy"
+                exit 0
+              fi
+              sleep 5
+            done
+
+            echo "Container tidak healthy setelah 3 menit" >&2
+            docker compose logs --tail=60 portfolio
+            exit 1
