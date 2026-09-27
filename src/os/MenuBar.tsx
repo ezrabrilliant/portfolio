@@ -1,0 +1,38 @@
+import { useEffect, useState } from 'react';
+import { useWM } from './WindowManagerContext';
+
+const wibFmt = new Intl.DateTimeFormat('en-GB', {
+  timeZone: 'Asia/Jakarta', hour: '2-digit', minute: '2-digit', hour12: false,
+});
+
+// pure formatter co-located with its only consumer by design; fast-refresh falls back to a full reload for this file
+// eslint-disable-next-line react-refresh/only-export-components
+export function formatWib(d: Date): string {
+  return `${wibFmt.format(d)} WIB`;
+}
+
+export function MenuBar() {
+  const wm = useWM();
+  const [now, setNow] = useState(() => new Date());
+
+  useEffect(() => {
+    // tick on the minute boundary, then every minute (spec §2.2)
+    let interval: ReturnType<typeof setInterval> | undefined;
+    const align = setTimeout(() => {
+      setNow(new Date());
+      interval = setInterval(() => setNow(new Date()), 60_000);
+    }, 60_000 - (Date.now() % 60_000));
+    return () => { clearTimeout(align); if (interval) clearInterval(interval); };
+  }, []);
+
+  return (
+    <header id="menubar" className="dark">
+      <button type="button" onClick={(e) => wm.open('about', e.currentTarget)}>About EzraOS</button>
+      <div className="right">
+        <span aria-label="Local time in Surabaya">{formatWib(now)}</span>
+        <span>all systems live</span>
+        <span>Surabaya, ID</span>
+      </div>
+    </header>
+  );
+}

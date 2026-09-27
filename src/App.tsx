@@ -1,7 +1,10 @@
+import { EzraOS } from '@/os/EzraOS';
+import { WindowManagerProvider } from '@/os/WindowManagerContext';
+
 export default function App() {
   return (
-    <div id="os">
-      <main id="desk" aria-label="Desktop" />
-    </div>
+    <WindowManagerProvider>
+      <EzraOS />
+    </WindowManagerProvider>
   );
 }
