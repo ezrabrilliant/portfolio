@@ -64,6 +64,13 @@ describe('selectors', () => {
     expect(getCaseStudy('gtid')!.techSentence).toMatch(/^Built with .+ and .+\.$/);
   });
 
+  it('links are derived from demo/github and omit empty ones', () => {
+    expect(getCaseStudy('orbit-store')!.links).toEqual([]);
+    expect(getCaseStudy('pos-monosuko')!.links).toContainEqual({
+      label: 'monosuko.my.id', href: 'https://monosuko.my.id',
+    });
+  });
+
   it('contact carries the resume path for Kasir', () => {
     expect(getContact().resume).toBe('/resume.pdf');
   });

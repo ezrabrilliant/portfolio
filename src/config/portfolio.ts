@@ -67,7 +67,7 @@ export const config = {
       achievements: [
         "Owned it end-to-end: order management (split / merge / void billing), daily portion-stock auto-deduction with low-stock alerts, RBAC across Owner / Cashier / Waiter, and an owner analytics dashboard",
         "Designed the REST API and MySQL schema (Prisma ORM) with role-aware secured endpoints, deployed on a self-managed Ubuntu VPS",
-        "Cut total transaction time by 41% and split-bill queue time by 48.6% against the old manual process",
+        "Cut total transaction time by 41% and split-bill queue time by 48.6%",
       ],
     },
     {
@@ -91,7 +91,7 @@ export const config = {
       ],
       achievements: [
         "Built a hybrid Gemini + GPT-4o engine with RAG-based long-term memory (ChromaDB vector embeddings) so it answers from real community knowledge",
-        "Migrated from a local PC to a Dockerized 24/7 cloud deployment with zero interruption to the community",
+        "Migrated from a local PC to a Dockerized 24/7 cloud setup",
         "Serves a 1,000+ member community continuously in production",
       ],
     },
@@ -396,7 +396,7 @@ export const config = {
       metric: "2,700+ paid orders from 370+ buyers",
       title: "Orbit Store",
       description:
-        "A store that lives inside Discord: 2,700+ paid orders from 370+ unique buyers. Buyers pick a product, pay by QRIS, and the bot delivers the moment Midtrans confirms the payment through webhooks.",
+        "A store that lives inside Discord: 2,700+ paid orders from 370+ unique buyers. Buyers pay by QRIS through the Midtrans API, with automated order handling and payment generation, secure webhook validation and real-time payment verification.",
       image: "/projects/QRIS.png",
       technologies: [
         "Discord.js",
@@ -477,12 +477,12 @@ export const config = {
 
   shipLog: [
     { date: "2022-09", text: "started Business Information Systems at Petra Christian University" },
-    { date: "2023-01", text: "first version of Ezra Bot goes live on Discord" },
-    { date: "2024-07", text: "Orbit Store opens — QRIS payments inside Discord" },
+    { date: "2023-01", text: "work on Ezra Bot begins" },
+    { date: "2024-07", text: "work on Orbit Store begins" },
     { date: "2025-01", text: "graduated Bangkit Academy (Mobile Development) as top graduate" },
     { date: "2025-04", text: "Orbit Store closes the books: 2,700+ paid orders from 370+ buyers" },
-    { date: "2025-06", text: "GTID ships — public market API for Growtopia Indonesia" },
-    { date: "2026-06", text: "POS Monosuko thesis ships — checkout 41% faster; Petak Umpet passes 3.1M visits" },
+    { date: "2025-06", text: "work on GTID begins" },
+    { date: "2026-06", text: "POS Monosuko thesis ships — checkout 41% faster; Petak Umpet at 3.1M+ visits" },
     { date: "2026-09", text: "EzraOS replaces the scrolling portfolio" },
   ],
 
