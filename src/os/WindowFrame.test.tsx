@@ -64,6 +64,31 @@ describe('WindowFrame', () => {
     expect(screen.getByRole('dialog', { name: 'bot', hidden: true })).not.toBeVisible();
   });
 
+  // desktop condition: os.css hides the back button (.tb .back { display: none }); jsdom has no os.css
+  const hideBack = () => {
+    screen.getByRole('button', { name: 'Back, close bot' }).style.display = 'none';
+  };
+
+  it('Tab from the last focusable wraps to the first rendered control (Minimize)', async () => {
+    mockMatchMedia(['prefers-reduced-motion']);
+    ui();
+    await userEvent.click(screen.getByRole('button', { name: 'launch bot' }));
+    hideBack();
+    screen.getByRole('button', { name: 'inside bot' }).focus();
+    await userEvent.tab();
+    expect(screen.getByRole('button', { name: 'Minimize bot' })).toHaveFocus();
+  });
+
+  it('Shift+Tab from Minimize wraps to the last focusable inside the window', async () => {
+    mockMatchMedia(['prefers-reduced-motion']);
+    ui();
+    await userEvent.click(screen.getByRole('button', { name: 'launch bot' }));
+    hideBack();
+    screen.getByRole('button', { name: 'Minimize bot' }).focus();
+    await userEvent.tab({ shift: true });
+    expect(screen.getByRole('button', { name: 'inside bot' })).toHaveFocus();
+  });
+
   it('the focused window carries the active title bar class', async () => {
     mockMatchMedia(['prefers-reduced-motion']);
     ui();

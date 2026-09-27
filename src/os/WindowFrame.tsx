@@ -19,8 +19,18 @@ export interface WindowFrameProps {
 const FOCUSABLE =
   'a[href], button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
+/** Rendered = no `display:none` on the element or any ancestor up to `root`.
+ *  Computed style, not getClientRects: jsdom has no layout, so rects are always empty there. */
+function isRendered(el: HTMLElement, root: HTMLElement): boolean {
+  for (let n: HTMLElement | null = el; n && n !== root; n = n.parentElement) {
+    if (getComputedStyle(n).display === 'none') return false;
+  }
+  return true;
+}
+
 function containTab(e: KeyboardEvent, root: HTMLElement) {
-  const items = Array.from(root.querySelectorAll<HTMLElement>(FOCUSABLE));
+  // skip non-rendered controls (e.g. .back is display:none on desktop) — focusing one is a no-op
+  const items = Array.from(root.querySelectorAll<HTMLElement>(FOCUSABLE)).filter((el) => isRendered(el, root));
   if (items.length === 0) return;
   const first = items[0];
   const last = items[items.length - 1];
