@@ -1,0 +1,603 @@
+<!-- THROWAWAY DESIGN MOCKUP — DIRECTION A (BURSA) -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ezra Brilliant</title>
+<meta name="description" content="Ezra Brilliant builds and operates production systems with real users and real money.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500&display=swap">
+<style>
+  :root {
+    --bg: #17150F;      /* umber-black trading screen */
+    --ink: #EDE6D6;     /* warm paper            14.68:1 on --bg */
+    --amber: #FFB300;   /* terminal amber        10.17:1 on --bg */
+    --meta: #8A8272;    /* muted meta             4.79:1 on --bg */
+    --rule: rgba(237, 230, 214, .16);
+    --gut: clamp(16px, 4vw, 48px);
+    --display: "IBM Plex Sans Condensed", "Arial Narrow", sans-serif;
+    --sans: "IBM Plex Sans", system-ui, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", monospace;
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  html { font-variant-numeric: tabular-nums; -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: #17150F;
+    background: var(--bg);
+    color: var(--ink);
+    font: 400 16px/1.55 var(--sans);
+    -webkit-font-smoothing: antialiased;
+  }
+  ::selection { background: var(--amber); color: var(--bg); }
+  a { color: inherit; }
+  :focus-visible { outline: 2px solid var(--amber); outline-offset: 3px; }
+  .num, .mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+  .sr {
+    position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+    overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+  }
+  .wrap { width: 100%; max-width: 1360px; margin: 0 auto; padding: 0 var(--gut); }
+
+  /* ---------- nav ---------- */
+  .top { border-bottom: 1px solid var(--rule); }
+  .top .wrap {
+    display: flex; justify-content: space-between; align-items: baseline;
+    padding-top: 14px; padding-bottom: 12px;
+  }
+  .top-name { font: 600 17px/1 var(--display); letter-spacing: .01em; }
+  .top-loc { font: 400 13px/1 var(--mono); color: var(--meta); }
+
+  /* ---------- hero ---------- */
+  .hero { padding-top: clamp(36px, 7vw, 96px); }
+  h1 {
+    margin: 0;
+    font: 700 clamp(2.9rem, 11vw, 10rem)/.86 var(--display);
+    text-transform: uppercase;
+    letter-spacing: -.012em;
+  }
+  h1 > span { display: block; }
+  .stop { color: var(--amber); }
+
+  /* quote strip: hairlines come from the 1px grid gap */
+  .quotes {
+    margin-top: clamp(28px, 5vw, 64px);
+    display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1px; background: var(--rule);
+    border-top: 2px solid var(--ink);
+    border-bottom: 1px solid var(--rule);
+  }
+  .quote { background: var(--bg); padding: 16px 14px 18px; min-width: 0; }
+  .quote:nth-child(odd) { padding-left: 0; }
+  .q-head { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+  .sym { font: 500 12px/1 var(--mono); color: var(--meta); }
+  .q-name { font: 500 14px/1.2 var(--sans); }
+  .q-val {
+    margin: 14px 0 12px;
+    font: 500 clamp(2rem, 9vw, 4.5rem)/1 var(--mono);
+    letter-spacing: -.03em;
+    white-space: nowrap;
+  }
+  .q-delta { font: 400 13px/1.45 var(--mono); color: var(--amber); }
+  .q-sub { display: block; color: var(--meta); }
+  .up {
+    display: inline-block; width: .62em; height: .54em; margin-right: .45em;
+    background: var(--amber); clip-path: polygon(50% 0, 100% 100%, 0 100%);
+  }
+
+  .hero-lower {
+    margin-top: clamp(28px, 4vw, 48px);
+    display: grid; gap: 32px;
+  }
+  .lede { margin: 0; max-width: 40ch; font-size: clamp(1.0625rem, 1.4vw, 1.1875rem); line-height: 1.6; }
+  .lede em { font-style: normal; color: var(--amber); }
+
+  figure.chart { margin: 0; min-width: 0; }
+  .chart-head {
+    display: flex; justify-content: space-between; align-items: baseline; gap: 12px;
+    padding-bottom: 10px; border-bottom: 1px solid var(--rule);
+  }
+  .c-last { font: 500 clamp(1.25rem, 2vw, 1.625rem)/1 var(--mono); }
+  .c-chg { margin-left: 12px; font: 400 13px/1 var(--mono); color: var(--amber); }
+  .chart-box { position: relative; height: clamp(190px, 22vw, 270px); margin-top: 6px; }
+  .chart-box svg { display: block; width: 100%; height: 100%; }
+  figcaption { margin-top: 10px; font: 400 12px/1.5 var(--mono); color: var(--meta); }
+
+  /* ---------- sections ---------- */
+  .sec { padding-top: clamp(56px, 8vw, 112px); }
+  .sec-head {
+    display: flex; justify-content: space-between; align-items: baseline; gap: 8px 16px; flex-wrap: wrap;
+    border-top: 2px solid var(--ink); padding-top: 14px;
+  }
+  h2 { margin: 0; font: 600 clamp(1.75rem, 4vw, 3rem)/1 var(--display); letter-spacing: -.005em; }
+  .sec-meta { font: 400 13px/1 var(--mono); color: var(--meta); display: inline-flex; align-items: center; gap: 10px; }
+
+  /* ---------- systems board ---------- */
+  .board { width: 100%; border-collapse: collapse; margin-top: clamp(18px, 3vw, 36px); }
+  .board th {
+    font: 400 12px/1 var(--mono); color: var(--meta); text-align: left;
+    padding: 0 16px 10px 0; border-bottom: 1px solid var(--rule);
+  }
+  .board th.r, .board td.r { text-align: right; padding-right: 0; }
+  .board td {
+    padding: clamp(14px, 1.6vw, 22px) 16px clamp(14px, 1.6vw, 22px) 0;
+    border-bottom: 1px solid var(--rule); vertical-align: baseline;
+  }
+  .c-sym { width: 6.5rem; font: 500 13px/1 var(--mono); color: var(--meta); }
+  .b-name { font: 600 clamp(1.25rem, 2vw, 1.75rem)/1.1 var(--display); transition: color .25s; }
+  .c-what { color: var(--meta); font-size: 15px; }
+  .m-val { font: 500 clamp(1.5rem, 2.8vw, 2.5rem)/1 var(--mono); letter-spacing: -.02em; white-space: nowrap; }
+  .m-unit { display: block; margin-top: 6px; font: 400 12px/1.3 var(--mono); color: var(--meta); }
+  .c-status { width: 10rem; font: 400 13px/1 var(--mono); white-space: nowrap; }
+  .st { display: inline-flex; align-items: center; gap: 8px; }
+  .sq { display: inline-block; width: 8px; height: 8px; flex: none; }
+  .st-live { color: var(--amber); }
+  .st-live .sq, .blink { background: var(--amber); }
+  .st-shipped .sq { border: 1px solid var(--ink); }
+  .st-soon { color: var(--meta); }
+  .st-soon .sq { border: 1px dashed var(--meta); }
+  .board tbody tr:not(.dim):hover .b-name { color: var(--amber); }
+  .board tr.flash .c-what, .board tr.flash .c-sym, .board tr.flash .m-unit { color: var(--ink); }
+  .board tr.dim td { color: var(--meta); border-bottom-style: dashed; }
+  .board tr.dim .b-name { font-weight: 500; }
+
+  .blink { width: 9px; height: 9px; animation: blink 2.6s ease-in-out infinite; }
+  @keyframes blink { 0%, 55% { opacity: 1; } 75%, 90% { opacity: .15; } 100% { opacity: 1; } }
+
+  /* ---------- selected work ---------- */
+  .index { margin-top: clamp(8px, 1.5vw, 16px); }
+  .idx {
+    position: relative; display: grid;
+    grid-template-columns: 7.5rem minmax(0, 1fr) auto;
+    align-items: baseline; column-gap: 24px;
+    padding: clamp(22px, 3vw, 40px) 0;
+    border-bottom: 1px solid var(--rule);
+    text-decoration: none; color: inherit;
+  }
+  .idx::before {
+    content: ""; position: absolute; left: 0; right: 0; top: -1px; height: 2px;
+    background: var(--amber); transform: scaleX(0); transform-origin: left;
+    transition: transform .55s cubic-bezier(.2, .7, .2, 1);
+  }
+  .idx:hover::before, .idx:focus-visible::before { transform: scaleX(1); }
+  .idx:focus-visible { outline-offset: 4px; }
+  .idx-year { font: 400 14px/1 var(--mono); color: var(--meta); }
+  .idx-name {
+    display: block; font: 600 clamp(2.5rem, 8vw, 6.75rem)/.9 var(--display); letter-spacing: -.012em;
+    transition: transform .45s cubic-bezier(.2, .7, .2, 1);
+  }
+  .idx-what { display: block; margin-top: 12px; color: var(--meta); font-size: 15px; max-width: 46ch; }
+  .idx-metric { text-align: right; }
+  .idx-metric .num {
+    display: inline-block; font: 400 clamp(2rem, 5.5vw, 4.75rem)/1 var(--mono);
+    letter-spacing: -.03em; white-space: nowrap; transition: color .3s;
+  }
+  .idx-unit { display: block; margin-top: 8px; font: 400 12px/1.3 var(--mono); color: var(--meta); }
+  .idx:hover .idx-name, .idx:focus-visible .idx-name { transform: translateX(.08em); }
+  .idx:hover .idx-metric .num, .idx:focus-visible .idx-metric .num { color: var(--amber); }
+
+  /* ---------- contact ---------- */
+  .contact { padding-bottom: clamp(56px, 8vw, 104px); }
+  .c-line {
+    margin: clamp(24px, 4vw, 48px) 0 0; max-width: 15ch;
+    font: 700 clamp(2.25rem, 7vw, 6.5rem)/.9 var(--display); text-transform: uppercase; letter-spacing: -.01em;
+  }
+  .c-mail {
+    display: inline-block; margin-top: clamp(28px, 4vw, 48px);
+    font: 500 clamp(1.125rem, 3.4vw, 2.5rem)/1.2 var(--mono); letter-spacing: -.02em;
+    text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: .22em;
+    text-decoration-color: var(--rule); overflow-wrap: anywhere;
+    transition: color .25s, text-decoration-color .25s;
+  }
+  .c-mail:hover { color: var(--amber); text-decoration-color: var(--amber); }
+  .c-links { margin: 22px 0 0; display: flex; gap: 28px; font-size: 16px; }
+  .c-links a {
+    text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: .25em;
+    text-decoration-color: var(--meta); transition: text-decoration-color .25s;
+  }
+  .c-links a:hover { text-decoration-color: var(--amber); }
+  footer { border-top: 1px solid var(--rule); }
+  footer .wrap { padding-top: 16px; padding-bottom: 28px; font: 400 12px/1 var(--mono); color: var(--meta); }
+
+  /* ---------- flip-board counters (built by JS only when motion is allowed) ---------- */
+  .reels { white-space: pre; }
+
+  /* ---------- breakpoints ---------- */
+  @media (min-width: 1000px) {
+    .quotes { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .quote, .quote:nth-child(odd) { padding: 18px 22px 20px; }
+    .quote:first-child { padding-left: 0; }
+    .q-val { font-size: clamp(2rem, 5vw, 4.5rem); }
+    .hero-lower { grid-template-columns: minmax(0, 4fr) minmax(0, 8fr); gap: 56px; }
+  }
+  @media (max-width: 760px) {
+    .board thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+    .board, .board tbody { display: block; }
+    .board tr {
+      display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 12px;
+      padding: 16px 0; border-bottom: 1px solid var(--rule);
+    }
+    .board tr.dim { border-bottom-style: dashed; }
+    .board td { display: block; padding: 0; border: 0; width: auto; }
+    .board td.c-sym { grid-area: 1 / 1; }
+    .board td.c-name { grid-area: 2 / 1; margin-top: 6px; }
+    .board td.c-status { grid-area: 1 / 2 / 3 / 3; align-self: start; }
+    .board td.c-what { grid-area: 3 / 1 / 4 / 3; margin-top: 6px; }
+    .board td.c-metric { grid-area: 4 / 1 / 5 / 3; margin-top: 12px; text-align: left; }
+    .board .m-unit { display: inline; margin-left: 10px; }
+    .idx { grid-template-columns: minmax(0, 1fr) auto; row-gap: 12px; }
+    .idx-year { grid-column: 1 / 3; }
+    .idx-main { grid-column: 1 / 3; }
+    .idx-metric { grid-column: 1 / 3; text-align: left; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { transition: none !important; animation: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <span class="top-name">Ezra Brilliant</span>
+    <span class="top-loc">Surabaya, ID</span>
+  </div>
+</header>
+
+<main>
+  <!-- ======== HERO: market-open board ======== -->
+  <section class="hero wrap" aria-labelledby="h-hero">
+    <h1 id="h-hero">
+      <span>Real users<span class="stop">.</span></span>
+      <span>Real money<span class="stop">.</span></span>
+      <span>Real uptime<span class="stop">.</span></span>
+    </h1>
+
+    <div class="quotes" role="list" aria-label="Lead numbers">
+      <div class="quote" role="listitem">
+        <div class="q-head"><span class="sym">ORBT</span><span class="q-name">Orbit Store</span></div>
+        <div class="q-val num" data-roll>2,700+</div>
+        <div class="q-delta"><span class="up" aria-hidden="true"></span>paid orders<span class="q-sub">370+ buyers</span></div>
+      </div>
+      <div class="quote" role="listitem">
+        <div class="q-head"><span class="sym">PTAK</span><span class="q-name">Petak Umpet</span></div>
+        <div class="q-val num" data-roll>3.1M</div>
+        <div class="q-delta"><span class="up" aria-hidden="true"></span>visits<span class="q-sub">2.6K peak concurrent</span></div>
+      </div>
+      <div class="quote" role="listitem">
+        <div class="q-head"><span class="sym">GTID</span><span class="q-name">GTID</span></div>
+        <div class="q-val num" data-roll>14.5k</div>
+        <div class="q-delta"><span class="up" aria-hidden="true"></span>req/day<span class="q-sub">public API</span></div>
+      </div>
+      <div class="quote" role="listitem">
+        <div class="q-head"><span class="sym">EZRA</span><span class="q-name">Ezra Bot</span></div>
+        <div class="q-val num" data-roll>1,000+</div>
+        <div class="q-delta"><span class="up" aria-hidden="true"></span>members<span class="q-sub">RAG memory</span></div>
+      </div>
+    </div>
+
+    <div class="hero-lower">
+      <p class="lede">I build systems and then stay on to run them: a Discord store taking QRIS payments, a Roblox game with millions of visits, a Growtopia market platform with a public API, a community AI that remembers, a restaurant POS. On the side, an <em>LSTM model</em> that forecasts game-item prices.</p>
+
+      <figure class="chart">
+        <div class="chart-head">
+          <span class="sym">GTID IDX</span>
+          <span><span class="c-last" id="c-last">—</span><span class="c-chg"><span class="up" aria-hidden="true"></span><span id="c-chg">—</span></span></span>
+        </div>
+        <div class="chart-box" id="chart" role="img" aria-label="Candlestick chart of a sample item-price index, trending upward"></div>
+        <figcaption>item-price index — from GTID's public API (static preview)</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <!-- ======== SYSTEMS BOARD ======== -->
+  <section class="sec wrap" aria-labelledby="h-systems">
+    <div class="sec-head">
+      <h2 id="h-systems">Systems</h2>
+      <span class="sec-meta"><span class="sq blink" aria-hidden="true"></span>4 live, 1 shipped</span>
+    </div>
+    <table class="board" id="board">
+      <thead>
+        <tr><th scope="col">Symbol</th><th scope="col">System</th><th scope="col">What it is</th><th scope="col" class="r">Metric</th><th scope="col" class="r">Status</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="c-sym">ORBT</td>
+          <td class="c-name"><span class="b-name">Orbit Store</span></td>
+          <td class="c-what">Discord commerce, QRIS payments</td>
+          <td class="c-metric r"><span class="m-val num" data-roll>2,700+</span><span class="m-unit">orders</span></td>
+          <td class="c-status r"><span class="st st-shipped"><span class="sq" aria-hidden="true"></span>shipped</span></td>
+        </tr>
+        <tr>
+          <td class="c-sym">GTID</td>
+          <td class="c-name"><span class="b-name">GTID</span></td>
+          <td class="c-what">Market platform + public API</td>
+          <td class="c-metric r"><span class="m-val num" data-roll>14.5k</span><span class="m-unit">req/day</span></td>
+          <td class="c-status r"><span class="st st-live"><span class="sq" aria-hidden="true"></span>live</span></td>
+        </tr>
+        <tr>
+          <td class="c-sym">PTAK</td>
+          <td class="c-name"><span class="b-name">Petak Umpet</span></td>
+          <td class="c-what">Roblox game</td>
+          <td class="c-metric r"><span class="m-val num" data-roll>3.1M</span><span class="m-unit">visits</span></td>
+          <td class="c-status r"><span class="st st-live"><span class="sq" aria-hidden="true"></span>live</span></td>
+        </tr>
+        <tr>
+          <td class="c-sym">EZRA</td>
+          <td class="c-name"><span class="b-name">Ezra Bot</span></td>
+          <td class="c-what">Community AI with RAG memory</td>
+          <td class="c-metric r"><span class="m-val num" data-roll>1,000+</span><span class="m-unit">members</span></td>
+          <td class="c-status r"><span class="st st-live"><span class="sq" aria-hidden="true"></span>live</span></td>
+        </tr>
+        <tr>
+          <td class="c-sym">MNSK</td>
+          <td class="c-name"><span class="b-name">POS Monosuko</span></td>
+          <td class="c-what">Restaurant POS</td>
+          <td class="c-metric r"><span class="m-val num" data-roll>41%</span><span class="m-unit">faster checkout</span></td>
+          <td class="c-status r"><span class="st st-live"><span class="sq" aria-hidden="true"></span>live</span></td>
+        </tr>
+        <tr class="dim">
+          <td class="c-sym">NEXT</td>
+          <td class="c-name"><span class="b-name">next system</span></td>
+          <td class="c-what"></td>
+          <td class="c-metric r"><span class="m-val num">—</span></td>
+          <td class="c-status r"><span class="st st-soon"><span class="sq" aria-hidden="true"></span>deploying soon</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ======== SELECTED WORK ======== -->
+  <section class="sec wrap" aria-labelledby="h-work">
+    <div class="sec-head">
+      <h2 id="h-work">Selected work</h2>
+      <span class="sec-meta">2024–2026</span>
+    </div>
+    <div class="index">
+      <div class="idx">
+        <span class="idx-year">2024–25</span>
+        <span class="idx-main">
+          <span class="idx-name">Orbit Store</span>
+          <span class="idx-what">Discord store with QRIS checkout through Midtrans, paid orders verified by webhook.</span>
+        </span>
+        <span class="idx-metric"><span class="num" data-roll>2,700+</span><span class="idx-unit">paid orders</span></span>
+      </div>
+      <a class="idx" href="https://www.roblox.com/games/91179701802837/Petak-Umpet">
+        <span class="idx-year">2026</span>
+        <span class="idx-main">
+          <span class="idx-name">Petak Umpet</span>
+          <span class="idx-what">Roblox hide-and-seek. Sole programmer on every line of game logic.</span>
+        </span>
+        <span class="idx-metric"><span class="num" data-roll>2.6K</span><span class="idx-unit">peak concurrent players</span></span>
+      </a>
+      <a class="idx" href="https://gtid.pro">
+        <span class="idx-year">2025–26</span>
+        <span class="idx-main">
+          <span class="idx-name">GTID</span>
+          <span class="idx-what">Growtopia market prices for 16,088 items, plus a public API at api.gtid.pro.</span>
+        </span>
+        <span class="idx-metric"><span class="num" data-roll>14.5k</span><span class="idx-unit">requests / day</span></span>
+      </a>
+    </div>
+  </section>
+
+  <!-- ======== CONTACT ======== -->
+  <section class="sec contact wrap" aria-labelledby="h-contact">
+    <div class="sec-head"><h2 id="h-contact">Contact</h2></div>
+    <p class="c-line">Send me the system that has to stay up<span class="stop">.</span></p>
+    <a class="c-mail" href="mailto:ezrakonterliem@gmail.com">ezrakonterliem@gmail.com</a>
+    <p class="c-links"><a href="https://github.com/ezrabrilliant">GitHub</a><a href="https://linkedin.com/in/ezrabrilliant">LinkedIn</a></p>
+  </section>
+</main>
+
+<footer><div class="wrap">© 2026 Ezra Brilliant</div></footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script>
+(function () {
+  "use strict";
+  var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var G = window.gsap;
+  var motion = !!G && !reduce;
+
+  /* ---------- helpers ---------- */
+  function $(s, r) { return (r || document).querySelector(s); }
+  function $$(s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); }
+  function onView(el, fn, thr) {
+    if (!("IntersectionObserver" in window)) { fn(); return; }
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) { if (e.isIntersecting) { io.disconnect(); fn(); } });
+    }, { threshold: thr || 0.3 });
+    io.observe(el);
+  }
+
+  /* ---------- flip-board counters ----------
+     The digit slots of a figure ("2,700+", "14.5k") are read as one integer
+     (2700, 145) that counts up from 0 and never overshoots. Updates are held
+     to ~16 ticks a second so the board clacks instead of blurring. Leading
+     zeros stay blank, like an unlit split-flap cell. */
+  var BLANK = " ";
+  function buildReels(el) {
+    var txt = el.textContent.trim(), cells = [], digits = "";
+    el.textContent = "";
+    var sr = document.createElement("span"); sr.className = "sr"; sr.textContent = txt;
+    var vis = document.createElement("span"); vis.className = "reels"; vis.setAttribute("aria-hidden", "true");
+    for (var i = 0; i < txt.length; i++) {
+      var ch = txt.charAt(i), c = document.createElement("span");
+      c.className = "cell";
+      cells.push({ el: c, ch: ch, digit: /[0-9]/.test(ch), beforePoint: txt.charAt(i + 1) === "." });
+      if (/[0-9]/.test(ch)) digits += ch;
+      vis.appendChild(c);
+    }
+    el.appendChild(sr); el.appendChild(vis);
+    el._flip = { cells: cells, target: parseInt(digits, 10), width: digits.length };
+    paint(el, 0);
+  }
+  function paint(el, n) {
+    var f = el._flip, s = String(n), k = 0, lit = false;
+    while (s.length < f.width) s = "0" + s;
+    f.cells.forEach(function (c, i) {
+      var out;
+      if (c.digit) {
+        var d = s.charAt(k++);
+        var lastDigit = k === f.width;
+        if (d !== "0" || c.beforePoint || lastDigit) lit = true;
+        out = lit ? d : BLANK;
+      } else {
+        out = (c.ch === "," && !lit) ? BLANK : c.ch;   // no floating separators
+      }
+      if (c.el.textContent !== out) c.el.textContent = out;
+    });
+  }
+  function roll(el, delay) {
+    if (!el || !el._flip || el._rolled) return;
+    el._rolled = true;
+    var p = { v: 0 }, lastT = 0, T = el._flip.target;
+    G.to(p, {
+      v: T, duration: 1.35, delay: delay || 0, ease: "power3.out",
+      onUpdate: function () {
+        var now = performance.now();
+        if (now - lastT < 60) return;
+        lastT = now; paint(el, Math.min(T, Math.round(p.v)));
+      },
+      onComplete: function () { paint(el, T); }
+    });
+  }
+  if (motion) $$("[data-roll]").forEach(buildReels);
+
+  /* ---------- chart: static sample, seeded so it renders the same every time ---------- */
+  var SVGNS = "http://www.w3.org/2000/svg";
+  function mk(tag, attrs, parent) {
+    var n = document.createElementNS(SVGNS, tag);
+    for (var a in attrs) n.setAttribute(a, attrs[a]);
+    if (parent) parent.appendChild(n);
+    return n;
+  }
+  var DATA = (function () {
+    var s = 20260927 % 2147483647, out = [], p = 100;
+    function r() { s = (s * 16807) % 2147483647; return (s - 1) / 2147483646; }
+    for (var i = 0; i < 48; i++) {
+      var o = p, c = o + (r() - 0.43) * 3.4;
+      out.push({ o: o, c: c, h: Math.max(o, c) + r() * 1.5, l: Math.min(o, c) - r() * 1.5 });
+      p = c;
+    }
+    return out;
+  })();
+  function niceStep(range) {
+    var raw = range / 4, mag = Math.pow(10, Math.floor(Math.log10(raw))), f = raw / mag;
+    return (f < 1.5 ? 1 : f < 3 ? 2 : f < 7 ? 5 : 10) * mag;
+  }
+  var box = $("#chart"), lastW = 0;
+  function drawChart(animate) {
+    var w = box.clientWidth, h = box.clientHeight;
+    if (!w || !h) return;
+    lastW = w;
+    box.innerHTML = "";
+    var data = DATA.slice(w < 520 ? DATA.length - 28 : 0);
+    var padR = 58, padT = 12, padB = 12, n = data.length;
+    var lo = Infinity, hi = -Infinity;
+    data.forEach(function (d) { lo = Math.min(lo, d.l); hi = Math.max(hi, d.h); });
+    var span = hi - lo; lo -= span * 0.06; hi += span * 0.06;
+    var plotW = w - padR, step = plotW / n, bw = Math.max(2, Math.round(step * 0.56));
+    function y(v) { return padT + (hi - v) / (hi - lo) * (h - padT - padB); }
+    function x(i) { return Math.round(i * step + step / 2); }
+
+    var svg = mk("svg", { viewBox: "0 0 " + w + " " + h, width: w, height: h, "aria-hidden": "true", focusable: "false" }, box);
+    var grid = mk("g", {}, svg);
+    var st = niceStep(hi - lo);
+    for (var t = Math.ceil(lo / st) * st; t <= hi; t += st) {
+      var yy = Math.round(y(t)) + 0.5;
+      mk("line", { x1: 0, x2: plotW, y1: yy, y2: yy, stroke: "rgba(237,230,214,.16)", "stroke-width": 1 }, grid);
+      var lab = mk("text", { x: plotW + 10, y: yy + 4, fill: "#8A8272", "font-family": "IBM Plex Mono, monospace", "font-size": 11 }, grid);
+      lab.textContent = t.toFixed(st < 1 ? 1 : 0);
+    }
+
+    var candles = mk("g", {}, svg), groups = [];
+    data.forEach(function (d, i) {
+      var up = d.c >= d.o, cx = x(i) + 0.5, col = up ? "#FFB300" : "#8A8272";
+      var g = mk("g", {}, candles);
+      mk("line", { x1: cx, x2: cx, y1: y(d.h), y2: y(d.l), stroke: col, "stroke-width": 1 }, g);
+      var top = y(Math.max(d.o, d.c)), bh = Math.max(1, y(Math.min(d.o, d.c)) - top);
+      mk("rect", up
+        ? { x: Math.round(x(i) - bw / 2), y: top, width: bw, height: bh, fill: "#FFB300" }
+        : { x: Math.round(x(i) - bw / 2) + 0.5, y: top + 0.5, width: bw - 1, height: Math.max(0, bh - 1), fill: "#17150F", stroke: "#8A8272", "stroke-width": 1 }, g);
+      groups.push(g);
+    });
+
+    // 5-session moving average of the close: the line that draws itself in
+    var dstr = "";
+    data.forEach(function (d, i) {
+      var a = Math.max(0, i - 4), sum = 0;
+      for (var k = a; k <= i; k++) sum += data[k].c;
+      dstr += (i ? "L" : "M") + x(i) + " " + y(sum / (i - a + 1)).toFixed(1);
+    });
+    var ma = mk("path", { d: dstr, fill: "none", stroke: "#EDE6D6", "stroke-width": 1.5, "stroke-linejoin": "round", "stroke-linecap": "round" }, svg);
+
+    // last-price marker
+    var last = data[n - 1], ly = Math.round(y(last.c)) + 0.5;
+    var tag = mk("g", {}, svg);
+    mk("line", { x1: x(n - 1), x2: plotW, y1: ly, y2: ly, stroke: "#FFB300", "stroke-width": 1, "stroke-dasharray": "3 3" }, tag);
+    mk("rect", { x: plotW + 2, y: ly - 10, width: padR - 2, height: 20, fill: "#FFB300" }, tag);
+    var tt = mk("text", { x: plotW + 8, y: ly + 4, fill: "#17150F", "font-family": "IBM Plex Mono, monospace", "font-size": 11, "font-weight": 500 }, tag);
+    tt.textContent = last.c.toFixed(2);
+
+    $("#c-last").textContent = last.c.toFixed(2);
+    $("#c-chg").textContent = ((last.c / data[0].o - 1) * 100).toFixed(1) + "%";
+
+    if (animate) {
+      var len = ma.getTotalLength();
+      G.set(groups, { transformOrigin: "50% 50%" });
+      G.from(groups, { scaleY: 0, opacity: 0, duration: 0.35, stagger: 0.022, ease: "power2.out" });
+      G.fromTo(ma, { strokeDasharray: len, strokeDashoffset: len },
+        { strokeDashoffset: 0, duration: 1.7, delay: 0.25, ease: "power2.inOut",
+          onComplete: function () { ma.removeAttribute("style"); } });
+      G.from(tag, { opacity: 0, duration: 0.3, delay: 0.25 + n * 0.022 });
+    }
+  }
+
+  /* ---------- boot ---------- */
+  var fontsReady = document.fonts && document.fonts.ready
+    ? Promise.race([document.fonts.ready, new Promise(function (r) { setTimeout(r, 1500); })])
+    : Promise.resolve();
+
+  if (!motion) {
+    drawChart(false);
+  } else {
+    fontsReady.then(function () {
+      drawChart(true);
+      $$(".quote [data-roll]").forEach(function (el, i) { roll(el, 0.2 + i * 0.12); });
+    });
+
+    // board rows "come online": staggered amber flash + their numbers tick up
+    var board = $("#board");
+    onView(board, function () {
+      $$("tbody tr:not(.dim)", board).forEach(function (row, i) {
+        var d = 0.1 + i * 0.16;
+        G.fromTo(row, { backgroundColor: "rgba(255,179,0,0.22)" }, {
+          backgroundColor: "rgba(255,179,0,0)", duration: 0.9, delay: d, ease: "power2.in", immediateRender: false,
+          onStart: function () { row.classList.add("flash"); },
+          onComplete: function () { row.classList.remove("flash"); row.style.backgroundColor = ""; }
+        });
+        roll($("[data-roll]", row), d);
+      });
+    }, 0.2);
+
+    $$(".idx").forEach(function (row) {
+      onView(row, function () { roll($("[data-roll]", row), 0); }, 0.4);
+    });
+  }
+
+  if ("ResizeObserver" in window) {
+    var tmr;
+    new ResizeObserver(function () {
+      if (!lastW || Math.abs(box.clientWidth - lastW) < 2) return; // not drawn yet, or no real change
+      clearTimeout(tmr);
+      tmr = setTimeout(function () { drawChart(false); }, 120);
+    }).observe(box);
+  }
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,551 @@
+<!--
+  THROWAWAY DESIGN MOCKUP — DIRECTION C (ARENA)
+  Scoreboard / stadium confidence. Two inks (warm white, acid yellow) on one cobalt field.
+  Flat colour only, no gradients. Not production code.
+-->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ezra Brilliant</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --field: #2036C7;      /* page field */
+    --deep:  #16247F;      /* panel separation */
+    --ink:   #F5F2EA;      /* warm white text */
+    --ink-2: #C0C3E1;      /* dimmed text, solid (= ink @ 75% over field) */
+    --volt:  #E9FF3F;      /* single accent: scores, lamps, hover */
+    --hair:  rgba(245, 242, 234, .25);
+    --rule:  3px solid var(--ink);
+    --gut:   clamp(16px, 4vw, 56px);
+    --display: "Anton", "Impact", "Arial Narrow", sans-serif;
+    --text: "Instrument Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+
+    /* Anton advance widths in em, measured in Chrome after font load:
+       digits 0,2-9 = .4942em, "1" = .3306em (Anton has no tnum), comma = .2364em,
+       "VISITS AND COUNTING." = 7.952em.
+       The hero number sits in fixed .495em digit slots (scoreboard cells), so every
+       7-digit count-up frame has the same width: 7 x .495 + 2 x .2364 = 3.938em
+       (confirmed in-page). ~1% safety added.
+       Each line fills its container: font-size = 100cqi / width. */
+    --w-num: 3.98;
+    --w-line: 8.02;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--field);
+    color: var(--ink);
+    font-family: var(--text);
+    font-size: 17px;
+    line-height: 1.5;
+    overflow-x: clip;
+  }
+  a { color: inherit; }
+  :focus-visible { outline: 2px solid var(--volt); outline-offset: 3px; }
+  ::selection { background: var(--volt); color: var(--deep); }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .num { font-variant-numeric: tabular-nums lining-nums; font-feature-settings: "tnum" 1, "lnum" 1; }
+  .d { font-family: var(--display); font-weight: 400; text-transform: uppercase; line-height: .9; letter-spacing: 0; }
+
+  /* ---------- lamp: the scoreboard bulb ---------- */
+  .lamp {
+    display: inline-block; flex: none;
+    width: 16px; height: 16px;
+    box-shadow: inset 0 0 0 2px var(--hair);
+    position: relative;
+  }
+  .lamp i { position: absolute; inset: 0; background: var(--volt); }
+  .lamp.off i { display: none; }
+  .lamp.held { box-shadow: inset 0 0 0 2px var(--ink); }
+  .motion .lamp.live i { opacity: 0; }
+
+  .slam { display: inline-block; transform-origin: 50% 85%; }
+  .dg { display: inline-block; width: .495em; text-align: center; }
+
+  /* ---------- nav ---------- */
+  .nav {
+    display: flex; justify-content: space-between; align-items: center; gap: 16px;
+    padding: 14px var(--gut);
+    border-bottom: var(--rule);
+    font-weight: 600; font-size: 15px;
+  }
+  .nav a { text-decoration: none; }
+  .nav a:hover { color: var(--volt); }
+
+  /* ---------- hero: the scoreboard ---------- */
+  .hero {
+    container-type: inline-size;
+    padding: clamp(28px, 5vw, 64px) var(--gut) 0;
+  }
+  .hero h1 { margin: 0; }
+  .hero-num, .hero-line {
+    display: block; white-space: nowrap;
+    font-family: var(--display); font-weight: 400; line-height: .9;
+    text-transform: uppercase;
+  }
+  .hero-num {
+    font-size: 19vw;
+    font-size: calc(100cqi / var(--w-num));
+    margin-bottom: .15em; /* clear Anton's deep comma tails */
+  }
+  .hero-line {
+    font-size: 9.5vw;
+    font-size: calc(100cqi / var(--w-line));
+  }
+  .hero-foot {
+    display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline;
+    gap: 10px 32px;
+    margin: clamp(18px, 2.4vw, 32px) 0 clamp(28px, 4vw, 56px);
+  }
+  .hero-sub {
+    margin: 0; max-width: 42ch;
+    font-size: clamp(19px, 2.1vw, 28px); font-weight: 500; line-height: 1.25;
+  }
+  .hero-credit {
+    margin: 0; display: inline-flex; align-items: center; gap: 10px;
+    font-size: 15px; font-weight: 600; color: var(--ink-2);
+  }
+  .hero-credit .lamp { width: 12px; height: 12px; }
+
+  .strip {
+    list-style: none; margin: 0; padding: 0;
+    display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
+    border-top: var(--rule);
+  }
+  .strip li {
+    padding: clamp(16px, 2vw, 26px) clamp(12px, 2vw, 28px) clamp(20px, 2.4vw, 32px);
+    border-left: 1px solid var(--hair);
+    min-width: 0;
+  }
+  .strip li:first-child { border-left: 0; padding-left: 0; }
+  .strip .n {
+    display: block;
+    font-weight: 600; font-size: clamp(36px, 6.4vw, 104px);
+    line-height: .95; letter-spacing: -.035em; color: var(--volt);
+    white-space: nowrap;
+  }
+  .strip .l { display: block; margin-top: 10px; font-family: var(--display); font-size: clamp(18px, 1.7vw, 26px); line-height: 1; }
+  .strip .s { display: block; margin-top: 6px; font-size: 14px; color: var(--ink-2); }
+
+  /* ---------- section frame ---------- */
+  .sec { padding: clamp(48px, 7vw, 112px) var(--gut); border-top: var(--rule); }
+  .sec-head {
+    display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between;
+    gap: 12px 32px; margin-bottom: clamp(24px, 3.4vw, 48px);
+  }
+  .sec-head h2 { margin: 0; font-size: clamp(56px, 11vw, 176px); }
+  .sec-head p { margin: 0; font-weight: 600; font-size: 15px; color: var(--ink-2); }
+
+  /* ---------- SYSTEMS: the fixture list ---------- */
+  .board { background: var(--deep); border-bottom: var(--rule); }
+  .fixtures { width: 100%; border-collapse: collapse; display: block; }
+  .fixtures thead, .fixtures tbody { display: block; }
+  .fixtures tr {
+    display: grid;
+    grid-template-columns: 16px minmax(0, 1.2fr) minmax(0, 1.35fr) minmax(0, 1fr) 96px;
+    column-gap: clamp(16px, 2.2vw, 36px);
+    align-items: center;
+  }
+  .fixtures th {
+    text-align: left; font-weight: 600; font-size: 14px; color: var(--ink-2);
+    padding: 0 0 12px;
+  }
+  .fixtures thead tr { border-bottom: 1px solid var(--hair); }
+  .fixtures tbody tr {
+    border-bottom: 1px solid var(--hair);
+    padding: clamp(16px, 1.8vw, 24px) 0;
+    transition: background-color .15s linear, box-shadow .15s linear;
+  }
+  .fixtures td { padding: 0; min-width: 0; }
+  .fixtures .nm { font-family: var(--display); text-transform: uppercase; font-size: clamp(30px, 3.7vw, 58px); line-height: .9; transition: color .15s linear; }
+  .fixtures .wh { font-size: clamp(16px, 1.25vw, 19px); line-height: 1.35; }
+  .fixtures .sc { white-space: nowrap; }
+  .fixtures .sc .count { font-weight: 600; font-size: clamp(26px, 2.8vw, 44px); letter-spacing: -.03em; color: var(--volt); line-height: 1; }
+  .fixtures .sc .u { display: block; font-size: 14px; color: var(--ink-2); margin-top: 4px; white-space: normal; }
+  .fixtures .st { font-weight: 600; font-size: 15px; }
+  @media (hover: hover) {
+    .fixtures tbody tr:not(.next):hover { background: var(--field); box-shadow: -12px 0 0 var(--field), 12px 0 0 var(--field); }
+    .fixtures tbody tr:not(.next):hover .nm { color: var(--volt); }
+  }
+  .fixtures tr.next { color: var(--ink-2); }
+  .fixtures tr.next .nm { color: var(--ink-2); }
+  .fixtures tr.next .blank { font-weight: 600; font-size: clamp(26px, 2.8vw, 44px); letter-spacing: .08em; line-height: 1; color: var(--ink-2); }
+  .fixtures tbody tr:last-child { border-bottom: 0; }
+
+  /* ---------- selected work: index rows ---------- */
+  .work-list { list-style: none; margin: 0; padding: 0; border-top: var(--rule); }
+  .work-row {
+    display: grid;
+    grid-template-columns: clamp(64px, 8vw, 128px) minmax(0, 1fr) auto;
+    grid-template-areas: "yr nm sc";
+    align-items: end; column-gap: clamp(12px, 2vw, 32px);
+    padding: clamp(18px, 2.4vw, 36px) 0;
+    border-bottom: 1px solid var(--hair);
+  }
+  .work-row:last-child { border-bottom: var(--rule); }
+  .work-row .yr { grid-area: yr; font-weight: 600; font-size: clamp(15px, 1.4vw, 20px); padding-bottom: .5em; }
+  .work-row .nm {
+    grid-area: nm; margin: 0;
+    font-family: var(--display); font-weight: 400; text-transform: uppercase;
+    font-size: clamp(48px, 10.5vw, 176px); line-height: .9;
+    transition: color .15s linear;
+    overflow-wrap: anywhere;
+  }
+  .work-row .sc { grid-area: sc; text-align: right; padding-bottom: .2em; }
+  .work-row .sc .count { display: block; font-weight: 600; font-size: clamp(28px, 4.2vw, 68px); line-height: 1; letter-spacing: -.035em; color: var(--volt); white-space: nowrap; }
+  .work-row .sc .u { display: block; font-size: 15px; color: var(--ink-2); margin-top: 6px; }
+  @media (hover: hover) { .work-row:hover .nm { color: var(--volt); } }
+
+  /* ---------- contact ---------- */
+  .contact .line { margin: 0; font-size: clamp(48px, 9.6vw, 164px); max-width: 12ch; }
+  .contact .mail {
+    display: inline-block; margin-top: clamp(24px, 3.4vw, 48px);
+    font-weight: 600; font-size: clamp(20px, 4.4vw, 60px); letter-spacing: -.02em; line-height: 1.1;
+    text-decoration: underline; text-decoration-thickness: 3px; text-underline-offset: .16em;
+    overflow-wrap: anywhere;
+  }
+  .contact .mail:hover { color: var(--volt); }
+  .contact .links { margin: 20px 0 0; display: flex; gap: 28px; font-weight: 600; font-size: 17px; }
+  .contact .links a { text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: .22em; }
+  .contact .links a:hover { color: var(--volt); text-decoration-thickness: 2px; }
+
+  /* ---------- marquee: the ribbon board ---------- */
+  .ribbon {
+    background: var(--volt); color: var(--deep);
+    overflow: hidden; border-top: var(--rule); border-bottom: var(--rule);
+    border-color: var(--deep);
+  }
+  .ribbon-track { display: flex; width: max-content; }
+  .ribbon-set { display: flex; align-items: center; flex: none; }
+  .ribbon-set span {
+    font-family: var(--display); text-transform: uppercase; line-height: 1;
+    font-size: clamp(28px, 3.8vw, 58px);
+    padding: .28em 0; white-space: nowrap;
+  }
+  .ribbon-set i { flex: none; width: .42em; height: .42em; background: var(--deep); margin: 0 .7em; font-size: clamp(28px, 3.8vw, 58px); }
+
+  .foot { padding: 18px var(--gut) 22px; font-size: 14px; color: var(--ink-2); display: flex; justify-content: space-between; gap: 16px; }
+
+  /* ---------- narrow ---------- */
+  @media (max-width: 760px) {
+    .strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .strip li:nth-child(3) { border-left: 0; padding-left: 0; }
+    .strip li:nth-child(n+3) { border-top: 1px solid var(--hair); }
+    .strip li:nth-child(even) { padding-right: 0; }
+
+    .fixtures thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+    .fixtures tr {
+      grid-template-columns: 16px minmax(0, 1fr) auto;
+      grid-template-areas: "lp nm st" ".  wh wh" ".  sc sc";
+      row-gap: 8px;
+    }
+    .fixtures .lp { grid-area: lp; align-self: center; }
+    .fixtures .nm { grid-area: nm; }
+    .fixtures .st { grid-area: st; }
+    .fixtures .wh { grid-area: wh; }
+    .fixtures .sc { grid-area: sc; display: flex; align-items: baseline; gap: 10px; }
+    .fixtures .sc .u { display: inline; margin: 0; }
+
+    .work-row { grid-template-columns: auto minmax(0, 1fr); grid-template-areas: "nm nm" "yr sc"; row-gap: 10px; align-items: baseline; }
+    .work-row .yr { padding-bottom: 0; }
+    .work-row .sc { padding-bottom: 0; display: flex; justify-content: flex-end; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+    .work-row .sc .count, .work-row .sc .u { display: inline; margin: 0; }
+  }
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <a href="#top">Ezra Brilliant</a>
+  <span>Surabaya, ID</span>
+</header>
+
+<main id="top">
+
+  <!-- HERO: the scoreboard -->
+  <section class="hero" aria-labelledby="h-hero">
+    <h1 id="h-hero">
+      <span class="hero-num count" data-hero data-slots aria-hidden="true"><span class="dg">3</span>,<span class="dg">1</span><span class="dg">0</span><span class="dg">0</span>,<span class="dg">0</span><span class="dg">0</span><span class="dg">0</span></span><span class="sr">3,100,000 </span>
+      <span class="hero-line">Visits and counting.</span>
+    </h1>
+    <div class="hero-foot">
+      <p class="hero-sub">Games, bots, and markets built and run by Ezra Brilliant.</p>
+      <p class="hero-credit"><span class="lamp live" aria-hidden="true"><i></i></span>Petak Umpet on Roblox</p>
+    </div>
+    <ul class="strip" aria-label="Lead stats">
+      <li><span class="n num count">2,700+</span><span class="l">Orders</span><span class="s">Orbit Store</span></li>
+      <li><span class="n num count">14.5K</span><span class="l">Req/day</span><span class="s">GTID public API</span></li>
+      <li><span class="n num count">1,000+</span><span class="l">Members</span><span class="s">Ezra Bot</span></li>
+      <li><span class="n num count">2.6K</span><span class="l">Peak CCU</span><span class="s">Petak Umpet</span></li>
+    </ul>
+  </section>
+
+  <!-- SYSTEMS: fixture list -->
+  <section class="sec board" aria-labelledby="h-sys">
+    <div class="sec-head">
+      <h2 id="h-sys" class="d">Systems</h2>
+      <p>4 live, 1 shipped, 1 on deck</p>
+    </div>
+    <table class="fixtures" aria-labelledby="h-sys">
+      <thead>
+        <tr><th scope="col"><span class="sr">Lamp</span></th><th scope="col">System</th><th scope="col">What it does</th><th scope="col">Score</th><th scope="col">Status</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="lp"><span class="lamp held" aria-hidden="true"></span></td>
+          <td class="nm">Orbit Store</td>
+          <td class="wh">Discord commerce, QRIS payments</td>
+          <td class="sc"><span class="count num">2,700+</span><span class="u">orders</span></td>
+          <td class="st">Shipped</td>
+        </tr>
+        <tr>
+          <td class="lp"><span class="lamp live" aria-hidden="true"><i></i></span></td>
+          <td class="nm">GTID</td>
+          <td class="wh">Market platform + public API</td>
+          <td class="sc"><span class="count num">14.5k</span><span class="u">req/day</span></td>
+          <td class="st">Live</td>
+        </tr>
+        <tr>
+          <td class="lp"><span class="lamp live" aria-hidden="true"><i></i></span></td>
+          <td class="nm">Petak Umpet</td>
+          <td class="wh">Roblox game</td>
+          <td class="sc"><span class="count num">3.1M</span><span class="u">visits</span></td>
+          <td class="st">Live</td>
+        </tr>
+        <tr>
+          <td class="lp"><span class="lamp live" aria-hidden="true"><i></i></span></td>
+          <td class="nm">Ezra Bot</td>
+          <td class="wh">Community AI with RAG memory</td>
+          <td class="sc"><span class="count num">1,000+</span><span class="u">members</span></td>
+          <td class="st">Live</td>
+        </tr>
+        <tr>
+          <td class="lp"><span class="lamp live" aria-hidden="true"><i></i></span></td>
+          <td class="nm">POS Monosuko</td>
+          <td class="wh">Restaurant POS</td>
+          <td class="sc"><span class="count num">41%</span><span class="u">faster checkout</span></td>
+          <td class="st">Live</td>
+        </tr>
+        <tr class="next">
+          <td class="lp"><span class="lamp off" aria-hidden="true"></span></td>
+          <td class="nm">Next system</td>
+          <td class="wh">Deploying soon</td>
+          <td class="sc"><span class="blank num" aria-label="No score yet">--</span></td>
+          <td class="st">Soon</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- SELECTED WORK: index rows -->
+  <section class="sec work" aria-labelledby="h-work">
+    <div class="sec-head">
+      <h2 id="h-work" class="d">Selected work</h2>
+    </div>
+    <ol class="work-list">
+      <li class="work-row">
+        <span class="yr num">2026</span>
+        <h3 class="nm">Petak Umpet</h3>
+        <p class="sc" style="margin:0"><span class="count num">3.1M</span><span class="u">visits on Roblox</span></p>
+      </li>
+      <li class="work-row">
+        <span class="yr num">2024</span>
+        <h3 class="nm">Orbit Store</h3>
+        <p class="sc" style="margin:0"><span class="count num">2,700+</span><span class="u">paid orders</span></p>
+      </li>
+      <li class="work-row">
+        <span class="yr num">2026</span>
+        <h3 class="nm">GTID</h3>
+        <p class="sc" style="margin:0"><span class="count num">14.5k</span><span class="u">requests a day</span></p>
+      </li>
+    </ol>
+  </section>
+
+  <!-- CONTACT -->
+  <section class="sec contact" aria-labelledby="h-contact">
+    <h2 id="h-contact" class="line d">Put yours on the board.</h2>
+    <a class="mail" href="mailto:ezrakonterliem@gmail.com">ezrakonterliem@gmail.com</a>
+    <p class="links">
+      <a href="https://github.com/ezrabrilliant">GitHub</a>
+      <a href="https://linkedin.com/in/ezrabrilliant">LinkedIn</a>
+    </p>
+  </section>
+
+  <!-- RIBBON: the one ambient motion -->
+  <div class="ribbon" aria-hidden="true">
+    <div class="ribbon-track">
+      <div class="ribbon-set">
+        <span>2,700+ orders</span><i></i><span>14.5K req/day</span><i></i><span>1,000+ members</span><i></i><span>2.6K peak CCU</span><i></i>
+        <span>2,700+ orders</span><i></i><span>14.5K req/day</span><i></i><span>1,000+ members</span><i></i><span>2.6K peak CCU</span><i></i>
+      </div>
+      <div class="ribbon-set">
+        <span>2,700+ orders</span><i></i><span>14.5K req/day</span><i></i><span>1,000+ members</span><i></i><span>2.6K peak CCU</span><i></i>
+        <span>2,700+ orders</span><i></i><span>14.5K req/day</span><i></i><span>1,000+ members</span><i></i><span>2.6K peak CCU</span><i></i>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer class="foot">
+  <span>&copy; 2026 Ezra Brilliant</span>
+  <span>Surabaya, Indonesia</span>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script>
+(function () {
+  "use strict";
+  var root = document.documentElement;
+  var G = window.gsap;
+  var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  // Reduced motion, or GSAP failed to load: final states as authored in the HTML.
+  if (reduce || !G) return;
+  root.classList.add("motion");
+
+  /* ---- helpers ---- */
+
+  // Scoreboard tick: expo-out progress quantised into n discrete steps.
+  function tick(n) {
+    var base = G.parseEase("expo.out");
+    return function (t) { return t >= 1 ? 1 : Math.floor(base(t) * n) / n; };
+  }
+
+  // Parse "2,700+" -> { pre:"", target:2700, dec:0, commas:true, suf:"+" }
+  function parse(el) {
+    var txt = el.textContent.trim();
+    var m = txt.match(/^([^\d]*)([\d][\d,]*(?:\.\d+)?)(.*)$/);
+    if (!m) return null;
+    var n = m[2];
+    return {
+      final: txt, pre: m[1], suf: m[3],
+      target: parseFloat(n.replace(/,/g, "")),
+      dec: n.indexOf(".") > -1 ? n.split(".")[1].length : 0,
+      commas: n.indexOf(",") > -1
+    };
+  }
+
+  function fmt(p, v) {
+    var s = p.dec ? v.toFixed(p.dec) : String(Math.round(v));
+    if (p.commas) s = Number(s).toLocaleString("en-US", { minimumFractionDigits: p.dec, maximumFractionDigits: p.dec });
+    return p.pre + s + p.suf;
+  }
+
+  // Write a value. Slotted counters (hero) put every digit in a fixed-width cell;
+  // when slamLast is set, the last digit gets its own box so it can pop.
+  function paint(el, t, slamLast) {
+    var last = slamLast ? t.search(/\d(?!.*\d)/) : -1;
+    var slots = el._slots;
+    el.textContent = "";
+    var run = "";
+    for (var k = 0; k < t.length; k++) {
+      var ch = t.charAt(k), isD = ch >= "0" && ch <= "9";
+      if (isD && (slots || k === last)) {
+        if (run) { el.appendChild(document.createTextNode(run)); run = ""; }
+        var s = document.createElement("span");
+        s.className = (slots ? "dg" : "") + (k === last ? " slam" : "");
+        s.textContent = ch;
+        el.appendChild(s);
+      } else run += ch;
+    }
+    if (run) el.appendChild(document.createTextNode(run));
+  }
+
+  function settle(el) { paint(el, el._p.final, true); el._done = true; }
+
+  function slam(el) {
+    var s = el.querySelector(".slam");
+    if (!s) return;
+    G.fromTo(s, { scale: 1.32, yPercent: -8 }, { scale: 1, yPercent: 0, duration: .34, ease: "back.out(4)", overwrite: true });
+  }
+
+  function count(el, delay, dur, steps) {
+    var p = el._p, o = { t: 0 };
+    return G.to(o, {
+      t: 1, delay: delay || 0, duration: dur || 1.1, ease: tick(steps || 22),
+      onUpdate: function () { paint(el, fmt(p, p.target * o.t), false); },
+      onComplete: function () { settle(el); slam(el); }
+    });
+  }
+
+  function lampOn(i, delay) {
+    G.timeline({ delay: delay || 0 })
+      .set(i, { opacity: 1 })
+      .set(i, { opacity: .15 }, "+=.06")
+      .set(i, { opacity: 1 }, "+=.07");
+  }
+
+  function once(el, cb, threshold) {
+    if (!("IntersectionObserver" in window)) { cb(); return; }
+    var io = new IntersectionObserver(function (entries) {
+      for (var k = 0; k < entries.length; k++) {
+        if (entries[k].isIntersecting) { io.disconnect(); cb(); return; }
+      }
+    }, { threshold: threshold || .3 });
+    io.observe(el);
+  }
+
+  /* ---- arm every counter at zero ---- */
+  var counters = document.querySelectorAll(".count");
+  for (var c = 0; c < counters.length; c++) {
+    var el = counters[c], p = parse(el);
+    if (!p) continue;
+    el._p = p;
+    el._slots = el.hasAttribute("data-slots");
+    paint(el, fmt(p, 0), false);
+  }
+
+  /* ---- hero: runs once fonts are in ---- */
+  var heroNum = document.querySelector("[data-hero]");
+  var heroLamp = document.querySelector(".hero-credit .lamp i");
+  var strip = document.querySelectorAll(".strip .count");
+  var started = false;
+  function startHero() {
+    if (started) return; started = true;
+    count(heroNum, .1, 1.6, 30);
+    for (var s = 0; s < strip.length; s++) count(strip[s], .35 + s * .12, 1.1, 20);
+    lampOn(heroLamp, 1.75);
+  }
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(startHero);
+  setTimeout(startHero, 1200);
+
+  /* ---- systems board: lamps switch on, row by row ---- */
+  var board = document.querySelector(".fixtures");
+  once(board, function () {
+    var rows = board.querySelectorAll("tbody tr");
+    for (var r = 0; r < rows.length; r++) {
+      var d = r * .2;
+      var lamp = rows[r].querySelector(".lamp.live i");
+      var num = rows[r].querySelector(".count");
+      if (lamp) lampOn(lamp, d);
+      if (num && num._p) count(num, d + .05, .85, 16);
+    }
+  }, .2);
+
+  /* ---- selected work: count on view, re-slam on hover ---- */
+  var works = document.querySelectorAll(".work-row");
+  for (var w = 0; w < works.length; w++) {
+    (function (row) {
+      var num = row.querySelector(".count");
+      once(row, function () { count(num, 0, 1, 18); }, .5);
+      row.addEventListener("mouseenter", function () { if (num._done) slam(num); });
+    })(works[w]);
+  }
+
+  /* ---- ribbon: single slow marquee, pauses on hover ---- */
+  var ribbon = document.querySelector(".ribbon");
+  var track = ribbon.querySelector(".ribbon-track");
+  var loop = G.to(track, { xPercent: -50, duration: 46, ease: "none", repeat: -1 });
+  ribbon.addEventListener("mouseenter", function () { loop.pause(); });
+  ribbon.addEventListener("mouseleave", function () { loop.play(); });
+})();
+</script>
+</body>
+</html>

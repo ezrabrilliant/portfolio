@@ -1,0 +1,994 @@
+<!-- THROWAWAY DESIGN MOCKUP — EZRAOS FORMAT VALIDATION
+     Purpose: let Ezra feel the "portfolio as a mini OS" format before any real implementation.
+     Single self-contained file. Only externals: Google Fonts (IBM Plex) and GSAP core from cdnjs.
+     Works without GSAP too (animations fall back to instant state changes).
+
+     Reduced-motion decision (prefers-reduced-motion: reduce):
+       - no boot sequence at all, desktop shows immediately, Bot window still auto-opens once
+       - window open/close/minimize snaps are instant
+       - the Petak Umpet icon STILL flees, but teleports instantly instead of tweening
+       - terminal caret does not blink (solid block); typing dots are static
+     Touch-only devices and phone mode (< 720px): Petak Umpet never flees, a tap opens it directly.
+     Keyboard: Enter on the Petak Umpet icon opens it directly (the chase is a pointer-only game). -->
+<!doctype html>
+<html lang="en" class="booting">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>EzraOS</title>
+<meta name="description" content="Ezra Brilliant's portfolio, shaped as a small operating system.">
+<script>if (matchMedia('(prefers-reduced-motion: reduce)').matches) document.documentElement.classList.remove('booting');</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#1D1B16; --paper:#F4F1E8; --amber:#FFB300; --wall:#1E2333; --bootbg:#14121A;
+  --muted:#5E5A50; --card:#FFFDF7; --rule:#D9D3C2;
+  --mb:28px; --dock:44px;
+  --mono:'IBM Plex Mono', ui-monospace, Menlo, Consolas, monospace;
+  --sans:'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --shadow:6px 6px 0 rgba(0,0,0,.35);
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden}
+body{
+  background-color:var(--wall);
+  /* tile grid + plus-sign motif, paper colour at ~6% (a nod to Growtopia's 2D tiles) */
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' shape-rendering='crispEdges'%3E%3Cpath d='M12.5 9v7M9 12.5h7' stroke='%23F4F1E8' stroke-opacity='.07'/%3E%3Cpath d='M23.5 0v24M0 23.5h24' stroke='%23F4F1E8' stroke-opacity='.03'/%3E%3C/svg%3E");
+  color:var(--paper); font-family:var(--sans);
+  -webkit-font-smoothing:antialiased; overscroll-behavior:none;
+  -webkit-tap-highlight-color:transparent;
+}
+button{font:inherit;color:inherit}
+a{color:inherit}
+
+/* focus: ink on paper by default, amber on dark surfaces */
+:focus{outline:none}
+:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+.dark :focus-visible, .dark:focus-visible{outline-color:var(--amber)}
+
+/* ---------- boot ---------- */
+#boot{display:none}
+.booting #boot{
+  display:flex;flex-direction:column;justify-content:flex-start;
+  position:fixed;inset:0;z-index:10000;background:var(--bootbg);color:var(--amber);
+  font:500 14px/1.7 var(--mono);padding:max(24px,6vh) max(20px,6vw);cursor:default;
+}
+#bootlog div{white-space:pre-wrap}
+#boot .skip{position:absolute;left:max(20px,6vw);bottom:24px;font-size:12px}
+
+/* ---------- menu bar ---------- */
+#menubar{
+  position:fixed;top:0;left:0;right:0;height:var(--mb);z-index:9000;
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
+  padding:0 6px;background:var(--ink);color:var(--paper);font:500 12px/1 var(--mono);
+  border-bottom:1px solid #000;
+}
+#menubar button{background:none;border:0;padding:7px 8px;cursor:pointer;font-weight:600}
+#menubar button:hover{background:var(--amber);color:var(--ink)}
+#menubar .right{display:flex;gap:16px;padding-right:6px;white-space:nowrap}
+
+/* ---------- desk ---------- */
+#os{position:fixed;inset:0}
+#desk{position:absolute;top:var(--mb);left:0;right:0;bottom:var(--dock);overflow:hidden}
+#icons{position:absolute;inset:0;z-index:1}
+.icon-col{
+  position:absolute;left:12px;top:12px;bottom:12px;
+  display:grid;grid-auto-flow:column;grid-template-rows:repeat(auto-fill,98px);
+  grid-auto-columns:88px;gap:0 6px;align-content:start;
+}
+.icon{
+  width:88px;height:96px;padding:6px 2px;margin:0;border:0;background:none;
+  display:flex;flex-direction:column;align-items:center;gap:7px;
+  color:var(--paper);font:500 11.5px/1.25 var(--mono);cursor:default;
+  touch-action:manipulation;user-select:none;-webkit-user-select:none;
+}
+.icon .tile{
+  width:52px;height:52px;flex:none;display:grid;place-items:center;
+  background:var(--paper);border:1px solid var(--ink);box-shadow:3px 3px 0 rgba(0,0,0,.45);
+}
+.icon svg{width:30px;height:30px;fill:none;stroke:var(--ink);stroke-width:2;stroke-linecap:square;stroke-linejoin:miter}
+.icon svg .f{fill:var(--paper)} .icon svg .k{fill:var(--ink);stroke:none}
+.icon .lbl{padding:2px 5px;max-width:100%;text-align:center}
+.icon.sel .lbl{background:var(--amber);color:var(--ink)}
+.icon.petak{position:absolute;left:0;top:0}
+#counter{
+  position:absolute;left:50%;bottom:12px;transform:translateX(-50%);z-index:8000;
+  background:var(--ink);color:var(--amber);border:1px solid var(--amber);
+  font:500 12px/1 var(--mono);padding:7px 10px;pointer-events:none;white-space:nowrap;
+}
+#counter[hidden]{display:none}
+
+/* ---------- windows ---------- */
+#wins{position:absolute;inset:0;z-index:2;pointer-events:none}
+.win{
+  position:absolute;pointer-events:auto;display:flex;flex-direction:column;
+  background:var(--paper);color:var(--ink);border:1px solid var(--ink);box-shadow:var(--shadow);
+  transform-origin:50% 20%;
+}
+.win:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+.tb{
+  flex:none;height:30px;display:flex;align-items:center;gap:6px;padding:0 4px 0 10px;
+  background:var(--ink);color:var(--paper);font:500 12px/1 var(--mono);
+  border-bottom:1px solid var(--ink);user-select:none;-webkit-user-select:none;touch-action:none;cursor:grab;
+}
+.tb.dragging{cursor:grabbing}
+.win.active .tb{background:var(--amber);color:var(--ink)}
+.tb h2{font:inherit;font-weight:600;margin:0;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tb button{
+  flex:none;width:22px;height:22px;padding:0;display:grid;place-items:center;cursor:pointer;
+  border:1px solid currentColor;background:transparent;font:500 15px/1 var(--mono);
+}
+.win:not(.active) .tb button:hover{background:var(--paper);color:var(--ink)}
+.win.active .tb button:hover{background:var(--ink);color:var(--amber)}
+.win:not(.active) .tb :focus-visible{outline-color:var(--amber)}
+.tb .back{display:none}
+.body{flex:1 1 auto;min-height:0;overflow:auto;font:15px/1.55 var(--sans)}
+
+/* ---------- dock ---------- */
+#dock{
+  position:absolute;left:0;right:0;bottom:0;height:var(--dock);z-index:9000;
+  display:flex;align-items:center;gap:6px;padding:0 10px;overflow-x:auto;scrollbar-width:none;
+  background:var(--ink);border-top:1px solid #000;
+}
+#dock::-webkit-scrollbar{display:none}
+#dock button{
+  flex:none;height:30px;padding:0 12px 0 10px;display:flex;align-items:center;gap:8px;
+  background:transparent;color:var(--paper);border:1px solid var(--paper);
+  font:500 12px/1 var(--mono);cursor:pointer;
+}
+#dock button .sq{width:8px;height:8px;border:1px solid currentColor}
+#dock button.on{background:var(--amber);color:var(--ink);border-color:var(--amber)}
+#dock button.on .sq{background:var(--ink)}
+#dock button.min{border-style:dashed}
+#dock button:hover:not(.on){background:var(--paper);color:var(--ink)}
+
+/* ---------- app: bot ---------- */
+.bot{display:flex;flex-direction:column;height:100%}
+.msgs{flex:1;min-height:0;overflow-y:auto;padding:14px 14px 8px;display:flex;flex-direction:column;gap:9px}
+.m{display:flex;gap:8px;align-items:flex-end;max-width:90%}
+.m .av{flex:none;width:28px;height:28px;background:var(--ink);color:var(--amber);font:600 11px/28px var(--mono);text-align:center}
+.m .bub{background:var(--card);border:1px solid var(--ink);padding:7px 11px;font-size:14.5px;line-height:1.45}
+.m .bub ul{margin:4px 0 0;padding-left:18px}
+.m .bub li{margin:2px 0}
+.m.me{align-self:flex-end}
+.m.me .bub{background:var(--ink);color:var(--paper)}
+.m .inl{font:500 12px/1 var(--mono);padding:6px 8px;margin-top:6px;border:1px solid var(--ink);background:var(--amber);color:var(--ink);cursor:pointer}
+.typing .bub{display:flex;gap:4px;padding:11px 12px}
+.typing i{width:6px;height:6px;background:var(--ink);display:block}
+@media (prefers-reduced-motion:no-preference){
+  .typing i{animation:dot .9s steps(2,jump-none) infinite}
+  .typing i:nth-child(2){animation-delay:.15s}.typing i:nth-child(3){animation-delay:.3s}
+}
+@keyframes dot{0%{opacity:.25}100%{opacity:1}}
+.chips{flex:none;display:flex;flex-wrap:wrap;gap:6px;padding:10px 12px 12px;border-top:1px solid var(--ink)}
+.chips[hidden]{display:none}
+.chip{font:500 12.5px/1 var(--mono);padding:8px 10px;border:1px solid var(--ink);background:var(--card);color:var(--ink);cursor:pointer}
+.chip:hover{background:var(--amber)}
+
+/* ---------- app: monitor ---------- */
+.mon{padding:0}
+.mon table{width:100%;border-collapse:collapse;font:13px/1.4 var(--mono);min-width:560px}
+.mon th{text-align:left;font-weight:600;padding:8px 12px;background:var(--rule);border-bottom:1px solid var(--ink);white-space:nowrap}
+.mon td{padding:9px 12px;border-bottom:1px solid var(--rule);vertical-align:top}
+.mon td.what{font-family:var(--sans);font-size:14px}
+.mon td.st{white-space:nowrap}
+.mon tr.dim td{color:var(--muted)}
+.lamp{display:inline-block;width:11px;height:11px;margin-right:8px;vertical-align:-1px;border:1px dashed var(--muted);background:transparent}
+.lamp.on{border:1px solid var(--ink)}
+.lamp.on.live{background:var(--amber)}
+.mon .foot{font:12px/1.4 var(--mono);padding:10px 12px;color:var(--muted);margin:0}
+
+/* ---------- app: files ---------- */
+.files{display:flex;flex-direction:column;height:100%}
+.files .path{flex:none;font:500 12px/1 var(--mono);padding:10px 12px;border-bottom:1px solid var(--ink);background:var(--rule)}
+.files ul{list-style:none;margin:0;padding:6px;overflow-y:auto;flex:1}
+.files .row{
+  width:100%;display:flex;align-items:center;gap:10px;padding:8px 8px;border:0;background:none;
+  text-align:left;font:500 13px/1.2 var(--mono);color:var(--ink);cursor:pointer;
+}
+.files .row:hover{background:var(--amber)}
+.files .row svg{width:20px;height:20px;flex:none;fill:none;stroke:var(--ink);stroke-width:1.8}
+.files .row .n{flex:1}
+.files .row .x{color:var(--muted);font-weight:400}
+.files .row:hover .x{color:var(--ink)}
+
+/* ---------- case / about / petak windows ---------- */
+.case{padding:16px 18px 18px}
+.case h3{font:600 20px/1.2 var(--sans);margin:0 0 4px}
+.case .meta{font:12.5px/1.3 var(--mono);margin:0 0 12px;display:flex;align-items:center}
+.case .metric{font:600 15px/1.35 var(--mono);margin:0 0 12px;padding:8px 10px;border:1px solid var(--ink);background:var(--card)}
+.case p{margin:0 0 10px}
+.case .links{display:flex;flex-wrap:wrap;gap:8px 16px;margin:14px 0 0;font:500 13px/1.3 var(--mono)}
+.case .links a{text-underline-offset:3px}
+.case .links a:hover{background:var(--amber)}
+.about ul{list-style:none;margin:14px 0 0;padding:0;font:13px/1.9 var(--mono)}
+.about ul span{display:inline-block;width:78px;color:var(--muted)}
+.about a:hover{background:var(--amber)}
+.petakwin .lead{font:600 18px/1.35 var(--sans);margin-bottom:12px}
+.petakwin .joke{font-weight:600}
+
+/* ---------- app: terminal ---------- */
+.body.termbody{background:var(--ink);overflow:hidden}
+.term{height:100%;overflow-y:auto;padding:12px 14px 16px;color:var(--amber);font:13.5px/1.55 var(--mono);cursor:text}
+.term .o{white-space:pre-wrap;word-break:break-word}
+.term a{color:var(--amber);text-underline-offset:3px}
+.term .line{position:relative;display:flex;flex-wrap:wrap;gap:0 .6em;margin-top:2px}
+.term .typed{white-space:pre-wrap;word-break:break-all}
+.term .caret{display:inline-block;width:.62em;height:1.25em;margin-left:-.6em;vertical-align:text-bottom;background:var(--amber);align-self:center}
+.term .line:not(:focus-within) .caret{background:transparent;box-shadow:inset 0 0 0 1px var(--amber)}
+@media (prefers-reduced-motion:no-preference){
+  .term .line:focus-within .caret{animation:blink 1.05s steps(1) infinite}
+}
+@keyframes blink{50%{background:transparent}}
+.term .tin{position:absolute;inset:0;width:100%;opacity:0;border:0;padding:0;font:inherit;color:transparent;background:transparent}
+.term .line:focus-within{outline:2px solid var(--amber);outline-offset:3px}
+
+/* ---------- app: kasir ---------- */
+.kasir{display:flex;flex-direction:column;height:100%}
+.kmenu{flex:none;padding:12px 12px 0;display:grid;gap:6px}
+.kitem{
+  display:grid;grid-template-columns:auto 1fr;gap:2px 10px;align-items:baseline;text-align:left;
+  padding:9px 10px;border:1px solid var(--ink);background:var(--card);color:var(--ink);cursor:pointer;
+}
+.kitem .box{font:600 13px/1 var(--mono);grid-row:span 2}
+.kitem .kn{font:600 14.5px/1.2 var(--sans)}
+.kitem .kd{font:12.5px/1.3 var(--mono);color:var(--muted);grid-column:2}
+.kitem[aria-pressed="true"]{background:var(--amber)}
+.kitem[aria-pressed="true"] .kd{color:var(--ink)}
+.kact{flex:none;display:flex;gap:8px;padding:10px 12px;border-bottom:1px solid var(--ink)}
+.kbtn{font:600 13px/1 var(--mono);padding:10px 14px;border:1px solid var(--ink);background:var(--ink);color:var(--paper);cursor:pointer}
+.kbtn.alt{background:var(--card);color:var(--ink)}
+.kbtn:hover:not(:disabled){background:var(--amber);color:var(--ink)}
+.kbtn:disabled{cursor:not-allowed;background:var(--rule);color:var(--muted);border-color:var(--muted)}
+.rwrap{flex:1;min-height:0;overflow:auto;padding:14px 12px 18px}
+.khint{margin:0;font:13px/1.4 var(--mono);color:var(--muted)}
+.rcpt{
+  margin:0 auto;width:max-content;max-width:100%;overflow-x:auto;padding:14px 14px 16px;
+  background:var(--card);border:1px solid var(--ink);border-bottom:2px dashed var(--ink);
+  font:12.5px/1.45 var(--mono);color:var(--ink);white-space:pre;
+}
+
+/* ---------- phone-OS mode (< 720px) ---------- */
+.phone #desk{bottom:0}
+.phone #dock{display:none}
+.phone #menubar .date{display:none}
+.phone #menubar .right{gap:12px}
+.phone #icons{display:grid;grid-template-columns:repeat(4,1fr);align-content:start;justify-items:center;gap:14px 0;padding:22px 6px}
+.phone .icon-col{display:contents}
+.phone .icon{width:80px}
+.phone .icon.petak{position:static!important;left:auto!important;top:auto!important;transform:none!important}
+.phone #counter{display:none}
+.phone .win{left:0!important;top:0!important;width:100%!important;height:100%!important;max-height:none!important;border:0;box-shadow:none}
+.phone .tb{height:46px;cursor:default;padding:0 8px 0 4px;font-size:14px}
+.phone .tb .min,.phone .tb .close{display:none}
+.phone .tb .back{display:grid;width:38px;height:38px;border:0;font-size:26px}
+</style>
+</head>
+<body>
+
+<div id="boot" class="dark" aria-label="EzraOS is starting. Press any key or click to skip.">
+  <div id="bootlog" aria-hidden="true"></div>
+  <div class="skip">press any key to skip</div>
+</div>
+
+<div id="os">
+  <header id="menubar" class="dark">
+    <button type="button" id="osbtn" aria-label="About EzraOS">EzraOS</button>
+    <div class="right">
+      <span id="clock" aria-label="Local time in Surabaya"><span class="date"></span> <span class="time">--:--:--</span> WIB</span>
+      <span>Surabaya, ID</span>
+    </div>
+  </header>
+
+  <main id="desk" aria-label="Desktop">
+    <div id="icons" class="dark">
+      <div class="icon-col">
+        <button type="button" class="icon" data-app="bot"><span class="tile"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M4 6h24v16H15l-6 5v-5H4z"/><path d="M11 12v3M21 12v3"/></svg></span><span class="lbl">Bot</span></button>
+        <button type="button" class="icon" data-app="monitor"><span class="tile"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M4 5h24v18H4z"/><path d="M8 18l4-5 4 3 4-6 4 4"/><path d="M11 27h10M16 23v4"/></svg></span><span class="lbl">Monitor</span></button>
+        <button type="button" class="icon" data-app="market"><span class="tile"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M9 6v20M16 4v15M23 10v17"/><path class="f" d="M6.5 11h5v9h-5zM13.5 7h5v7h-5zM20.5 15h5v8h-5z"/></svg></span><span class="lbl">Market</span></button>
+        <button type="button" class="icon" data-app="files"><span class="tile"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M4 8h9l3 3h12v15H4z"/><path d="M4 14h24"/></svg></span><span class="lbl">Files</span></button>
+        <button type="button" class="icon" data-app="terminal"><span class="tile"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M4 6h24v20H4z"/><path d="M9 12l4 3.5L9 19M16 20h7"/></svg></span><span class="lbl">Terminal</span></button>
+        <button type="button" class="icon" data-app="kasir"><span class="tile"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M8 4h16v24l-3-2-2.5 2-2.5-2-2.5 2-2.5-2-3 2z"/><path d="M12 10h8M12 14h8M12 18h5"/></svg></span><span class="lbl">Kasir</span></button>
+      </div>
+      <button type="button" class="icon petak" id="petak" data-app="petak"><span class="tile"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M4 18h24v10H4zM4 23h24M12 18v5M20 23v5"/><circle cx="11" cy="12" r="3.5"/><circle cx="21" cy="12" r="3.5"/><circle class="k" cx="12" cy="12.5" r="1.4"/><circle class="k" cx="22" cy="12.5" r="1.4"/></svg></span><span class="lbl">Petak Umpet</span></button>
+    </div>
+    <div id="wins"></div>
+    <div id="counter" role="status" hidden></div>
+  </main>
+
+  <nav id="dock" class="dark" aria-label="Open windows"></nav>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script>
+(() => {
+'use strict';
+
+/* ================= data (real numbers only) ================= */
+const LINKS = {
+  email: 'ezrakonterliem@gmail.com',
+  github: 'https://github.com/ezrabrilliant',
+  linkedin: 'https://linkedin.com/in/ezrabrilliant',
+  roblox: 'https://www.roblox.com/games/91179701802837/Petak-Umpet',
+};
+const SYSTEMS = [
+  { key:'orbit', proc:'orbit-store',  name:'Orbit Store', what:'Discord commerce with QRIS payments via Midtrans', metric:'2,700+ paid orders, 370+ buyers', status:'shipped' },
+  { key:'gtid',  proc:'gtid',         name:'GTID',        what:'Market platform and public API',                    metric:'~14.5k requests/day',          status:'live' },
+  { key:'petak', proc:'petak-umpet',  name:'Petak Umpet', what:'Roblox hide-and-seek game',                         metric:'3.1M visits, 2.6K peak',       status:'live' },
+  { key:'bot',   proc:'ezra-bot',     name:'Ezra Bot',    what:'Community AI with RAG memory',                      metric:'1,000+ members',               status:'live' },
+  { key:'pos',   proc:'pos-monosuko', name:'POS Monosuko',what:'Restaurant POS, final-year thesis',                 metric:'41% faster checkout',          status:'live' },
+];
+const CASES = {
+  orbit: { file:'orbit-store.case', title:'Orbit Store', year:'2024–25', status:'shipped',
+    metric:'2,700+ paid orders from 370+ buyers',
+    desc:'A store that lives inside Discord: buyers pick a product, pay by QRIS, and the bot delivers the order the moment Midtrans confirms the payment. Over 2024–25 it took 2,700+ paid orders from 370+ different buyers.',
+    tech:'Built with Node.js, Discord.js and Express.js, with customers and orders in MongoDB and payments verified through Midtrans webhooks.',
+    links:[] },
+  gtid: { file:'gtid.case', title:'GTID', year:'2026', status:'live',
+    metric:'~14.5k requests a day',
+    desc:'A market platform for the Growtopia Indonesia community, with price history charts, fuzzy search across 16,088 game items and live Discord status. Its public API answers around 14.5k requests a day.',
+    tech:'Built with Next.js, React and Tailwind CSS in front, Node.js and MongoDB behind a pipeline that scrapes, cleans and aggregates prices, shipped in Docker behind Nginx.',
+    links:[['gtid.pro','https://gtid.pro'],['api.gtid.pro','https://api.gtid.pro']] },
+  petak: { file:'petak-umpet.case', title:'Petak Umpet', year:'2026', status:'live',
+    metric:'3.1M visits, 2.6K peak concurrent players',
+    desc:'A Roblox hide-and-seek game where Ezra wrote all of the game logic: choosing hiders and seekers, round timers, win and lose conditions, and the UI. It has passed 3.1M visits with 2.6K players online at its peak.',
+    tech:'Built in Roblox Studio and scripted in Luau, with 3D and art assets from the project lead.',
+    links:[['Play on Roblox', LINKS.roblox]] },
+  bot: { file:'ezra-bot.case', title:'Ezra Bot', year:'2026', status:'live',
+    metric:'1,000+ community members served',
+    desc:'A community AI that answers from what the server actually knows, using long-term memory built on retrieval (RAG). It runs around the clock for a Discord community of 1,000+ members.',
+    tech:'Built with Node.js and Discord.js on a hybrid Gemini and GPT-4o engine, with ChromaDB embeddings for memory and MongoDB for everything else, packaged in Docker.',
+    links:[['Add to a server','https://discord.com/oauth2/authorize?client_id=1127105994766426122']] },
+  pos: { file:'pos-monosuko.case', title:'POS Monosuko', year:'2026', status:'live',
+    metric:'41% faster checkout',
+    desc:'A restaurant point of sale built as a final-year thesis, handling split, merge and void bills, per-portion stock that deducts itself, and separate roles for owner, cashier and waiter. Measured against the old process, it cut total transaction time by 41%.',
+    tech:'Built with React and TypeScript as an installable web app, with Node.js, Express.js and Prisma over MySQL.',
+    links:[['monosuko.my.id','https://monosuko.my.id'],['source','https://github.com/ezrabrilliant/Skripsi-POS-Restaurant']] },
+  /* smaller projects: generic file template */
+  pawcare: { file:'pawcare.case', title:'PawCare', year:'2024', generic:true,
+    desc:'Pet shop management with service ordering, delivery tracking on Google Maps and a dashboard per role.',
+    links:[['pawcare.ezrabrilliant.tech','https://pawcare.ezrabrilliant.tech']] },
+  cinehub: { file:'cinehub.case', title:'CineHub', year:'2025', generic:true,
+    desc:'Movie and TV discovery with recommendations from cosine similarity across two databases.',
+    links:[['pdds.ezrabrilliant.tech','https://pdds.ezrabrilliant.tech']] },
+  bee: { file:'bee-furniture-crm.case', title:'Bee Furniture CRM', year:'2025', generic:true,
+    desc:'A CRM for a wooden furniture company, with six modules and an analytics dashboard, built in a team of three.',
+    links:[['manpro.ezrabrilliant.tech','https://manpro.ezrabrilliant.tech']] },
+  peduli: { file:'pedulipasal.case', title:'PeduliPasal', year:'2024–25', generic:true,
+    desc:'An Android app that helps lawyers and law students find their way through Indonesian statutes, using TensorFlow and the Gemini API.',
+    links:[['source','https://github.com/aliefauzan/Bangkit-Project-PeduliPasal']] },
+  dl: { file:'dl-price-prediction.case', title:'DL Price Prediction', year:'2026', generic:true,
+    desc:'Collects Diamond Lock price posts from Discord and trains an LSTM model to forecast where the price is heading.',
+    links:[['source','https://github.com/ezrabrilliant/collect-price-dl']] },
+  site: { file:'portfolio-website.case', title:'Portfolio Website', year:'2026', generic:true,
+    desc:'The scrolling predecessor of this desktop.',
+    links:[['ezrabrilliant.com','https://ezrabrilliant.com']] },
+};
+const FOLDERS = {
+  '2024': ['orbit','pawcare'],
+  '2025': ['cinehub','bee','peduli'],
+  '2026': ['pos','gtid','petak','bot','dl','site'],
+};
+
+/* ================= environment ================= */
+const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const TOUCH_ONLY = matchMedia('(hover: none) and (pointer: coarse)').matches;
+const phoneMQ = matchMedia('(max-width: 719.98px)');
+const G = window.gsap || null;
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+const html = document.documentElement;
+const desk = $('#desk'), winsEl = $('#wins'), dock = $('#dock'), counter = $('#counter'), petak = $('#petak');
+let phone = phoneMQ.matches;
+let lastPtr = 'mouse';
+let booting = !RM;
+
+function setPhone(v) {
+  phone = v; document.body.classList.toggle('phone', v);
+  if (!v) { clampAll(); placePetakIfHidden(); }
+}
+document.body.classList.toggle('phone', phone);
+phoneMQ.addEventListener('change', e => setPhone(e.matches));
+document.addEventListener('pointerdown', e => { lastPtr = e.pointerType || 'mouse'; }, true);
+
+/* tween helpers: GSAP when present and motion allowed, instant otherwise */
+function applyProps(t, p) {
+  if (G) { G.set(t, p); return; }
+  for (const [k, v] of Object.entries(p)) {
+    if (k === 'scale') t.style.transform = `scale(${v})`;
+    else if (k === 'left' || k === 'top') t.style[k] = typeof v === 'number' ? v + 'px' : v;
+    else t.style[k] = v;
+  }
+}
+function tween(t, vars) {
+  const { duration, ease, delay, onComplete, ...props } = vars;
+  if (G && !RM) return G.to(t, vars);
+  applyProps(t, props); if (onComplete) onComplete();
+}
+function fromTo(t, from, to) {
+  if (G && !RM) return G.fromTo(t, from, to);
+  applyProps(t, from); tween(t, to);
+}
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const ext = (label, href) => `<a href="${href}" target="_blank" rel="noopener">${esc(label)}</a>`;
+
+/* ================= clock (WIB) ================= */
+const dateFmt = new Intl.DateTimeFormat('en-GB', { timeZone:'Asia/Jakarta', weekday:'short', day:'numeric', month:'short' });
+const timeFmt = new Intl.DateTimeFormat('en-GB', { timeZone:'Asia/Jakarta', hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:false });
+function tick() {
+  const d = new Date();
+  $('#clock .date').textContent = dateFmt.format(d).replace(',', '');
+  $('#clock .time').textContent = timeFmt.format(d);
+}
+tick();
+setTimeout(() => { tick(); setInterval(tick, 1000); }, 1000 - (Date.now() % 1000));
+
+/* ================= window manager ================= */
+const open = new Map();
+let zTop = 10, active = null;
+const deskSize = () => ({ w: desk.clientWidth, h: desk.clientHeight });
+
+function clampPos(x, y, width) {
+  const { w: W, h: H } = deskSize();
+  x = Math.min(Math.max(x, -(width - 80)), W - 80);   // at least 80px of the window stays on screen
+  y = Math.min(Math.max(y, 0), H - 30);                // title bar always reachable
+  return [Math.round(x), Math.round(y)];
+}
+function clampAll() {
+  for (const r of open.values()) {
+    const [x, y] = clampPos(r.el.offsetLeft, r.el.offsetTop, r.el.offsetWidth);
+    r.el.style.left = x + 'px'; r.el.style.top = y + 'px';
+    const { h: H } = deskSize();
+    if (r.def.h) r.el.style.height = Math.min(r.def.h, H - 16) + 'px'; else r.el.style.maxHeight = (H - 16) + 'px';
+  }
+}
+addEventListener('resize', () => { if (!phone) { clampAll(); placePetakIfHidden(); } });
+
+function topWindow(except) {
+  let best = null;
+  for (const r of open.values()) if (r !== except && !r.min && (!best || +r.el.style.zIndex > +best.el.style.zIndex)) best = r;
+  return best;
+}
+function focusWin(rec, moveFocus) {
+  rec.el.style.zIndex = ++zTop; active = rec;
+  for (const r of open.values()) {
+    const on = r === rec;
+    r.el.classList.toggle('active', on);
+    r.el.querySelector('.tb').classList.toggle('dark', !on);
+    r.dockBtn.classList.toggle('on', on);
+  }
+  if (moveFocus) {
+    const t = rec.def.focus ? rec.el.querySelector(rec.def.focus) : null;
+    (t || rec.el).focus({ preventScroll: true });
+  }
+}
+function deactivateAll() {
+  active = null;
+  for (const r of open.values()) { r.el.classList.remove('active'); r.el.querySelector('.tb').classList.add('dark'); r.dockBtn.classList.remove('on'); }
+}
+
+function openApp(id, opener) {
+  let rec = open.get(id);
+  if (rec) { if (rec.min) restore(rec); focusWin(rec, true); return rec; }
+  const def = getDef(id);
+  if (!def) return null;
+  const el = document.createElement('section');
+  const tid = 'wt-' + id.replace(/[^a-z0-9]/gi, '-');
+  el.className = 'win'; el.tabIndex = -1; el.dataset.id = id;
+  el.setAttribute('role', 'dialog'); el.setAttribute('aria-labelledby', tid);
+  el.innerHTML = `<header class="tb dark">
+      <button type="button" class="back" aria-label="Back, close ${esc(def.title)}">‹</button>
+      <h2 id="${tid}">${esc(def.title)}</h2>
+      <button type="button" class="min" aria-label="Minimize ${esc(def.title)}">–</button>
+      <button type="button" class="close" aria-label="Close ${esc(def.title)}">×</button>
+    </header><div class="body"></div>`;
+  winsEl.append(el);
+  const { w: W, h: H } = deskSize();
+  const width = Math.min(def.w, W - 16);
+  el.style.width = width + 'px';
+  if (def.h) el.style.height = Math.min(def.h, H - 16) + 'px'; else el.style.maxHeight = (H - 16) + 'px';
+
+  const btn = document.createElement('button');
+  btn.type = 'button'; btn.innerHTML = `<span class="sq" aria-hidden="true"></span>${esc(def.dock || def.title)}`;
+  btn.setAttribute('aria-label', `${def.title} window`);
+  dock.append(btn);
+
+  rec = { id, el, def, min:false, dockBtn:btn, opener: opener || document.activeElement, body: el.querySelector('.body') };
+  open.set(id, rec);
+  def.build(rec.body, rec);
+
+  const pos = def.pos(W, H, width, el.offsetHeight);
+  const [x, y] = clampPos(Math.min(pos.x, W - width - 8), Math.min(pos.y, Math.max(8, H - el.offsetHeight - 8)), width);
+  el.style.left = Math.max(x, phone ? 0 : 8) + 'px'; el.style.top = Math.max(y, 8) + 'px';
+
+  wireWindow(rec);
+  focusWin(rec, true);
+  fromTo(el, { scale:.94, opacity:0 }, { scale:1, opacity:1, duration:.15, ease:'power2.out' });
+  if (def.onOpen) def.onOpen(rec);
+  placePetakIfHidden();
+  return rec;
+}
+
+function wireWindow(rec) {
+  const { el, dockBtn } = rec, tb = el.querySelector('.tb');
+  el.addEventListener('pointerdown', () => { if (active !== rec) focusWin(rec, false); }, true);
+  el.querySelector('.close').addEventListener('click', () => closeWin(rec));
+  el.querySelector('.back').addEventListener('click', () => closeWin(rec));
+  el.querySelector('.min').addEventListener('click', () => minimize(rec));
+  dockBtn.addEventListener('click', () => {
+    if (rec.min) { restore(rec); focusWin(rec, true); }
+    else if (active === rec) minimize(rec);
+    else focusWin(rec, true);
+  });
+  tb.addEventListener('pointerdown', e => {
+    if (phone || e.button !== 0 || e.target.closest('button')) return;
+    e.preventDefault();
+    const d = desk.getBoundingClientRect(), r = el.getBoundingClientRect();
+    const ox = e.clientX - r.left, oy = e.clientY - r.top;
+    tb.setPointerCapture(e.pointerId); tb.classList.add('dragging');
+    const move = ev => {
+      const [x, y] = clampPos(ev.clientX - d.left - ox, ev.clientY - d.top - oy, el.offsetWidth);
+      el.style.left = x + 'px'; el.style.top = y + 'px';
+    };
+    const up = () => {
+      tb.classList.remove('dragging');
+      tb.removeEventListener('pointermove', move); tb.removeEventListener('pointerup', up); tb.removeEventListener('pointercancel', up);
+    };
+    tb.addEventListener('pointermove', move); tb.addEventListener('pointerup', up); tb.addEventListener('pointercancel', up);
+  });
+}
+
+function afterLeave(rec) {
+  const next = topWindow(rec);
+  if (next) focusWin(next, false); else deactivateAll();
+  const o = rec.opener;
+  const usable = o && o.isConnected && o !== document.body && o.getClientRects().length && !rec.el.contains(o);
+  if (usable) o.focus({ preventScroll:true });
+  else if (next) focusWin(next, true);
+}
+function closeWin(rec) {
+  if (!open.has(rec.id)) return;
+  open.delete(rec.id);
+  rec.dockBtn.remove();
+  if (rec.def.onClose) rec.def.onClose(rec);
+  const hadFocus = rec.el.contains(document.activeElement);
+  tween(rec.el, { scale:.94, opacity:0, duration:.12, ease:'power2.in', onComplete: () => rec.el.remove() });
+  rec.el.style.pointerEvents = 'none';
+  if (hadFocus || active === rec) afterLeave(rec);
+}
+function minimize(rec) {
+  if (rec.min) return;
+  rec.min = true; rec.dockBtn.classList.add('min'); rec.dockBtn.setAttribute('aria-label', `${rec.def.title} window, minimized`);
+  tween(rec.el, { scale:.94, opacity:0, duration:.12, ease:'power2.in', onComplete: () => { if (rec.min) rec.el.style.display = 'none'; } });
+  const next = topWindow(rec);
+  if (next) focusWin(next, false); else deactivateAll();
+  rec.dockBtn.classList.remove('on');
+  if (!phone) rec.dockBtn.focus({ preventScroll:true });
+}
+function restore(rec) {
+  rec.min = false; rec.el.style.display = ''; rec.dockBtn.classList.remove('min');
+  rec.dockBtn.setAttribute('aria-label', `${rec.def.title} window`);
+  fromTo(rec.el, { scale:.94, opacity:0 }, { scale:1, opacity:1, duration:.15, ease:'power2.out' });
+}
+
+document.addEventListener('keydown', e => {
+  if (booting) return;
+  if (e.key === 'Escape' && active && !active.min) { e.preventDefault(); closeWin(active); }
+});
+
+/* ================= app definitions ================= */
+function caseCount() { let n = 0; for (const id of open.keys()) if (id.startsWith('case:')) n++; return n; }
+function getDef(id) {
+  if (id.startsWith('case:')) {
+    const c = CASES[id.slice(5)]; if (!c) return null;
+    const n = caseCount();
+    return { title:c.file, w:440, pos:(W,H,w)=>({ x:(W-w)/2 + 40 + n*26, y:60 + n*26 }), build: b => renderCase(b, c) };
+  }
+  return APPS[id];
+}
+
+function renderCase(b, c) {
+  const lamp = c.status ? `<span class="lamp on ${c.status}" aria-hidden="true"></span>` : '';
+  const meta = c.status ? `${lamp}${c.status}, ${c.year}` : c.year;
+  b.innerHTML = `<article class="case">
+    <h3>${esc(c.title)}</h3>
+    <p class="meta">${meta}</p>
+    ${c.metric ? `<p class="metric">${esc(c.metric)}</p>` : ''}
+    <p>${esc(c.desc)}</p>
+    ${c.tech ? `<p>${esc(c.tech)}</p>` : ''}
+    ${c.links.length ? `<p class="links">${c.links.map(([l,h]) => ext(l,h)).join('')}</p>` : ''}
+  </article>`;
+}
+
+const APPS = {
+  /* ---------- BOT ---------- */
+  bot: {
+    title:'Bot', w:380, h:520,
+    pos:(W,H,w)=>({ x:Math.round(W*0.56), y:28 }),
+    build(b, rec) {
+      b.innerHTML = `<div class="bot">
+        <div class="msgs" role="log" aria-live="polite" aria-label="Chat with Ezra Bot"></div>
+        <div class="chips" role="group" aria-label="Ask Ezra Bot" hidden>
+          <button type="button" class="chip" data-q="projects">projects</button>
+          <button type="button" class="chip" data-q="systems">systems</button>
+          <button type="button" class="chip" data-q="who">who is Ezra?</button>
+          <button type="button" class="chip" data-q="contact">contact</button>
+        </div></div>`;
+      const msgs = $('.msgs', b), chips = $('.chips', b);
+      let queue = Promise.resolve();
+      const wait = ms => new Promise(r => setTimeout(r, ms));
+      const scroll = () => { msgs.scrollTop = msgs.scrollHeight; };
+      const botSay = htmlStr => queue = queue.then(async () => {
+        if (!rec.el.isConnected) return;
+        const t = document.createElement('div');
+        t.className = 'm typing'; t.setAttribute('aria-hidden', 'true');
+        t.innerHTML = '<span class="av">EB</span><span class="bub"><i></i><i></i><i></i></span>';
+        msgs.append(t); scroll();
+        await wait(600);
+        t.remove();
+        const m = document.createElement('div');
+        m.className = 'm'; m.innerHTML = `<span class="av" aria-hidden="true">EB</span><div class="bub">${htmlStr}</div>`;
+        msgs.append(m); scroll();
+        const inl = $('.inl', m);
+        if (inl) inl.addEventListener('click', () => openApp(inl.dataset.open, inl));
+      });
+      const meSay = text => queue = queue.then(() => {
+        const m = document.createElement('div');
+        m.className = 'm me'; m.innerHTML = `<div class="bub">${esc(text)}</div>`;
+        msgs.append(m); scroll();
+      });
+      const ANSWERS = {
+        projects: [
+          'ini lima sistem yang jalan di produksi:',
+          '<ul>' + SYSTEMS.map(s => `<li><strong>${s.name}</strong>: ${
+            { orbit:'2,700+ paid orders dari 370+ buyer', gtid:'~14.5k request per hari', petak:'3.1M visits',
+              bot:'1,000+ member (termasuk aku)', pos:'checkout 41% lebih cepat' }[s.key]}</li>`).join('') + '</ul>',
+        ],
+        systems: [
+          'empat masih live: GTID, Petak Umpet, Ezra Bot, POS Monosuko. Orbit Store sudah shipped dan tutup buku setelah 2024–25.',
+          'status lengkapnya ada di Monitor.<br><button type="button" class="inl" data-open="monitor">buka Monitor</button>',
+        ],
+        who: [
+          'Ezra Brilliant, mahasiswa Sistem Informasi Bisnis di Petra Christian University, Surabaya.',
+          'dia bikin sistem lalu menjaganya tetap jalan: toko yang menerima uang sungguhan, game dengan jutaan kunjungan, dan aku.',
+        ],
+        contact: [
+          `paling cepat lewat email: <a href="mailto:${LINKS.email}">${LINKS.email}</a>`,
+          `kodenya di ${ext('github.com/ezrabrilliant', LINKS.github)}, profilnya di ${ext('LinkedIn', LINKS.linkedin)}.`,
+        ],
+      };
+      chips.addEventListener('click', e => {
+        const c = e.target.closest('.chip'); if (!c) return;
+        meSay(c.textContent);
+        ANSWERS[c.dataset.q].forEach(botSay);
+      });
+      botSay('halo! aku Ezra Bot — versi asli-ku melayani 1,000+ member di Discord. mau lihat apa?');
+      queue = queue.then(() => { chips.hidden = false; scroll(); });
+    },
+  },
+
+  /* ---------- MONITOR ---------- */
+  monitor: {
+    title:'Monitor', w:680,
+    pos:()=>({ x:130, y:36 }),
+    build(b) {
+      b.classList.add('mon');
+      b.innerHTML = `<table>
+        <thead><tr><th scope="col">Process</th><th scope="col">What</th><th scope="col">Metric</th><th scope="col">Status</th></tr></thead>
+        <tbody>${SYSTEMS.map(s => `<tr><td>${s.proc}</td><td class="what">${s.what}</td><td>${s.metric}</td>
+          <td class="st"><span class="lamp ${s.status}" aria-hidden="true"></span>${s.status}</td></tr>`).join('')}
+          <tr class="dim"><td>next-system</td><td class="what">—</td><td>—</td><td class="st"><span class="lamp" aria-hidden="true"></span>deploying soon</td></tr>
+        </tbody></table>
+        <p class="foot">5 systems, 4 live, 1 shipped</p>`;
+    },
+    onOpen(rec) {
+      const lamps = $$('tbody tr:not(.dim) .lamp', rec.body);
+      lamps.forEach((l, i) => RM ? l.classList.add('on') : setTimeout(() => l.classList.add('on'), 160 + i * 130));
+    },
+  },
+
+  /* ---------- MARKET (GTID) ---------- */
+  market: {
+    title:'Market', w:440,
+    pos:(W)=>({ x:260, y:80 }),
+    build(b) { renderCase(b, CASES.gtid); },
+  },
+
+  /* ---------- FILES ---------- */
+  files: {
+    title:'Files', w:440, h:380,
+    pos:()=>({ x:170, y:110 }),
+    build(b, rec) {
+      const folderSvg = '<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M4 8h9l3 3h12v15H4z"/></svg>';
+      const fileSvg = '<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M8 4h11l5 5v19H8z"/><path d="M19 4v5h5M12 16h8M12 20h8"/></svg>';
+      const upSvg = '<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 26V8M9 15l7-7 7 7"/></svg>';
+      let dir = null, moveFocus = false;
+      const render = () => {
+        const rows = dir === null
+          ? Object.keys(FOLDERS).map(y => `<li><button type="button" class="row" data-dir="${y}">${folderSvg}<span class="n">${y}</span><span class="x">${FOLDERS[y].length} files</span></button></li>`)
+          : [`<li><button type="button" class="row" data-up="1">${upSvg}<span class="n">..</span><span class="x">back to /projects</span></button></li>`]
+              .concat(FOLDERS[dir].map(k => `<li><button type="button" class="row" data-case="${k}">${fileSvg}<span class="n">${CASES[k].file}</span><span class="x">${CASES[k].status || ''}</span></button></li>`));
+        b.innerHTML = `<div class="files"><div class="path">/projects${dir ? '/' + dir : ''}</div><ul aria-label="Folder contents">${rows.join('')}</ul></div>`;
+        if (moveFocus) $('.row', b).focus({ preventScroll:true });
+      };
+      b.addEventListener('click', e => {
+        const r = e.target.closest('.row'); if (!r) return;
+        if (r.dataset.dir) { dir = r.dataset.dir; moveFocus = true; render(); }
+        else if (r.dataset.up) { dir = null; moveFocus = true; render(); }
+        else if (r.dataset.case) openApp('case:' + r.dataset.case, r);
+      });
+      render();
+    },
+  },
+
+  /* ---------- TERMINAL ---------- */
+  terminal: {
+    title:'Terminal', w:580, h:360, focus:'.tin',
+    pos:()=>({ x:220, y:170 }),
+    build(b) {
+      b.classList.add('termbody', 'dark');
+      b.innerHTML = `<div class="term">
+        <div class="out" role="log" aria-live="polite"></div>
+        <label class="line"><span class="ps">ezra@ezraos:~$</span><span class="typed"></span><span class="caret" aria-hidden="true"></span>
+        <input class="tin" type="text" aria-label="Terminal command" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false"></label></div>`;
+      const term = $('.term', b), out = $('.out', b), inp = $('.tin', b), typed = $('.typed', b);
+      const hist = []; let hi = 0;
+      const print = (s, isHtml) => { const d = document.createElement('div'); d.className = 'o'; if (isHtml) d.innerHTML = s; else d.textContent = s; out.append(d); };
+      const pad = (s, n) => s + ' '.repeat(Math.max(1, n - s.length));
+      const CMDS = {
+        help: () => print('commands\n  help      this list\n  whoami    who runs this machine\n  projects  the five production systems\n  contact   how to reach Ezra\n  clear     wipe the screen'),
+        whoami: () => print('Ezra Brilliant, Business Information Systems, Petra Christian University\nbased in Surabaya, Indonesia\nbuilds production systems, then keeps them running'),
+        projects: () => print(SYSTEMS.map(s => pad(s.proc, 14) + pad(s.metric, 34) + s.status).join('\n')),
+        contact: () => print(`email     <a href="mailto:${LINKS.email}">${LINKS.email}</a>\ngithub    ${ext('github.com/ezrabrilliant', LINKS.github)}\nlinkedin  ${ext('linkedin.com/in/ezrabrilliant', LINKS.linkedin)}`, true),
+        clear: () => { out.innerHTML = ''; },
+      };
+      const run = raw => {
+        const cmd = raw.trim();
+        print('ezra@ezraos:~$ ' + raw);
+        if (!cmd) return;
+        hist.push(cmd); hi = hist.length;
+        const fn = CMDS[cmd.toLowerCase()];
+        if (fn) fn(); else print(`${cmd.split(/\s+/)[0]}: command not found — try help`);
+      };
+      inp.addEventListener('input', () => { typed.textContent = inp.value; });
+      inp.addEventListener('keydown', e => {
+        if (e.key === 'Enter') { run(inp.value); inp.value = ''; typed.textContent = ''; term.scrollTop = term.scrollHeight; }
+        else if (e.key === 'ArrowUp' && hist.length) { e.preventDefault(); hi = Math.max(0, hi - 1); inp.value = typed.textContent = hist[hi]; }
+        else if (e.key === 'ArrowDown' && hist.length) { e.preventDefault(); hi = Math.min(hist.length, hi + 1); inp.value = typed.textContent = hist[hi] || ''; }
+      });
+      term.addEventListener('click', e => { if (!e.target.closest('a') && !String(getSelection())) inp.focus({ preventScroll:true }); });
+      print('EzraOS terminal. type help to see what it knows.');
+    },
+  },
+
+  /* ---------- KASIR ---------- */
+  kasir: {
+    title:'Kasir', w:420, h:560,
+    pos:(W)=>({ x:Math.round(W*0.3), y:30 }),
+    build(b) {
+      const ITEMS = [
+        { k:'contact', n:'Contact card', d:'email, GitHub, LinkedIn' },
+        { k:'projects', n:'Project list', d:'five systems with their numbers' },
+        { k:'resume', n:'Resume', d:'study, training, full CV' },
+      ];
+      b.innerHTML = `<div class="kasir">
+        <div class="kmenu" role="group" aria-label="Menu">${ITEMS.map(i =>
+          `<button type="button" class="kitem" aria-pressed="false" data-k="${i.k}"><span class="box" aria-hidden="true">[ ]</span><span class="kn">${i.n}</span><span class="kd">${i.d}</span></button>`).join('')}
+        </div>
+        <div class="kact"><button type="button" class="kbtn order" disabled>Order</button><button type="button" class="kbtn alt save" disabled>save receipt</button></div>
+        <div class="rwrap" aria-live="polite"><p class="khint">pick from the menu, then Order.</p></div></div>`;
+      const orderBtn = $('.order', b), saveBtn = $('.save', b), wrap = $('.rwrap', b);
+      let no = 0, lastText = '';
+      const W = 40;
+      const line = ch => ch.repeat(W);
+      const center = s => ' '.repeat(Math.max(0, Math.floor((W - s.length) / 2))) + s;
+      const lr = (l, r) => l + ' '.repeat(Math.max(1, W - l.length - r.length)) + r;
+      const BODY = {
+        contact: ['email    ' + LINKS.email, 'github   github.com/ezrabrilliant', 'linkedin linkedin.com/in/ezrabrilliant'],
+        projects: SYSTEMS.map(s => (s.proc + ' '.repeat(14)).slice(0, 14) + { orbit:'2,700+ paid orders', gtid:'~14.5k req/day', petak:'3.1M visits', bot:'1,000+ members', pos:'41% faster checkout' }[s.key]),
+        resume: ['Business Information Systems,', '  Petra Christian University', 'Bangkit Academy 2024, top graduate', 'CV ezrabrilliant.com/resume.pdf'],
+      };
+      b.querySelector('.kmenu').addEventListener('click', e => {
+        const it = e.target.closest('.kitem'); if (!it) return;
+        const on = it.getAttribute('aria-pressed') !== 'true';
+        it.setAttribute('aria-pressed', on); $('.box', it).textContent = on ? '[x]' : '[ ]';
+        orderBtn.disabled = !$$('.kitem[aria-pressed="true"]', b).length;
+      });
+      orderBtn.addEventListener('click', () => {
+        const picked = $$('.kitem[aria-pressed="true"]', b).map(x => x.dataset.k);
+        if (!picked.length) return;
+        no++;
+        const d = new Date();
+        const p = Object.fromEntries(new Intl.DateTimeFormat('en-GB', { timeZone:'Asia/Jakarta', day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit', hour12:false }).formatToParts(d).map(x => [x.type, x.value]));
+        const stamp = `${p.day}/${p.month}/${p.year} ${p.hour}:${p.minute} WIB`;
+        const rows = [center('EZRAOS KASIR'), center('Surabaya, ID'), line('-'), lr('No. ' + String(no).padStart(4, '0'), stamp), lr('Kasir', 'ezra-bot'), line('-')];
+        picked.forEach(k => { rows.push('1x ' + ITEMS.find(i => i.k === k).n); BODY[k].forEach(t => rows.push('   ' + t)); });
+        rows.push(line('-'), lr('ITEMS', String(picked.length)), lr('STATUS', 'LUNAS'), '- '.repeat(W / 2).trimEnd(), '', center('TERIMA KASIH'));
+        lastText = rows.join('\n');
+        wrap.innerHTML = '';
+        const pre = document.createElement('pre'); pre.className = 'rcpt'; pre.tabIndex = 0;
+        pre.setAttribute('aria-label', 'Receipt number ' + no); pre.textContent = lastText;
+        wrap.append(pre); saveBtn.disabled = false; wrap.scrollTop = 0;
+      });
+      saveBtn.addEventListener('click', () => {
+        if (!lastText) return;
+        const a = document.createElement('a');
+        a.href = 'data:text/plain;charset=utf-8,' + encodeURIComponent(lastText + '\n');
+        a.download = `ezraos-receipt-${String(no).padStart(4, '0')}.txt`;
+        document.body.append(a); a.click(); a.remove();
+      });
+    },
+  },
+
+  /* ---------- PETAK UMPET ---------- */
+  petak: {
+    title:'Petak Umpet', w:400,
+    pos:(W,H,w,h)=>({ x:(W-w)/2, y:Math.max(24,(H-h)/2 - 40) }),
+    build(b) {
+      b.innerHTML = `<article class="case petakwin">
+        <p class="lead">Petak Umpet — Roblox, 3.1M visits, 2.6K peak concurrent players.</p>
+        <p class="joke">Kamu memang jago cari yang ngumpet.</p>
+        <p class="links">${ext('Play Petak Umpet on Roblox', LINKS.roblox)}</p></article>`;
+    },
+  },
+
+  /* ---------- ABOUT ---------- */
+  about: {
+    title:'About EzraOS', w:480,
+    pos:(W,H,w)=>({ x:(W-w)/2, y:50 }),
+    build(b) {
+      b.innerHTML = `<article class="case about">
+        <h3>Ezra Brilliant</h3>
+        <p class="meta">Surabaya, Indonesia</p>
+        <p>I build systems that real people use and pay through, then I keep them running. Orbit Store took 2,700+ paid orders from 370+ buyers over QRIS. GTID's public API answers around 14.5k requests a day. Petak Umpet has passed 3.1M visits, and Ezra Bot looks after a 1,000+ member community around the clock. I study Business Information Systems, so I care about the checkout queue as much as the code behind it.</p>
+        <ul>
+          <li><span>email</span><a href="mailto:${LINKS.email}">${LINKS.email}</a></li>
+          <li><span>github</span>${ext('github.com/ezrabrilliant', LINKS.github)}</li>
+          <li><span>linkedin</span>${ext('linkedin.com/in/ezrabrilliant', LINKS.linkedin)}</li>
+        </ul></article>`;
+    },
+  },
+};
+
+/* ================= desktop icons ================= */
+function selectIcon(ic) { $$('.icon.sel').forEach(x => x.classList.remove('sel')); if (ic) ic.classList.add('sel'); }
+$$('.icon').forEach(ic => {
+  ic.addEventListener('click', e => {
+    const isPetak = ic === petak;
+    if (phone || e.detail === 0 || lastPtr === 'touch' || TOUCH_ONLY) { selectIcon(ic); openApp(ic.dataset.app, ic); return; }
+    if (isPetak && !caught) return;          // mouse: the chase handles it
+    selectIcon(ic);
+  });
+  ic.addEventListener('dblclick', () => {
+    if (phone || (ic === petak && !caught)) return;
+    openApp(ic.dataset.app, ic);
+  });
+});
+desk.addEventListener('pointerdown', e => { if (!e.target.closest('.icon') && !e.target.closest('.win')) selectIcon(null); });
+$('#osbtn').addEventListener('click', e => openApp('about', e.currentTarget));
+
+/* ================= Petak Umpet: the icon that hides ================= */
+let caught = false, catches = 0, fled = false, fleeing = false, coolUntil = 0;
+const COOL = 900;   // after landing, the icon catches its breath this long: the window to click it
+function rectIn(el, pad = 0) {
+  const d = desk.getBoundingClientRect(), r = el.getBoundingClientRect();
+  return { l:r.left - d.left - pad, t:r.top - d.top - pad, r:r.right - d.left + pad, b:r.bottom - d.top + pad };
+}
+const overlap = (a, b) => a.l < b.r && a.r > b.l && a.t < b.b && a.b > b.t;
+function obstacles() {
+  const list = [rectIn($('.icon-col'), 10)];
+  if (!counter.hidden) list.push(rectIn(counter, 12));
+  for (const r of open.values()) if (!r.min && r.el.style.opacity !== '0') list.push(rectIn(r.el, 8));
+  return list;
+}
+function freeSpot(avoidX, avoidY) {
+  const { w: W, h: H } = deskSize(), iw = petak.offsetWidth, ih = petak.offsetHeight;
+  const obs = obstacles(); let spot = null;
+  for (let i = 0; i < 120; i++) {
+    const x = 8 + Math.random() * Math.max(1, W - iw - 16), y = 8 + Math.random() * Math.max(1, H - ih - 16);
+    if (avoidX != null) {
+      const dist = Math.hypot(x + iw/2 - avoidX, y + ih/2 - avoidY);
+      if (dist < 240 || (i < 70 && dist > 520)) continue;   // dart a short hop, not a teleport across the screen
+    }
+    spot = { x:Math.round(x), y:Math.round(y) };
+    const box = { l:x, t:y, r:x + iw, b:y + ih };
+    if (i < 90 && obs.some(o => overlap(box, o))) continue;
+    return spot;
+  }
+  return spot || { x:W - iw - 40, y:H - ih - 30 };
+}
+function initialPetak() {
+  const { w: W, h: H } = deskSize();
+  petak.style.left = Math.max(8, W - petak.offsetWidth - 48) + 'px';
+  petak.style.top = Math.max(8, H - petak.offsetHeight - 36) + 'px';
+}
+function placePetakIfHidden() {
+  if (phone) return;
+  const me = rectIn(petak), { w: W, h: H } = deskSize();
+  const off = me.l < 0 || me.t < 0 || me.r > W || me.b > H;
+  if (off || obstacles().slice(1).some(o => overlap(me, o))) {
+    // wait a frame so a just-opened window has its final geometry
+    requestAnimationFrame(() => { const s = freeSpot(); applyProps(petak, { left:s.x, top:s.y }); });
+  }
+}
+function showCounter() { counter.hidden = false; counter.textContent = `tangkap dia: ${catches}/3`; }
+function flee(px, py) {
+  const d = desk.getBoundingClientRect();
+  const s = freeSpot(px - d.left, py - d.top);
+  fleeing = true;
+  if (!fled) { fled = true; showCounter(); }
+  tween(petak, { left:s.x, top:s.y, duration:.18, ease:'power3.out', onComplete: () => { fleeing = false; coolUntil = performance.now() + COOL; } });
+}
+document.addEventListener('pointermove', e => {
+  if (booting || phone || caught || TOUCH_ONLY || fleeing || e.pointerType === 'touch') return;
+  if (performance.now() < coolUntil) return;
+  const r = petak.getBoundingClientRect();
+  if (Math.hypot(e.clientX - (r.left + r.width/2), e.clientY - (r.top + r.height/2)) < 90) flee(e.clientX, e.clientY);
+});
+petak.addEventListener('pointerdown', e => {
+  if (phone || caught || TOUCH_ONLY || e.pointerType === 'touch' || e.button !== 0) return;
+  e.preventDefault();
+  catches++;
+  if (!fled) fled = true;
+  counter.hidden = false; counter.textContent = `tangkap dia: ${catches}/3`;
+  if (catches >= 3) {
+    caught = true; counter.textContent = 'ketangkap! 3/3';
+    setTimeout(() => { counter.hidden = true; }, 2600);
+    openApp('petak', petak);
+  } else {
+    coolUntil = 0; flee(e.clientX, e.clientY);
+  }
+});
+
+/* ================= boot ================= */
+const BOOT_LINES = [
+  'EzraOS 1.0 — Surabaya build',
+  'mounting /projects … 12 found',
+  'starting ezra-bot … 1,000+ members connected',
+  'market feed … ~14.5k req/day',
+  'roblox bridge … 3.1M visits recorded',
+  'ready.',
+];
+let bootTl = null, bootTimers = [];
+function startDesktop(fade) {
+  booting = false;
+  html.classList.remove('booting');
+  const b = $('#boot'); if (b) b.remove();
+  removeEventListener('keydown', skipBoot, true);
+  removeEventListener('pointerdown', skipBoot, true);
+  initialPetak();
+  if (fade) fromTo($('#os'), { opacity:0 }, { opacity:1, duration:.2, ease:'power1.out' });
+  openApp('bot');
+}
+function endBoot() {
+  if (!booting) return;
+  if (bootTl) bootTl.kill();
+  bootTimers.forEach(clearTimeout);
+  startDesktop(true);
+}
+function skipBoot(e) { if (!booting) return; e.preventDefault(); e.stopPropagation(); endBoot(); }
+if (!booting) {
+  startDesktop(false);
+} else {
+  addEventListener('keydown', skipBoot, true);
+  addEventListener('pointerdown', skipBoot, true);
+  const log = $('#bootlog');
+  const add = t => { const d = document.createElement('div'); d.textContent = t; log.append(d); };
+  if (G) {
+    bootTl = G.timeline();
+    BOOT_LINES.forEach((t, i) => bootTl.call(add, [t], i * 0.32));
+    bootTl.to('#boot', { opacity:0, duration:.18, ease:'power1.in' }, 1.98).call(endBoot);
+  } else {
+    BOOT_LINES.forEach((t, i) => bootTimers.push(setTimeout(() => add(t), i * 320)));
+    bootTimers.push(setTimeout(endBoot, 2150));
+  }
+}
+
+/* test hook for the headless verification script (harmless in the mockup) */
+window.__ezraos = { open, openApp, get active(){ return active; }, get caught(){ return caught; }, get catches(){ return catches; }, get booting(){ return booting; } };
+})();
+</script>
+</body>
+</html>

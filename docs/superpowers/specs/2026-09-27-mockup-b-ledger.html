@@ -1,0 +1,664 @@
+<!--
+  THROWAWAY DESIGN MOCKUP — DIRECTION B (LEDGER)
+  Art direction: an audited annual report / ledger. Ruled rows, big Fraunces
+  numerals with tabular figures, footnotes that resolve, and rubber stamps.
+  Palette: paper #F7F7F4, ink #22221E, one accent green #1F6F50, muted #6F6E66.
+  Not production code. Single file; only external requests are Google Fonts and GSAP core (cdnjs).
+-->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ezra Brilliant</title>
+<meta name="description" content="Ezra Brilliant builds and operates production systems in Surabaya: commerce, games, public APIs and community AI.">
+<script>
+  /* Motion is opt-in: only when the reader has not asked for reduced motion.
+     If GSAP fails to load, the script at the end of <body> removes the class and
+     everything is shown in its final state. */
+  (function () {
+    try {
+      if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        document.documentElement.classList.add('motion');
+      }
+    } catch (e) {}
+  })();
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT,WONK@0,9..144,100..900,0..100,0..1;1,9..144,100..900,0..100,0..1&family=Public+Sans:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #F7F7F4;
+    --ink: #22221E;
+    --green: #1F6F50;
+    --muted: #6F6E66;
+    --hair: rgba(34, 34, 30, 0.2);
+    --serif: "Fraunces", "Iowan Old Style", Georgia, "Times New Roman", serif;
+    --sans: "Public Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --gut: clamp(16px, 4vw, 48px);
+    color-scheme: light;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 1rem;
+    line-height: 1.6;
+    overflow-x: clip; /* guards the 1.6x stamp scale during its thunk; layout itself never overflows */
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  ::selection { background: var(--green); color: var(--paper); }
+
+  h1, h2, h3, p, ol, dl, dd { margin: 0; }
+  sup { line-height: 0; }
+
+  a { color: var(--green); text-decoration-thickness: 1px; text-underline-offset: 0.18em; }
+  a:hover { text-decoration-thickness: 2px; }
+  :focus-visible { outline: 2px solid var(--green); outline-offset: 3px; border-radius: 1px; }
+
+  .sr-only {
+    position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+    overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0;
+  }
+
+  /* Fraunces: soft, non-wonky; opsz follows font-size automatically. */
+  .serif, h1, h2, h3, .fig, .n {
+    font-family: var(--serif);
+    font-optical-sizing: auto;
+    font-variation-settings: "SOFT" 100, "WONK" 0;
+  }
+
+  .wrap { width: 100%; max-width: 1280px; margin-inline: auto; padding-inline: var(--gut); }
+
+  /* ---------- Rules that draw themselves ---------- */
+  .rule { height: 1px; background: var(--ink); transform: scaleX(var(--draw, 1)); transform-origin: 0 50%; }
+  .rule--heavy { height: 2px; }
+  .rule--double { height: 6px; background: none; border-top: 2px solid var(--ink); border-bottom: 1px solid var(--ink); }
+  .motion [data-draw] { --draw: 0; }
+
+  /* ---------- Nav ---------- */
+  .nav {
+    display: flex; justify-content: space-between; align-items: baseline; gap: 1rem;
+    padding-top: 1.25rem; padding-bottom: 0.9rem;
+  }
+  .nav-name { font-family: var(--serif); font-size: 1.125rem; font-weight: 500; letter-spacing: -0.005em; }
+  .nav-loc { font-size: 0.9375rem; color: var(--muted); }
+
+  /* ---------- Hero ---------- */
+  .masthead {
+    margin-top: clamp(2.5rem, 6vw, 4.5rem);
+    text-align: center;
+    font-family: var(--serif); font-style: italic; font-size: 1.0625rem; color: var(--muted);
+  }
+  .display {
+    margin: clamp(1rem, 2.5vw, 1.75rem) auto 0;
+    text-align: center;
+    font-size: clamp(3rem, 0.5rem + 7.4vw, 8rem);
+    font-weight: 340;
+    line-height: 0.95;
+    letter-spacing: -0.025em;
+    font-variation-settings: "SOFT" 100, "WONK" 0, "opsz" 144;
+  }
+  .display .line { display: block; text-wrap: balance; }
+  .display em { font-style: italic; font-weight: 300; }
+  .motion .display .line { opacity: 0; transform: translateY(0.3em); }
+
+  .lede {
+    max-width: 60ch;
+    margin: clamp(1.5rem, 3vw, 2.25rem) auto 0;
+    text-align: center;
+    font-family: var(--serif);
+    font-size: clamp(1.0625rem, 1rem + 0.3vw, 1.1875rem);
+    line-height: 1.7;
+    font-variation-settings: "SOFT" 50, "WONK" 0;
+  }
+
+  /* Summary: the operating highlights */
+  .summary-wrap { position: relative; margin-top: clamp(3.5rem, 8vw, 6rem); }
+  .summary-cap {
+    display: flex; align-items: baseline; gap: 0.75rem; flex-wrap: wrap;
+    padding-bottom: 0.7rem; padding-right: 20rem;
+  }
+  .summary-cap strong { font-family: var(--serif); font-weight: 500; font-size: 1.1875rem; }
+  .summary-cap span { font-family: var(--serif); font-style: italic; color: var(--muted); }
+
+  .summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .cell {
+    position: relative;
+    display: flex; flex-direction: column;
+    padding: clamp(2rem, 3.2vw, 2.75rem) clamp(0.75rem, 1.6vw, 1.5rem) 1.75rem;
+  }
+  .cell:first-child { padding-left: 0; }
+  .cell + .cell::before {
+    content: ""; position: absolute; left: 0; top: 1.25rem; bottom: 1.25rem; width: 1px;
+    background: var(--hair); transform: scaleY(var(--draw, 1)); transform-origin: 50% 0;
+  }
+  .cell dd { order: -1; display: flex; align-items: flex-start; }
+  .cell dt {
+    margin-top: 1rem; max-width: 18ch;
+    font-family: var(--serif); font-size: 1.0625rem; line-height: 1.4;
+    font-variation-settings: "SOFT" 50, "WONK" 0;
+  }
+  .fig {
+    position: relative; display: inline-block;
+    padding-bottom: 0.16em;
+    font-size: clamp(3rem, 5.6vw, 5.25rem);
+    font-weight: 300; line-height: 1; letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums lining-nums;
+    font-variation-settings: "SOFT" 100, "WONK" 0, "opsz" 144;
+    white-space: nowrap;
+  }
+  /* double underline: the accountant's mark for a total */
+  .fig::after {
+    content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 5px;
+    border-top: 1px solid var(--ink); border-bottom: 1px solid var(--ink);
+    transform: scaleX(var(--u, 1)); transform-origin: 0 50%;
+  }
+  .fig .lz { color: var(--muted); }
+  .fn { font-family: var(--serif); font-size: 1rem; font-weight: 500; font-variant-numeric: lining-nums; }
+  .fn a { display: inline-block; padding: 0.1em 0.25em; text-decoration: none; }
+  .fn a:hover { text-decoration: underline; }
+  .cell .fn { margin-left: 0.2rem; margin-top: 0.15rem; }
+
+  /* ---------- Rubber stamps ---------- */
+  .stamp {
+    --c: var(--green);
+    display: inline-block;
+    font-family: var(--sans); font-weight: 800; font-size: 0.8125rem;
+    letter-spacing: 0.14em; text-transform: uppercase; line-height: 1;
+    padding: 0.6em 0.72em 0.55em 0.86em;
+    color: var(--c);
+    border: 2px solid var(--c); border-radius: 4px;
+    box-shadow: inset 0 0 0 2px var(--paper), inset 0 0 0 3px var(--c);
+    opacity: 0.94;
+    transform: rotate(var(--r, 0deg));
+    filter: url(#stamp-ink);
+    white-space: nowrap;
+  }
+  .stamp--pending { --c: var(--muted); border-style: dashed; box-shadow: none; opacity: 1; }
+  .stamp--hero {
+    position: absolute; right: 0.75rem; top: -0.8rem; z-index: 2;
+    font-size: clamp(1rem, 0.7rem + 0.75vw, 1.5rem);
+    letter-spacing: 0.16em;
+    padding: 0.62em 0.9em 0.56em 1.06em;
+    border-width: 3px; border-radius: 6px;
+    box-shadow: inset 0 0 0 3px var(--paper), inset 0 0 0 4px var(--c);
+  }
+  .motion .stamp { opacity: 0; }
+
+  /* ---------- Section heads ---------- */
+  .section { margin-top: clamp(5rem, 11vw, 9.5rem); }
+  .sec-head {
+    display: flex; justify-content: space-between; align-items: baseline;
+    gap: 0.25rem 1.5rem; flex-wrap: wrap; padding-bottom: 0.9rem;
+  }
+  .sec-head h2 {
+    font-size: clamp(2rem, 1.2rem + 2.6vw, 3.5rem);
+    font-weight: 360; line-height: 1.05; letter-spacing: -0.015em;
+  }
+  .sec-cap { font-family: var(--serif); font-style: italic; color: var(--muted); font-size: 1.0625rem; }
+
+  /* ---------- Systems ledger ---------- */
+  .row {
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(10rem, 1.15fr) minmax(0, 1.9fr) minmax(11rem, 1.25fr) 9rem;
+    column-gap: clamp(1rem, 2vw, 2rem);
+    align-items: center;
+    padding: 1.4rem 0;
+  }
+  .row::after {
+    content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 1px;
+    background: var(--hair); transform: scaleX(var(--draw, 1)); transform-origin: 0 50%;
+  }
+  .row--head { padding: 0.75rem 0; font-size: 0.875rem; color: var(--muted); }
+  .row--head::after { background: var(--ink); }
+  .c-name { font-family: var(--serif); font-size: clamp(1.375rem, 1.1rem + 0.8vw, 1.75rem); font-weight: 430; line-height: 1.15; letter-spacing: -0.01em; }
+  .c-what { font-size: 1rem; }
+  .c-fig { text-align: right; white-space: nowrap; }
+  .c-fig .n {
+    font-size: clamp(1.625rem, 1.2rem + 1.1vw, 2.125rem); font-weight: 340; line-height: 1;
+    font-variant-numeric: tabular-nums lining-nums; letter-spacing: -0.01em;
+  }
+  .c-fig .u { margin-left: 0.35em; font-size: 0.9375rem; color: var(--muted); }
+  .c-fig .fn { font-size: 0.9375rem; }
+  .c-st { text-align: center; }
+  .row--head .c-fig { font-size: inherit; }
+  .row--next .c-name { font-style: italic; font-weight: 340; color: var(--muted); }
+  .row--next .c-what, .row--next .c-fig .n { color: var(--muted); }
+  .row--next::after {
+    background: repeating-linear-gradient(90deg, var(--hair) 0 6px, transparent 6px 11px);
+  }
+
+  /* ---------- Selected work: index rows ---------- */
+  .index-head {
+    display: grid; grid-template-columns: 7rem 1fr auto; column-gap: clamp(1rem, 2.5vw, 2.5rem);
+    padding: 0.75rem 0; font-size: 0.875rem; color: var(--muted); position: relative;
+  }
+  .index-head::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 1px; background: var(--ink); transform: scaleX(var(--draw, 1)); transform-origin: 0 50%; }
+  .index-head span:last-child { text-align: right; }
+  .entry {
+    position: relative;
+    display: grid;
+    grid-template-columns: 7rem auto minmax(2rem, 1fr) auto;
+    grid-template-areas:
+      "year name leader fig"
+      ".    desc desc   desc";
+    column-gap: clamp(1rem, 2.5vw, 2.5rem);
+    align-items: baseline;
+    padding: clamp(1.75rem, 3.4vw, 2.75rem) 0;
+  }
+  .entry::after {
+    content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 1px;
+    background: var(--hair); transform: scaleX(var(--draw, 1)); transform-origin: 0 50%;
+  }
+  .e-year {
+    grid-area: year;
+    font-family: var(--serif); font-style: italic; font-size: 1.125rem; color: var(--muted);
+    font-variant-numeric: tabular-nums lining-nums;
+  }
+  .e-name {
+    grid-area: name;
+    font-size: clamp(2.5rem, 1rem + 5.4vw, 6.25rem);
+    font-weight: 320; line-height: 1; letter-spacing: -0.025em;
+    font-variation-settings: "SOFT" 100, "WONK" 0, "opsz" 144;
+  }
+  .e-leader {
+    grid-area: leader; align-self: baseline;
+    height: 0.4rem; border-bottom: 2px dotted var(--muted);
+    transform: scaleX(var(--draw, 1)); transform-origin: 0 50%;
+  }
+  .e-fig { grid-area: fig; text-align: right; white-space: nowrap; }
+  .e-fig .n {
+    display: block;
+    font-size: clamp(2rem, 1.2rem + 2.2vw, 3.25rem); font-weight: 320; line-height: 1;
+    font-variant-numeric: tabular-nums lining-nums; letter-spacing: -0.015em;
+    font-variation-settings: "SOFT" 100, "WONK" 0, "opsz" 144;
+  }
+  .e-fig .u { display: block; margin-top: 0.35rem; font-size: 0.9375rem; color: var(--muted); }
+  .e-desc {
+    grid-area: desc; max-width: 62ch; margin-top: 0.9rem;
+    font-family: var(--serif); font-size: 1.0625rem; line-height: 1.7;
+    font-variation-settings: "SOFT" 50, "WONK" 0;
+  }
+
+  /* ---------- Contact ---------- */
+  .contact-inner { max-width: 70ch; margin: clamp(3rem, 7vw, 5.5rem) auto 0; }
+  .contact-line {
+    font-size: clamp(2rem, 1rem + 3.4vw, 3.75rem);
+    font-weight: 340; line-height: 1.08; letter-spacing: -0.02em;
+    font-variation-settings: "SOFT" 100, "WONK" 0, "opsz" 144;
+  }
+  .contact-mail { margin-top: clamp(1.5rem, 3vw, 2.25rem); }
+  .contact-mail a {
+    font-family: var(--serif); font-size: clamp(1.375rem, 0.9rem + 2.2vw, 2.5rem);
+    font-weight: 400; overflow-wrap: anywhere;
+    font-variation-settings: "SOFT" 100, "WONK" 0;
+  }
+  .contact-links { display: flex; gap: 1.75rem; flex-wrap: wrap; margin-top: 1.25rem; font-size: 1.0625rem; }
+  .signature { margin-top: clamp(3rem, 6vw, 4.5rem); width: min(20rem, 100%); }
+  .sig-name {
+    display: block; padding: 0 0 0.35rem 0.25rem;
+    font-family: var(--serif); font-style: italic; font-size: 1.75rem; font-weight: 300;
+    font-variation-settings: "SOFT" 100, "WONK" 1;
+  }
+  .sig-cap { display: block; margin-top: 0.45rem; font-size: 0.875rem; color: var(--muted); }
+
+  /* ---------- Notes ---------- */
+  .notes { margin-top: clamp(5rem, 10vw, 8rem); padding-bottom: 6rem; }
+  .notes-title { margin: 1.25rem 0 1rem; font-size: 1.25rem; font-weight: 450; }
+  .fn-list { list-style: none; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.9rem 3rem; }
+  .fn-list li {
+    display: grid; grid-template-columns: 1.5rem 1fr; align-items: baseline;
+    font-size: 0.875rem; line-height: 1.6; color: var(--muted);
+    padding: 0.25rem 0 0.25rem 0.5rem; margin-left: -0.5rem;
+  }
+  .fn-list li:target { box-shadow: inset 2px 0 0 var(--green); }
+  .fn-n { font-family: var(--serif); font-weight: 500; color: var(--ink); font-variant-numeric: lining-nums; }
+  .fn-list b { font-weight: 600; color: var(--ink); }
+  .back { margin-left: 0.3em; text-decoration: none; }
+  .back:hover { text-decoration: underline; }
+  .end { margin-top: 2.5rem; }
+
+  /* ---------- Responsive ---------- */
+  @media (max-width: 1080px) {
+    .summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .fig { font-size: clamp(3rem, 9vw, 5.25rem); }
+    .cell:nth-child(3) { padding-left: 0; }
+    .cell:nth-child(3)::before { display: none; }
+    .cell:nth-child(n+3) { border-top: 1px solid var(--hair); }
+  }
+  @media (max-width: 860px) {
+    .row {
+      grid-template-columns: minmax(0, 1fr) auto;
+      grid-template-areas: "name st" "what what" "fig fig";
+      row-gap: 0.35rem;
+      padding: 1.25rem 0 1.35rem;
+    }
+    .c-name { grid-area: name; }
+    .c-what { grid-area: what; color: var(--ink); }
+    .c-fig { grid-area: fig; text-align: left; margin-top: 0.35rem; }
+    .c-st { grid-area: st; }
+    .row--head {
+      position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); padding: 0;
+    }
+    .index-head { grid-template-columns: 1fr auto; }
+    .index-head span:first-child { display: none; }
+    .entry {
+      grid-template-columns: minmax(0, 1fr);
+      grid-template-areas: "year" "name" "desc" "fig";
+    }
+    .e-year { margin-bottom: 0.4rem; }
+    .e-leader { display: none; }
+    .e-fig { text-align: left; margin-top: 1.1rem; }
+    .e-fig .n, .e-fig .u { display: inline; }
+    .e-fig .u { margin-left: 0.4em; }
+    .fn-list { grid-template-columns: minmax(0, 1fr); }
+  }
+  @media (max-width: 560px) {
+    .summary { grid-template-columns: minmax(0, 1fr); }
+    .cell, .cell:nth-child(n) { padding-left: 0; padding-right: 0; }
+    .cell + .cell::before { display: none; }
+    .cell + .cell { border-top: 1px solid var(--hair); }
+    .cell { padding-top: 1.75rem; padding-bottom: 1.5rem; }
+    .cell:first-child { padding-top: 2.75rem; }
+    .fig { font-size: clamp(3rem, 18vw, 5rem); }
+    .summary-wrap { padding-top: 4rem; }
+    .summary-cap { padding-right: 0; }
+    .stamp--hero { right: 0.5rem; top: 0; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Ink texture for the stamps: roughened edges plus sparse speckle where the rubber did not take ink. -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <filter id="stamp-ink" x="-6%" y="-20%" width="112%" height="140%" color-interpolation-filters="sRGB">
+      <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" seed="11" result="edge"/>
+      <feDisplacementMap in="SourceGraphic" in2="edge" scale="1.4" xChannelSelector="R" yChannelSelector="G" result="rough"/>
+      <feTurbulence type="fractalNoise" baseFrequency="1.3" numOctaves="1" seed="4" result="grain"/>
+      <feColorMatrix in="grain" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  -7 0 0 0 4.75" result="speck"/>
+      <feComposite in="rough" in2="speck" operator="in"/>
+    </filter>
+  </defs>
+</svg>
+
+<header class="nav wrap">
+  <span class="nav-name">Ezra Brilliant</span>
+  <span class="nav-loc">Surabaya, ID</span>
+</header>
+
+<main>
+  <!-- ============ Hero: a ledger summary ============ -->
+  <section class="wrap" aria-labelledby="hero-title">
+    <div class="rule rule--double" data-draw></div>
+    <p class="masthead">A statement of systems in operation, 2024 to 2026</p>
+    <h1 id="hero-title" class="display">
+      <span class="line">Systems people use.</span>
+      <span class="line"><em>Every day.</em></span>
+    </h1>
+    <p class="lede">I build software and then stay on to run it: a shop that takes real payments, a game with millions of visits, an API that other people&rsquo;s code depends on. The figures below are the ones those systems recorded.</p>
+
+    <figure class="summary-wrap" style="margin-inline:0">
+      <figcaption class="summary-cap"><strong>Operating highlights</strong><span>four systems, as recorded</span></figcaption>
+      <div class="rule rule--heavy" data-draw></div>
+      <span class="stamp stamp--hero" style="--r:-3.5deg">In production</span>
+      <dl class="summary">
+        <div class="cell" data-draw>
+          <dt>paid orders processed</dt>
+          <dd><span class="fig"><span class="fig-n" aria-hidden="true">2,700+</span><span class="sr-only">2,700+</span></span><sup class="fn"><a href="#fn1" id="ref1" aria-label="Note 1">1</a></sup></dd>
+        </div>
+        <div class="cell" data-draw>
+          <dt>visits to one Roblox game</dt>
+          <dd><span class="fig"><span class="fig-n" aria-hidden="true">3.1M</span><span class="sr-only">3.1 million</span></span><sup class="fn"><a href="#fn2" id="ref2" aria-label="Note 2">2</a></sup></dd>
+        </div>
+        <div class="cell" data-draw>
+          <dt>API requests a day</dt>
+          <dd><span class="fig"><span class="fig-n" aria-hidden="true">14.5k</span><span class="sr-only">14,500</span></span><sup class="fn"><a href="#fn3" id="ref3" aria-label="Note 3">3</a></sup></dd>
+        </div>
+        <div class="cell" data-draw>
+          <dt>community members served</dt>
+          <dd><span class="fig"><span class="fig-n" aria-hidden="true">1,000+</span><span class="sr-only">1,000+</span></span><sup class="fn"><a href="#fn4" id="ref4" aria-label="Note 4">4</a></sup></dd>
+        </div>
+      </dl>
+      <div class="rule rule--double" data-draw></div>
+    </figure>
+  </section>
+
+  <!-- ============ Systems board ============ -->
+  <section class="section wrap" aria-labelledby="systems-title">
+    <header class="sec-head">
+      <h2 id="systems-title">Systems in operation</h2>
+      <p class="sec-cap">As at September 2026</p>
+    </header>
+    <div class="rule rule--heavy" data-draw></div>
+
+    <div class="ledger" role="table" aria-labelledby="systems-title">
+      <div role="rowgroup">
+        <div class="row row--head" role="row" data-draw>
+          <span role="columnheader">System</span>
+          <span role="columnheader">What it is</span>
+          <span role="columnheader" class="c-fig">In figures</span>
+          <span role="columnheader" class="c-st">Status</span>
+        </div>
+      </div>
+      <div role="rowgroup">
+        <div class="row" role="row" data-draw>
+          <span class="c-name" role="rowheader">Orbit Store</span>
+          <span class="c-what" role="cell">Discord commerce, QRIS payments</span>
+          <span class="c-fig" role="cell"><span class="n serif">2,700+</span><span class="u">orders</span><sup class="fn"><a href="#fn1" aria-label="Note 1">1</a></sup></span>
+          <span class="c-st" role="cell"><span class="stamp" style="--r:2.5deg">Shipped</span></span>
+        </div>
+        <div class="row" role="row" data-draw>
+          <span class="c-name" role="rowheader">GTID</span>
+          <span class="c-what" role="cell">Market platform + public API</span>
+          <span class="c-fig" role="cell"><span class="n serif">14.5k</span><span class="u">req/day</span><sup class="fn"><a href="#fn3" aria-label="Note 3">3</a></sup></span>
+          <span class="c-st" role="cell"><span class="stamp" style="--r:-3deg">Live</span></span>
+        </div>
+        <div class="row" role="row" data-draw>
+          <span class="c-name" role="rowheader">Petak Umpet</span>
+          <span class="c-what" role="cell">Roblox game</span>
+          <span class="c-fig" role="cell"><span class="n serif">3.1M</span><span class="u">visits</span><sup class="fn"><a href="#fn2" aria-label="Note 2">2</a></sup></span>
+          <span class="c-st" role="cell"><span class="stamp" style="--r:3.5deg">Live</span></span>
+        </div>
+        <div class="row" role="row" data-draw>
+          <span class="c-name" role="rowheader">Ezra Bot</span>
+          <span class="c-what" role="cell">Community AI with RAG memory</span>
+          <span class="c-fig" role="cell"><span class="n serif">1,000+</span><span class="u">members</span><sup class="fn"><a href="#fn4" aria-label="Note 4">4</a></sup></span>
+          <span class="c-st" role="cell"><span class="stamp" style="--r:-2deg">Live</span></span>
+        </div>
+        <div class="row" role="row" data-draw>
+          <span class="c-name" role="rowheader">POS Monosuko</span>
+          <span class="c-what" role="cell">Restaurant POS</span>
+          <span class="c-fig" role="cell"><span class="n serif">41%</span><span class="u">faster checkout</span><sup class="fn"><a href="#fn5" id="ref5" aria-label="Note 5">5</a></sup></span>
+          <span class="c-st" role="cell"><span class="stamp" style="--r:2deg">Live</span></span>
+        </div>
+        <div class="row row--next" role="row" data-draw>
+          <span class="c-name" role="rowheader">Next system</span>
+          <span class="c-what" role="cell">Deploying soon</span>
+          <span class="c-fig" role="cell"><span class="n serif" aria-label="nil">&ndash;</span></span>
+          <span class="c-st" role="cell"><span class="stamp stamp--pending" style="--r:-3deg">Deploying</span></span>
+        </div>
+      </div>
+    </div>
+    <div class="rule rule--double" data-draw></div>
+  </section>
+
+  <!-- ============ Selected work ============ -->
+  <section class="section wrap" aria-labelledby="work-title">
+    <header class="sec-head">
+      <h2 id="work-title">Selected work</h2>
+      <p class="sec-cap">Three systems, one figure each</p>
+    </header>
+    <div class="rule rule--heavy" data-draw></div>
+    <div class="index-head" aria-hidden="true" data-draw>
+      <span>Year</span><span>System</span><span>Headline figure</span>
+    </div>
+
+    <article class="entry" data-draw>
+      <p class="e-year">2024&ndash;25</p>
+      <h3 class="e-name">Orbit Store</h3>
+      <span class="e-leader" aria-hidden="true" data-draw></span>
+      <p class="e-fig"><span class="n">2,700+</span><span class="u">paid orders</span></p>
+      <p class="e-desc">A storefront that lives inside Discord and takes QRIS payments through Midtrans. 370+ buyers paid through it, and every order was recorded against a customer and a product.</p>
+    </article>
+
+    <article class="entry" data-draw>
+      <p class="e-year">2026</p>
+      <h3 class="e-name">Petak Umpet</h3>
+      <span class="e-leader" aria-hidden="true" data-draw></span>
+      <p class="e-fig"><span class="n">3.1M</span><span class="u">visits</span></p>
+      <p class="e-desc">A Roblox hide-and-seek game. I wrote all of the game logic: who hides, who seeks, the timers, how a round is won. At its peak, 2.6K people were playing at once.</p>
+    </article>
+
+    <article class="entry" data-draw>
+      <p class="e-year">2025&ndash;26</p>
+      <h3 class="e-name">GTID</h3>
+      <span class="e-leader" aria-hidden="true" data-draw></span>
+      <p class="e-fig"><span class="n">14.5k</span><span class="u">requests a day</span></p>
+      <p class="e-desc">A market platform for Growtopia Indonesia: price history for 16,088 items and a public API that other developers build on, with caching and rate limits.</p>
+    </article>
+  </section>
+
+  <!-- ============ Contact ============ -->
+  <section class="section wrap" aria-labelledby="contact-title">
+    <div class="rule rule--double" data-draw></div>
+    <div class="contact-inner">
+      <h2 id="contact-title" class="contact-line">If it has to run in production, write to me.</h2>
+      <p class="contact-mail"><a href="mailto:ezrakonterliem@gmail.com">ezrakonterliem@gmail.com</a></p>
+      <p class="contact-links">
+        <a href="https://github.com/ezrabrilliant">GitHub</a>
+        <a href="https://linkedin.com/in/ezrabrilliant">LinkedIn</a>
+      </p>
+      <div class="signature">
+        <span class="sig-name" aria-hidden="true">Ezra Brilliant</span>
+        <div class="rule" data-draw></div>
+        <span class="sig-cap">Ezra Brilliant, Surabaya, September 2026</span>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- ============ Notes to the figures ============ -->
+<footer class="notes wrap" aria-labelledby="notes-title">
+  <div class="rule rule--heavy" data-draw></div>
+  <h2 id="notes-title" class="notes-title">Notes to the figures</h2>
+  <ol class="fn-list">
+    <li id="fn1"><span class="fn-n">1</span><p><b>Orbit Store.</b> Discord commerce bot taking QRIS payments via Midtrans, 2024&ndash;2025. 2,700+ paid orders from 370+ buyers. <a class="back" href="#ref1" aria-label="Back to figure 1">&uarr;</a></p></li>
+    <li id="fn2"><span class="fn-n">2</span><p><b>Petak Umpet.</b> Roblox multiplayer game, 2026; sole programmer. 3.1M visits, 2.6K peak concurrent players. <a class="back" href="#ref2" aria-label="Back to figure 2">&uarr;</a></p></li>
+    <li id="fn3"><span class="fn-n">3</span><p><b>GTID.</b> Market platform and public API (api.gtid.pro), 2025&ndash;2026. About 14,500 requests a day. <a class="back" href="#ref3" aria-label="Back to figure 3">&uarr;</a></p></li>
+    <li id="fn4"><span class="fn-n">4</span><p><b>Ezra Bot.</b> Community AI on Discord with RAG long-term memory, 2026. Serves a community of 1,000+ members. <a class="back" href="#ref4" aria-label="Back to figure 4">&uarr;</a></p></li>
+    <li id="fn5"><span class="fn-n">5</span><p><b>POS Monosuko.</b> Restaurant point-of-sale and inventory system, 2025&ndash;2026. Transaction time cut by 41%. <a class="back" href="#ref5" aria-label="Back to figure 5">&uarr;</a></p></li>
+  </ol>
+  <div class="rule rule--double end" data-draw></div>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script>
+(function () {
+  var root = document.documentElement;
+  if (!root.classList.contains('motion')) return;           // reduced motion: final states already shown
+  if (!window.gsap || !('IntersectionObserver' in window)) { // GSAP missing: fall back to final states
+    root.classList.remove('motion');
+    return;
+  }
+  var g = window.gsap;
+
+  /* One-shot "when this enters the viewport" helper. */
+  function onView(el, fn, threshold) {
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (e.isIntersecting) { io.unobserve(e.target); fn(e.target); }
+      });
+    }, { threshold: threshold || 0, rootMargin: '0px 0px -5% 0px' });
+    io.observe(el);
+  }
+
+  /* Ledger-style numeral formatter: keeps the final shape ("2,700+") and fills
+     its digit slots, so "0,000+" rolls to "2,700+" at a fixed width. Leading
+     zeros are printed muted, as on an adding-machine tape. */
+  function formatter(finalText) {
+    var chars = finalText.split('');
+    var slots = [];
+    chars.forEach(function (ch, i) { if (/\d/.test(ch)) slots.push(i); });
+    var dot = finalText.indexOf('.');
+    var intSlots = slots.filter(function (i) { return dot < 0 || i < dot; });
+    var total = parseInt(slots.map(function (i) { return chars[i]; }).join(''), 10);
+    function render(n) {
+      var ds = String(Math.round(n));
+      while (ds.length < slots.length) ds = '0' + ds;
+      var out = chars.slice();
+      slots.forEach(function (idx, k) { out[idx] = ds[k]; });
+      var sig = intSlots.length - 1;
+      for (var k = 0; k < intSlots.length - 1; k++) { if (ds[k] !== '0') { sig = k; break; } }
+      var cut = intSlots[sig];
+      var lead = out.slice(0, cut).join(''), rest = out.slice(cut).join('');
+      return (lead ? '<span class="lz">' + lead + '</span>' : '') + rest;
+    }
+    return { total: total, render: render };
+  }
+
+  /* 1. Rules draw themselves (row rules, cell dividers, leaders). */
+  document.querySelectorAll('[data-draw]').forEach(function (el) {
+    onView(el, function (t) {
+      g.to(t, { '--draw': 1, duration: t.classList.contains('e-leader') ? 1.1 : 0.9, ease: 'power2.inOut' });
+    });
+  });
+
+  /* 2. Stamps thunk in: 1.6x down to 1x, rotation settles, fast ease-out,
+        then the surface they land on gives by a pixel and a half. */
+  function thunk(st, delay, surface) {
+    var r = parseFloat(getComputedStyle(st).getPropertyValue('--r')) || 0;
+    var finalOpacity = st.classList.contains('stamp--pending') ? 1 : 0.94;
+    g.fromTo(st,
+      { opacity: 0, scale: 1.6, rotation: r + (r < 0 ? -8 : 8) },
+      { opacity: finalOpacity, scale: 1, rotation: r, duration: 0.3, delay: delay || 0, ease: 'power4.out',
+        onComplete: function () {
+          if (surface) g.fromTo(surface, { y: 1.5 }, { y: 0, duration: 0.2, ease: 'power2.out', clearProps: 'transform' });
+        } });
+  }
+  document.querySelectorAll('.ledger .stamp').forEach(function (st) {
+    onView(st, function (t) { thunk(t, 0.15, t.closest('.row')); }, 0.9);
+  });
+
+  /* 3. Headline lines set in, once. */
+  var h1 = document.querySelector('.display');
+  onView(h1, function () {
+    g.to(h1.querySelectorAll('.line'), { opacity: 1, y: 0, duration: 1, ease: 'power3.out', stagger: 0.14 });
+  });
+
+  /* 4. Summary numerals count up, then get their double underline, then the hero stamp lands. */
+  var summary = document.querySelector('.summary');
+  var figs = [].slice.call(summary.querySelectorAll('.fig'));
+  var fmts = figs.map(function (fig) {
+    var out = fig.querySelector('.fig-n');
+    var f = formatter(out.textContent.trim());
+    out.innerHTML = f.render(0);
+    fig.style.setProperty('--u', '0');
+    return f;
+  });
+  onView(summary, function () {
+    figs.forEach(function (fig, i) {
+      var out = fig.querySelector('.fig-n'), f = fmts[i], o = { v: 0 };
+      g.to(o, {
+        v: f.total, duration: 1.7, delay: 0.1 + i * 0.12, ease: 'power3.out',
+        onUpdate: function () { out.innerHTML = f.render(o.v); },
+        onComplete: function () {
+          out.innerHTML = f.render(f.total);
+          g.to(fig, { '--u': 1, duration: 0.5, ease: 'power2.out' });
+        }
+      });
+    });
+    thunk(document.querySelector('.stamp--hero'), 1.95, summary);
+  }, 0.3);
+})();
+</script>
+</body>
+</html>
