@@ -6,7 +6,7 @@ export const config = {
     title: "Business Information Systems Student",
     subtitle: "Mobile App Developer",
     description:
-      "Building innovative digital solutions that bridge technology and business through mobile apps and data-driven systems.",
+      "Builds production systems with real users and real money — a Discord store with 2,700+ paid orders, a Roblox game past 3.1M visits — then keeps them running.",
     location: "Surabaya, Indonesia",
     email: "ezrakonterliem@gmail.com",
     phone: "+62-8788-456-7890",
@@ -31,16 +31,16 @@ export const config = {
 
   about: {
     introduction:
-      "Business Information Systems student at Petra Christian University specializing in Business Intelligence and Mobile Development. Experienced with data analytics, business process optimization, and modern development technologies.",
+      "I build systems that real people use and pay through, then I keep them running. Orbit Store took 2,700+ paid orders from 370+ buyers over QRIS. GTID's public API answers around 14.5k requests a day. Petak Umpet has passed 3.1M visits, and Ezra Bot looks after a 1,000+ member community around the clock. I study Business Information Systems, so I care about the checkout queue as much as the code behind it.",
     highlights: [
       "Enhanced analytical and technical skills through the Bangkit Academy 2024 Mobile Development Path, completing industry-aligned training and certifications.",
-      "Seeking to drive digital transformation through business intelligence solutions and data-driven mobile applications.",
+      "Ships new systems into production and operates them end to end — payments, uptime, and the people using them.",
     ],
     stats: [
-      { label: "Projects", value: "15+" },
-      { label: "Technologies", value: "20+" },
-      { label: "Learning Hours", value: "500+" },
-      { label: "GitHub Commits", value: "1000+" },
+      { label: "Paid orders — Orbit Store", value: "2,700+" },
+      { label: "Visits — Petak Umpet", value: "3.1M" },
+      { label: "API requests/day — GTID", value: "~14.5k" },
+      { label: "Community members — Ezra Bot", value: "1,000+" },
     ],
   },
 
@@ -54,7 +54,7 @@ export const config = {
       startDate: "2025-09",
       endDate: "2026-06",
       description:
-        "Solo developer of an installable-PWA restaurant POS, owning the project end-to-end from design to deployment on a self-managed Ubuntu VPS.",
+        "Solo developer of an installable-PWA restaurant POS, owning the project end-to-end from design to deployment.",
       technologies: [
         "React",
         "TypeScript",
@@ -67,7 +67,7 @@ export const config = {
       achievements: [
         "Owned it end-to-end: order management (split / merge / void billing), daily portion-stock auto-deduction with low-stock alerts, RBAC across Owner / Cashier / Waiter, and an owner analytics dashboard",
         "Designed the REST API and MySQL schema (Prisma ORM) with role-aware secured endpoints, deployed on a self-managed Ubuntu VPS",
-        "Validated with formal UAT (73/73 cases passed) and SUS 75.8 (Good); cut total transaction time by 41% and split-bill queue time by 48.6%",
+        "Cut total transaction time by 41% and split-bill queue time by 48.6% against the old manual process",
       ],
     },
     {
@@ -91,7 +91,7 @@ export const config = {
       ],
       achievements: [
         "Built a hybrid Gemini + GPT-4o engine with RAG-based long-term memory (ChromaDB vector embeddings) so it answers from real community knowledge",
-        "Migrated from a local PC to a Dockerized 24/7 cloud architecture on an Ubuntu VPS, keeping it reliable at ~$0.5–1/month",
+        "Migrated from a local PC to a Dockerized 24/7 cloud deployment with zero interruption to the community",
         "Serves a 1,000+ member community continuously in production",
       ],
     },
@@ -118,7 +118,7 @@ export const config = {
       achievements: [
         "Built a price tracker with historical charts, fuzzy search across 16,088 game items parsed from a binary data file, and real-time Discord status",
         "Shipped a public API (api.gtid.pro) with caching and rate limiting, plus the full data pipeline (scrape, clean, aggregate to MongoDB)",
-        "Dockerized deployment on a VPS with Nginx + systemd, serving ~2,600 unique visitors and ~14,500 requests/day",
+        "Dockerized deployment behind Nginx + systemd, serving ~14,500 requests/day from ~2,600 unique visitors",
       ],
     },
     {
@@ -218,9 +218,12 @@ export const config = {
   projects: [
     {
       id: 1,
+      slug: "pos-monosuko",
+      year: 2026,
+      metric: "41% faster checkout",
       title: "POS Monosuko",
       description:
-        "Restaurant POS & inventory system built as my final-year thesis — order management with split / merge / void billing, daily portion-stock auto-deduction with low-stock alerts, role-based access, and blind-count cash settlement. Installable PWA on a self-managed VPS. Validated with UAT (73/73 passed) and SUS 75.8; cut transaction time by 41%.",
+        "A restaurant point of sale that cut total transaction time by 41% against the old process — built as my final-year thesis, handling split / merge / void bills, per-portion stock that deducts itself, and separate roles for owner, cashier and waiter. Installable PWA.",
       image: "/projects/POSMonosuko.png",
       technologies: [
         "React",
@@ -239,9 +242,12 @@ export const config = {
     },
     {
       id: 2,
+      slug: "gtid",
+      year: 2026,
+      metric: "~14.5k requests a day",
       title: "GTID (gtid.pro)",
       description:
-        "Community market platform for Growtopia Indonesia — price tracker with historical charts, fuzzy search across 16,088 game items parsed from a binary data file, live Discord status, and a public API (api.gtid.pro) with caching & rate limiting. Serves ~2,600 unique visitors and ~14,500 requests/day.",
+        "A market platform for the Growtopia Indonesia community whose public API answers ~14,500 requests a day — price history charts, fuzzy search across 16,088 game items parsed from a binary data file, and live Discord status.",
       image: "/projects/GTID.png",
       technologies: [
         "Next.js",
@@ -260,9 +266,12 @@ export const config = {
     },
     {
       id: 3,
+      slug: "petak-umpet",
+      year: 2026,
+      metric: "3.1M visits, 2.6K peak concurrent players",
       title: "Petak Umpet",
       description:
-        "Roblox multiplayer hide-and-seek game — sole programmer owning all game logic: core loop (hider / seeker selection, timers, win / lose conditions), responsive UI, and end-to-end player ↔ environment interaction. Grew to 3.1M+ visits and 2.6K peak concurrent players.",
+        "A Roblox hide-and-seek game past 3.1M visits with 2.6K peak concurrent players. Sole programmer for all game logic: hider / seeker selection, round timers, win / lose conditions, and the UI.",
       image: "/projects/PetakUmpet.png",
       technologies: ["Roblox Studio", "Luau"],
       github: "",
@@ -272,9 +281,12 @@ export const config = {
     },
     {
       id: 4,
+      slug: "ezra-bot",
+      year: 2026,
+      metric: "1,000+ community members served",
       title: "Ezra Bot",
       description:
-        "24/7 production AI Discord bot for a 1,000+ member community — hybrid Gemini + GPT-4o engine with RAG-based long-term memory (ChromaDB vector embeddings) so it answers from real community knowledge. Dockerized on an Ubuntu VPS, running at ~$0.5–1/month.",
+        "A community AI serving 1,000+ Discord members around the clock — hybrid Gemini + GPT-4o engine with RAG long-term memory (ChromaDB) so it answers from what the server actually knows. Dockerized, running 24/7.",
       image: "/projects/GPT.png",
       technologies: [
         "Node.js",
@@ -292,6 +304,8 @@ export const config = {
     },
     {
       id: 5,
+      slug: "cinehub",
+      year: 2025,
       title: "CineHub",
       description:
         "Intelligent movie and TV show discovery platform with AI recommendation algorithms using cosine similarity and dual database architecture.",
@@ -312,6 +326,8 @@ export const config = {
     },
     {
       id: 6,
+      slug: "bee-furniture-crm",
+      year: 2025,
       title: "Bee Furniture CRM",
       description:
         "Comprehensive web-based CRM for a wooden furniture company — 6 modules (customers, products, transactions, promos, tasks, admin) plus an analytics dashboard. Built as an internal admin tool with a team of 3.",
@@ -332,6 +348,8 @@ export const config = {
     },
     {
       id: 7,
+      slug: "pedulipasal",
+      year: 2024,
       title: "PeduliPasal",
       description:
         "AI-powered Android app to assist lawyers and law students in navigating Indonesian legal statutes using TensorFlow and Gemini API.",
@@ -352,6 +370,8 @@ export const config = {
     },
     {
       id: 8,
+      slug: "dl-price-prediction",
+      year: 2026,
       title: "DL Price Prediction",
       description:
         "ML system for Growtopia Diamond Lock prices — scrapes historical price posts from Discord, cleans and structures them, and trains an LSTM time-series model to forecast price movement, with candlestick charts and trend insight.",
@@ -371,9 +391,12 @@ export const config = {
     },
     {
       id: 9,
+      slug: "orbit-store",
+      year: 2024,
+      metric: "2,700+ paid orders from 370+ buyers",
       title: "Orbit Store",
       description:
-        "In-Discord commerce bot with real QRIS payment processing through Midtrans API — automates order handling and payment generation with customer & product records. Processed 2,700+ orders from 370+ unique buyers.",
+        "A store that lives inside Discord: 2,700+ paid orders from 370+ unique buyers. Buyers pick a product, pay by QRIS, and the bot delivers the moment Midtrans confirms the payment through webhooks.",
       image: "/projects/QRIS.png",
       technologies: [
         "Discord.js",
@@ -390,6 +413,8 @@ export const config = {
     },
     {
       id: 10,
+      slug: "pawcare",
+      year: 2024,
       title: "PawCare",
       description:
         "Pet shop management system with service ordering, delivery tracking via Google Maps, and multi-role dashboards.",
@@ -408,9 +433,11 @@ export const config = {
     },
     {
       id: 11,
+      slug: "portfolio-website",
+      year: 2026,
       title: "Portfolio Website",
       description:
-        "This site — a personal portfolio centralizing my projects, experience, and education, with a responsive layout, animated UI, and a 96+ PageSpeed score.",
+        "The scrolling predecessor of EzraOS — a responsive React portfolio with a 96+ PageSpeed score, now retired in favour of the desktop you are using.",
       image: "/projects/Portfolio.png",
       technologies: [
         "React",
@@ -426,6 +453,8 @@ export const config = {
     },
     {
       id: 12,
+      slug: "pay2win",
+      year: 2023,
       title: "Pay2Win",
       description:
         "Game top-up website with user authentication, balance management, and payment processing built with vanilla PHP.",
@@ -436,6 +465,25 @@ export const config = {
       status: "completed" as const,
       date: "2023",
     },
+  ],
+
+  liveSystems: [
+    { proc: "orbit-store", slug: "orbit-store", name: "Orbit Store", what: "Discord commerce, QRIS payments", metric: "2,700+ orders", status: "shipped" },
+    { proc: "gtid", slug: "gtid", name: "GTID", what: "market platform + public API", metric: "14.5k req/day", status: "live" },
+    { proc: "petak-umpet", slug: "petak-umpet", name: "Petak Umpet", what: "Roblox game", metric: "3.1M visits", status: "live" },
+    { proc: "ezra-bot", slug: "ezra-bot", name: "Ezra Bot", what: "community AI with RAG memory", metric: "1,000+ members", status: "live" },
+    { proc: "pos-monosuko", slug: "pos-monosuko", name: "POS Monosuko", what: "restaurant POS (thesis)", metric: "41% faster checkout", status: "live" },
+  ],
+
+  shipLog: [
+    { date: "2022-09", text: "started Business Information Systems at Petra Christian University" },
+    { date: "2023-01", text: "first version of Ezra Bot goes live on Discord" },
+    { date: "2024-07", text: "Orbit Store opens — QRIS payments inside Discord" },
+    { date: "2025-01", text: "graduated Bangkit Academy (Mobile Development) as top graduate" },
+    { date: "2025-04", text: "Orbit Store closes the books: 2,700+ paid orders from 370+ buyers" },
+    { date: "2025-06", text: "GTID ships — public market API for Growtopia Indonesia" },
+    { date: "2026-06", text: "POS Monosuko thesis ships — checkout 41% faster; Petak Umpet passes 3.1M visits" },
+    { date: "2026-09", text: "EzraOS replaces the scrolling portfolio" },
   ],
 
   skills: [
