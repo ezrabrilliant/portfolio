@@ -1,0 +1,16 @@
+/* Values mirror src/os/tokens.ts — the contrast test guards them. */
+:root {
+  --desk: #1E2333;
+  --paper: #F4F1E8;
+  --ink: #1D1B16;
+  --amber: #FFB300;
+  --muted: #5E5A50;
+  --card: #FFFDF7;
+  --rule: #D9D3C2;
+  --bootbg: #14121A;
+  --mb: 28px;      /* menu bar height */
+  --dock: 44px;    /* dock height */
+  --mono: 'IBM Plex Mono', ui-monospace, Menlo, Consolas, monospace;
+  --sans: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --shadow: 6px 6px 0 rgba(0, 0, 0, 0.35); /* hard flat offset, no blur */
+}

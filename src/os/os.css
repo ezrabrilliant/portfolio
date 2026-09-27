@@ -1,0 +1,124 @@
+* { box-sizing: border-box; }
+html, body, #root { margin: 0; height: 100%; overflow: hidden; }
+body {
+  background-color: var(--desk);
+  /* tile-plus grid motif at ~6% paper — the Growtopia 2D-tile nod */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' shape-rendering='crispEdges'%3E%3Cpath d='M12.5 9v7M9 12.5h7' stroke='%23F4F1E8' stroke-opacity='.07'/%3E%3Cpath d='M23.5 0v24M0 23.5h24' stroke='%23F4F1E8' stroke-opacity='.03'/%3E%3C/svg%3E");
+  color: var(--paper);
+  font-family: var(--sans);
+  font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior: none;
+  -webkit-tap-highlight-color: transparent;
+}
+button { font: inherit; color: inherit; }
+a { color: inherit; }
+
+/* visible keyboard focus: ink on paper, amber on dark surfaces */
+:focus { outline: none; }
+:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.dark :focus-visible, .dark:focus-visible { outline-color: var(--amber); }
+
+/* ---------- boot ---------- */
+#boot {
+  position: fixed; inset: 0; z-index: 10000;
+  display: flex; flex-direction: column; justify-content: flex-start;
+  background: var(--bootbg); color: var(--amber);
+  font: 500 14px/1.7 var(--mono);
+  padding: max(24px, 6vh) max(20px, 6vw);
+}
+#boot .skip { position: absolute; left: max(20px, 6vw); bottom: 24px; font-size: 12px; }
+
+/* ---------- menu bar ---------- */
+#menubar {
+  position: fixed; top: 0; left: 0; right: 0; height: var(--mb); z-index: 9000;
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  padding: 0 6px; background: var(--ink); color: var(--paper);
+  font: 500 12px/1 var(--mono); border-bottom: 1px solid #000;
+}
+#menubar button { background: none; border: 0; padding: 7px 8px; cursor: pointer; font-weight: 600; }
+#menubar button:hover { background: var(--amber); color: var(--ink); }
+#menubar .right { display: flex; gap: 16px; padding-right: 6px; white-space: nowrap; }
+
+/* ---------- desk + icons ---------- */
+#os { position: fixed; inset: 0; }
+#desk { position: absolute; top: var(--mb); left: 0; right: 0; bottom: var(--dock); overflow: hidden; }
+#icons { position: absolute; inset: 0; z-index: 1; }
+.icon-col {
+  position: absolute; left: 12px; top: 12px; bottom: 12px;
+  display: grid; grid-auto-flow: column;
+  grid-template-rows: repeat(auto-fill, 98px); grid-auto-columns: 88px;
+  gap: 0 6px; align-content: start;
+}
+.icon {
+  width: 88px; height: 96px; padding: 6px 2px; border: 0; background: none;
+  display: flex; flex-direction: column; align-items: center; gap: 7px;
+  color: var(--paper); font: 500 11.5px/1.25 var(--mono); cursor: default;
+  touch-action: manipulation; user-select: none; -webkit-user-select: none;
+}
+.icon .tile {
+  width: 52px; height: 52px; flex: none; display: grid; place-items: center;
+  background: var(--paper); border: 1px solid var(--ink);
+  box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.45);
+}
+.icon svg { width: 30px; height: 30px; fill: none; stroke: var(--ink); stroke-width: 2; stroke-linecap: square; stroke-linejoin: miter; }
+.icon svg .f { fill: var(--paper); }
+.icon svg .k { fill: var(--ink); stroke: none; }
+.icon .lbl { padding: 2px 5px; max-width: 100%; text-align: center; }
+.icon.sel .lbl { background: var(--amber); color: var(--ink); }
+.icon.petak { position: absolute; left: 0; top: 0; }
+#counter {
+  position: absolute; left: 50%; bottom: 12px; transform: translateX(-50%); z-index: 8000;
+  background: var(--ink); color: var(--amber); border: 1px solid var(--amber);
+  font: 500 12px/1 var(--mono); padding: 7px 10px; pointer-events: none; white-space: nowrap;
+}
+#counter[hidden] { display: none; }
+
+/* ---------- windows ---------- */
+#wins { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
+.win {
+  position: absolute; pointer-events: auto; display: flex; flex-direction: column;
+  background: var(--paper); color: var(--ink);
+  border: 1px solid var(--ink); box-shadow: var(--shadow);
+  transform-origin: 50% 20%;
+}
+.win:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+.tb {
+  flex: none; height: 30px; display: flex; align-items: center; gap: 6px;
+  padding: 0 4px 0 10px; background: var(--ink); color: var(--paper);
+  font: 500 12px/1 var(--mono); border-bottom: 1px solid var(--ink);
+  user-select: none; -webkit-user-select: none; touch-action: none; cursor: grab;
+}
+.tb.dragging { cursor: grabbing; }
+.win.active .tb { background: var(--amber); color: var(--ink); }
+.tb h2 { font: inherit; font-weight: 600; margin: 0; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tb button {
+  flex: none; width: 22px; height: 22px; padding: 0; display: grid; place-items: center;
+  cursor: pointer; border: 1px solid currentColor; background: transparent;
+  font: 500 15px/1 var(--mono);
+}
+.win:not(.active) .tb button:hover { background: var(--paper); color: var(--ink); }
+.win.active .tb button:hover { background: var(--ink); color: var(--amber); }
+.win:not(.active) .tb :focus-visible { outline-color: var(--amber); }
+.tb .back { display: none; }
+.body { flex: 1 1 auto; min-height: 0; overflow: auto; font: 15px/1.55 var(--sans); }
+
+/* ---------- dock ---------- */
+#dock {
+  position: absolute; left: 0; right: 0; bottom: 0; height: var(--dock); z-index: 9000;
+  display: flex; align-items: center; gap: 6px; padding: 0 10px;
+  overflow-x: auto; scrollbar-width: none;
+  background: var(--ink); border-top: 1px solid #000;
+}
+#dock::-webkit-scrollbar { display: none; }
+#dock button {
+  flex: none; height: 30px; padding: 0 12px 0 10px;
+  display: flex; align-items: center; gap: 8px;
+  background: transparent; color: var(--paper); border: 1px solid var(--paper);
+  font: 500 12px/1 var(--mono); cursor: pointer;
+}
+#dock button .sq { width: 8px; height: 8px; border: 1px solid currentColor; }
+#dock button.on { background: var(--amber); color: var(--ink); border-color: var(--amber); }
+#dock button.on .sq { background: var(--ink); }
+#dock button.min { border-style: dashed; }
+#dock button:hover:not(.on) { background: var(--paper); color: var(--ink); }
