@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { useWM } from './WindowManagerContext';
 
 const wibFmt = new Intl.DateTimeFormat('en-GB', {
-  timeZone: 'Asia/Jakarta', hour: '2-digit', minute: '2-digit', hour12: false,
+  // hourCycle, not hour12:false — some ICU builds map hour12:false to h24 and print midnight as "24:00"
+  timeZone: 'Asia/Jakarta', hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
 });
 
 // pure formatter co-located with its only consumer by design; fast-refresh falls back to a full reload for this file

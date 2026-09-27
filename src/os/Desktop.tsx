@@ -22,7 +22,8 @@ export function Desktop() {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.ctrlKey && e.key === '`') {
+      // e.code covers layouts where backtick is a dead key (US-International reports e.key === 'Dead')
+      if (e.ctrlKey && (e.key === '`' || e.code === 'Backquote')) {
         e.preventDefault();
         wm.cycle();
       }
