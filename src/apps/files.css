@@ -1,0 +1,13 @@
+.files { display: flex; flex-direction: column; height: 100%; }
+.files .path { flex: none; font: 500 12px/1 var(--mono); padding: 10px 12px; border-bottom: 1px solid var(--ink); background: var(--rule); }
+.files ul { list-style: none; margin: 0; padding: 6px; overflow-y: auto; flex: 1; }
+.files .row {
+  width: 100%; display: flex; align-items: center; gap: 10px; padding: 8px;
+  border: 0; background: none; text-align: left;
+  font: 500 13px/1.2 var(--mono); color: var(--ink); cursor: pointer;
+}
+.files .row:hover { background: var(--amber); }
+.files .row svg { width: 20px; height: 20px; flex: none; fill: none; stroke: var(--ink); stroke-width: 1.8; }
+.files .row .n { flex: 1; }
+.files .row .x { color: var(--muted); font-weight: 400; }
+.files .row:hover .x { color: var(--ink); }

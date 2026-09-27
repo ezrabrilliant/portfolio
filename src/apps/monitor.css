@@ -1,0 +1,9 @@
+.mon table { width: 100%; border-collapse: collapse; font: 13px/1.4 var(--mono); min-width: 560px; }
+.mon th { text-align: left; font-weight: 600; padding: 8px 12px; background: var(--rule); border-bottom: 1px solid var(--ink); white-space: nowrap; }
+.mon td { padding: 9px 12px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+.mon td.what { font-family: var(--sans); font-size: 14px; }
+.mon td.st { white-space: nowrap; }
+.mon tr.dim td { color: var(--muted); }
+.mon .proc { padding: 0; border: 0; background: none; color: var(--ink); font: inherit; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+.mon .proc:hover { background: var(--amber); }
+.mon .foot { font: 12px/1.4 var(--mono); padding: 10px 12px; color: var(--muted); margin: 0; }

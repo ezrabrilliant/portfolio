@@ -4,6 +4,8 @@ import type { WindowId } from './window-manager';
 const AboutApp = lazy(() => import('@/apps/AboutApp'));
 const MarketApp = lazy(() => import('@/apps/MarketApp'));
 const CaseWindow = lazy(() => import('@/apps/CaseWindow'));
+const MonitorApp = lazy(() => import('@/apps/MonitorApp'));
+const FilesApp = lazy(() => import('@/apps/FilesApp'));
 
 export const CYCLE_SHORTCUT_LABEL = 'ctrl+`';
 
@@ -19,6 +21,8 @@ const lazily = (node: ReactNode) => <Suspense fallback={null}>{node}</Suspense>;
 const REGISTRY: Record<string, AppDef> = {
   about: { title: 'About EzraOS', width: 480, render: () => lazily(<AboutApp />) },
   market: { title: 'Market', width: 460, height: 480, render: () => lazily(<MarketApp />) },
+  monitor: { title: 'Monitor', width: 680, render: () => lazily(<MonitorApp />) },
+  files: { title: 'Files', width: 440, height: 380, render: () => lazily(<FilesApp />) },
 };
 
 export function getAppDef(id: WindowId): AppDef | null {
