@@ -245,7 +245,7 @@ export const config = {
       slug: "gtid",
       year: 2026,
       metric: "~14.5k requests a day",
-      title: "GTID (gtid.pro)",
+      title: "GTID",
       description:
         "A market platform for the Growtopia Indonesia community whose public API answers ~14,500 requests a day — price history charts, fuzzy search across 16,088 game items parsed from a binary data file, and live Discord status.",
       image: "/projects/GTID.png",

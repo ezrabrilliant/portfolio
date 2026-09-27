@@ -1,0 +1,14 @@
+.market { display: flex; flex-direction: column; height: 100%; }
+.market .mkhead { flex: none; margin: 0; font: 12px/1.4 var(--mono); padding: 10px 12px; border-bottom: 1px solid var(--ink); background: var(--rule); color: var(--ink); }
+.market ul { list-style: none; margin: 0; padding: 6px; overflow-y: auto; flex: 1; }
+.asset {
+  width: 100%; display: grid; grid-template-columns: 1fr auto; grid-template-areas: "tk spark" "nm spark" "mt spark";
+  gap: 1px 12px; align-items: center; text-align: left;
+  padding: 8px 10px; border: 0; background: none; color: var(--ink); cursor: pointer;
+}
+.asset:hover { background: var(--amber); }
+.asset .tk { grid-area: tk; font: 600 12px/1.2 var(--mono); }
+.asset .nm { grid-area: nm; font: 500 14px/1.3 var(--sans); }
+.asset .mt { grid-area: mt; font: 12.5px/1.3 var(--mono); color: var(--muted); }
+.asset:hover .mt { color: var(--ink); }
+.asset .spark { grid-area: spark; width: 66px; height: 20px; fill: none; stroke: var(--ink); stroke-width: 1.5; }
