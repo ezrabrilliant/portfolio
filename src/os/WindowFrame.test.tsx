@@ -97,4 +97,32 @@ describe('WindowFrame', () => {
     expect(screen.getByRole('dialog', { name: 'kasir' })).toHaveClass('active');
     expect(screen.getByRole('dialog', { name: 'bot' })).not.toHaveClass('active');
   });
+
+  it('a fixed-height window is still capped to the desk below its top edge (final review F2)', () => {
+    mockMatchMedia(['prefers-reduced-motion']);
+    render(
+      <WindowManagerProvider>
+        <WindowFrame id="bot" title="Bot" width={380} height={520} x={124} y={24} z={1}
+          minimized={false} focused>
+          <p>body</p>
+        </WindowFrame>
+      </WindowManagerProvider>,
+    );
+    const win = screen.getByRole('dialog', { name: 'Bot' });
+    expect(win.style.height).toBe('520px');
+    expect(win.style.maxHeight).toBe('max(120px, 100% - 32px)');
+  });
+
+  it('an auto-height window gets the same y-relative cap', () => {
+    mockMatchMedia(['prefers-reduced-motion']);
+    render(
+      <WindowManagerProvider>
+        <WindowFrame id="about" title="About" width={480} x={156} y={52} z={1}
+          minimized={false} focused>
+          <p>body</p>
+        </WindowFrame>
+      </WindowManagerProvider>,
+    );
+    expect(screen.getByRole('dialog', { name: 'About' }).style.maxHeight).toBe('max(120px, 100% - 60px)');
+  });
 });

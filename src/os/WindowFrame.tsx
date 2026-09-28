@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, type KeyboardEvent, type PointerEvent, type ReactNode } from 'react';
-import { clampToDesk, type WindowId } from './window-manager';
+import { clampToDesk, fitOnOpen, windowMaxHeight, type WindowId } from './window-manager';
 import { useWM } from './WindowManagerContext';
 import { snapIn } from '@/lib/motion';
 import { usePhoneMode } from './usePhoneMode';
@@ -54,12 +54,12 @@ export function WindowFrame({ id, title, width, height, x, y, z, focused, minimi
     if (ref.current) snapIn(ref.current);
   }, []);
 
-  // clamp into the desk on mount (window may cascade past a small viewport)
+  // fit onto the desk on mount (window may cascade past a small viewport); its height is capped by windowMaxHeight
   useLayoutEffect(() => {
     const el = ref.current;
     const desk = el?.offsetParent as HTMLElement | null;
-    if (!el || !desk) return;
-    const p = clampToDesk(x, y, el.offsetWidth, desk.clientWidth, desk.clientHeight);
+    if (!el || !desk || phone) return;
+    const p = fitOnOpen(x, y, el.offsetWidth, desk.clientWidth, desk.clientHeight);
     if (p.x !== x || p.y !== y) wm.move(id, p.x, p.y);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -110,6 +110,7 @@ export function WindowFrame({ id, title, width, height, x, y, z, focused, minimi
       const p = clampToDesk(ev.clientX - offX, ev.clientY - offY, el.offsetWidth, desk.clientWidth, desk.clientHeight);
       el.style.left = `${p.x}px`;
       el.style.top = `${p.y}px`;
+      el.style.maxHeight = windowMaxHeight(p.y);
     };
     const up = () => {
       tb.classList.remove('dragging');
@@ -136,7 +137,7 @@ export function WindowFrame({ id, title, width, height, x, y, z, focused, minimi
         aria-labelledby={labelId}
         tabIndex={-1}
         data-id={id}
-        style={{ left: x, top: y, zIndex: z, width, height, maxHeight: height ? undefined : 'calc(100% - 16px)' }}
+        style={{ left: x, top: y, zIndex: z, width, height, maxHeight: windowMaxHeight(y) }}
         onKeyDown={onKeyDown}
         onPointerDownCapture={() => { if (!focused) wm.focus(id); }}
       >

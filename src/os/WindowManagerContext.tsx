@@ -1,5 +1,7 @@
 import { createContext, useCallback, useContext, useMemo, useReducer, useRef, type ReactNode } from 'react';
-import { cascadePosition, initialWM, wmReducer, type WindowId, type WMState } from './window-manager';
+import {
+  CASCADE_ORIGIN_X, ICON_GUTTER, cascadePosition, initialWM, wmReducer, type WindowId, type WMState,
+} from './window-manager';
 
 export interface WM {
   state: WMState;
@@ -14,6 +16,19 @@ export interface WM {
 
 const WMContext = createContext<WM | null>(null);
 
+/**
+ * Left edge of the free desk area: right of the icon column as actually laid out. A short desk
+ * wraps the six icons into two columns (e.g. 911x512 -> right edge 194 px). Falls back to the
+ * one-column constant when there is no layout (phone grid uses display: contents; jsdom).
+ */
+function freeAreaLeft(): number {
+  const col = document.querySelector<HTMLElement>('#icons .icon-col');
+  const desk = document.getElementById('desk');
+  if (!col || !desk) return CASCADE_ORIGIN_X;
+  const right = col.getBoundingClientRect().right - desk.getBoundingClientRect().left;
+  return Math.max(CASCADE_ORIGIN_X, Math.round(right) + ICON_GUTTER);
+}
+
 export function WindowManagerProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(wmReducer, initialWM);
   const openers = useRef(new Map<WindowId, HTMLElement>());
@@ -22,7 +37,7 @@ export function WindowManagerProvider({ children }: { children: ReactNode }) {
 
   const open = useCallback((id: WindowId, opener?: HTMLElement | null) => {
     if (opener) openers.current.set(id, opener);
-    const pos = cascadePosition(countRef.current);
+    const pos = cascadePosition(countRef.current, freeAreaLeft());
     dispatch({ type: 'OPEN', id, x: pos.x, y: pos.y });
   }, []);
 

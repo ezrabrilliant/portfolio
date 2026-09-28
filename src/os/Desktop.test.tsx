@@ -138,4 +138,25 @@ describe('EzraOS desktop', () => {
     await userEvent.keyboard('{Control>}`{/Control}');
     expect(screen.getByRole('dialog', { name: 'Bot' })).toHaveClass('active');
   });
+
+  it('windows cascade from the right edge of the icon column as laid out (two columns on a short desk)', () => {
+    // final review F1: at 911x512 the six icons wrap into two columns (right edge 194 px)
+    const real = HTMLElement.prototype.getBoundingClientRect;
+    const spy = vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (this: HTMLElement) {
+      if (this.classList.contains('icon-col')) return { left: 12, right: 194, top: 12, bottom: 428, width: 182, height: 416, x: 12, y: 12, toJSON() {} } as DOMRect;
+      return real.call(this);
+    });
+    try {
+      ui();
+      expect(screen.getByRole('dialog', { name: 'Bot' }).style.left).toBe('218px'); // 194 + 24 gutter
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
+  it('with no measurable icon column (jsdom default) the cascade still clears one icon column', () => {
+    ui();
+    expect(screen.getByRole('dialog', { name: 'Bot' }).style.left).toBe('124px');
+  });
 });
+

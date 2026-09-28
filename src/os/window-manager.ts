@@ -32,10 +32,45 @@ export function focusedId(state: WMState): WindowId | null {
   return best ? best.id : null;
 }
 
-/** New windows cascade from the top-left of the free area; wraps after 8. */
-export function cascadePosition(openCount: number): { x: number; y: number } {
+/** Gutter between the desktop icon column and the first cascaded window. */
+export const ICON_GUTTER = 24;
+/**
+ * Left edge of the free desk area when the icon column is a single column:
+ * os.css `.icon-col` sits at left 12 px with 88 px columns, so 12 + 88 + gutter.
+ * A short desk wraps the icons into more columns; the provider then measures the real edge.
+ */
+export const CASCADE_ORIGIN_X = 12 + 88 + ICON_GUTTER;
+
+/** New windows cascade from the top-left of the free area (right of the icons); wraps after 8. */
+export function cascadePosition(openCount: number, originX: number = CASCADE_ORIGIN_X): { x: number; y: number } {
   const n = openCount % 8;
-  return { x: 48 + n * 32, y: 24 + n * 28 };
+  return { x: originX + n * 32, y: 24 + n * 28 };
+}
+
+/** Space kept between a window's bottom/right edge and the dock/screen edge. */
+export const DESK_MARGIN = 8;
+/** Smallest a window is capped to: the 30 px title bar plus a usable strip of body. */
+export const MIN_WIN_HEIGHT = 120;
+
+/**
+ * Max height for a window whose top edge is at `y`: it ends DESK_MARGIN above the dock (spec §3:
+ * windows stay fully within the viewport). Applies to fixed-height apps too — their scroll areas
+ * (flex: 1; min-height: 0) absorb the difference. Percent = the desk (#wins is inset: 0 of #desk).
+ */
+export function windowMaxHeight(y: number): string {
+  return `max(${MIN_WIN_HEIGHT}px, 100% - ${Math.round(y) + DESK_MARGIN}px)`;
+}
+
+/**
+ * Placement when a window first appears: shift it left so its full width is on the desk when the
+ * desk is wide enough (else pin it to the left edge), and pull it up so at least a MIN_WIN_HEIGHT
+ * window fits above the dock.
+ */
+export function fitOnOpen(x: number, y: number, winWidth: number, deskW: number, deskH: number): { x: number; y: number } {
+  return {
+    x: Math.round(Math.max(0, Math.min(x, deskW - DESK_MARGIN - winWidth))),
+    y: Math.round(Math.max(0, Math.min(y, deskH - DESK_MARGIN - MIN_WIN_HEIGHT))),
+  };
 }
 
 /** ≥80px of the window stays horizontally visible; the title bar (30px) stays inside the desk. */
