@@ -4,7 +4,7 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event';
 import { mockMatchMedia } from '@/test/match-media';
 import { getProjectCount } from '@/config/os-content';
-import { Boot, bootLines } from './Boot';
+import { Boot, SKIP_GRACE_MS, bootLines } from './Boot';
 
 describe('bootLines', () => {
   it('derives the /projects count from config, never hard-coded', () => {
@@ -71,8 +71,49 @@ describe('Boot', () => {
     await userEvent.click(btn); // full pointerdown → mousedown → pointerup → mouseup → click
     expect(onDone).toHaveBeenCalledTimes(1);
     expect(under).not.toHaveBeenCalled();
+    await act(() => new Promise((r) => setTimeout(r, SKIP_GRACE_MS + 50))); // past the post-skip grace window
     await userEvent.click(btn); // boot is gone: the desktop works normally again
     expect(under).toHaveBeenCalledTimes(1);
+  });
+
+  it('a double-click that skips the boot opens nothing underneath (final review F6)', async () => {
+    // the 1st click skips; the 2nd click + dblclick used to land on the desktop and open Monitor
+    const click = vi.fn();
+    const dbl = vi.fn();
+    const down = vi.fn();
+    function Harness() {
+      const [booted, setBooted] = useState(false);
+      return (
+        <>
+          <button type="button" onClick={click} onDoubleClick={dbl} onPointerDown={down}>Monitor</button>
+          {!booted && <Boot onDone={() => setBooted(true)} />}
+        </>
+      );
+    }
+    render(<Harness />);
+    const icon = screen.getByRole('button', { name: 'Monitor' });
+    await userEvent.dblClick(icon);
+    expect(screen.queryByRole('status')).toBeNull(); // boot skipped
+    expect(click).not.toHaveBeenCalled();
+    expect(dbl).not.toHaveBeenCalled();
+    expect(down).toHaveBeenCalledTimes(1); // only the 1st press, before the skip; the 2nd was swallowed
+    await act(() => new Promise((r) => setTimeout(r, SKIP_GRACE_MS + 50)));
+    await userEvent.dblClick(icon); // after the grace window the desktop answers normally
+    expect(dbl).toHaveBeenCalledTimes(1);
+  });
+
+  it('phone mode says "tap to skip" (M1)', () => {
+    mockMatchMedia(['max-width: 767.98px']);
+    render(<Boot onDone={() => {}} />);
+    expect(screen.getByText('tap to skip')).toBeInTheDocument();
+    expect(screen.queryByText('press any key to skip')).toBeNull();
+    expect(screen.getByRole('status', { name: 'EzraOS is starting. Tap to skip.' })).toBeInTheDocument();
+  });
+
+  it('desktop keeps "press any key to skip"', () => {
+    render(<Boot onDone={() => {}} />);
+    expect(screen.getByText('press any key to skip')).toBeInTheDocument();
+    expect(screen.getByRole('status', { name: 'EzraOS is starting. Press any key or click to skip.' })).toBeInTheDocument();
   });
 
   it('the skip key is consumed: a window keydown listener (like Desktop) never sees it', async () => {
