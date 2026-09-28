@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { DesktopIcon } from './DesktopIcon';
 import { GLYPHS } from './icons';
 import { WindowFrame } from './WindowFrame';
@@ -31,6 +31,18 @@ export function Desktop() {
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [wm]);
+
+  // default state after boot: the Bot greets first-time visitors (spec §2.2).
+  // Desktop mounts once, after Boot calls onDone. The ref (not a [wm] dependency — wm changes on every
+  // state update) keeps StrictMode's double effect and later re-renders from re-opening a closed Bot.
+  const openedBot = useRef(false);
+  useEffect(() => {
+    if (!openedBot.current) {
+      openedBot.current = true;
+      wm.open('bot');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const openApp = (id: string, opener: HTMLElement) => {
     if (!getAppDef(id)) return; // unknown app: safe no-op

@@ -25,15 +25,41 @@ const ui = () => {
   return render(<WindowManagerProvider><EzraOS /><ProbeLauncher /></WindowManagerProvider>);
 };
 
-/** Two windows open, Probe on top (focused). */
+/** Three windows open, stacked back to front: Bot (auto-opened after boot), About, Probe (focused). */
 const openAboutThenProbe = async () => {
   await userEvent.click(screen.getByRole('button', { name: 'About EzraOS' }));
   await userEvent.click(screen.getByRole('button', { name: 'launch probe' }));
   expect(screen.getByRole('dialog', { name: 'Probe' })).toHaveClass('active');
   expect(screen.getByRole('dialog', { name: 'About EzraOS' })).not.toHaveClass('active');
+  expect(screen.getByRole('dialog', { name: 'Bot' })).not.toHaveClass('active');
 };
 
+/** Start from an empty desk: close the Bot window the desktop opens after boot. */
+const closeBot = async () => {
+  await userEvent.click(screen.getByRole('button', { name: 'Close Bot' }));
+  expect(screen.queryByRole('dialog', { name: 'Bot' })).not.toBeInTheDocument();
+};
+
+const activeDialogs = () =>
+  screen.getAllByRole('dialog').filter((d) => d.classList.contains('active')).map((d) => d.getAttribute('data-id'));
+
 describe('EzraOS desktop', () => {
+  it('after boot the Bot window is already open and focused (no empty desk)', () => {
+    ui();
+    const bot = screen.getByRole('dialog', { name: 'Bot' });
+    expect(bot).toHaveClass('active');
+    expect(bot.contains(document.activeElement)).toBe(true);
+    expect(screen.getByRole('button', { name: 'Bot window' })).toBeInTheDocument(); // dock entry
+  });
+
+  it('Bot auto-opens once: once closed it stays closed across later re-renders', async () => {
+    ui();
+    await closeBot();
+    await userEvent.click(screen.getByRole('button', { name: 'About EzraOS' })); // re-renders Desktop
+    expect(await screen.findByRole('dialog', { name: 'About EzraOS' })).toHaveClass('active');
+    expect(screen.queryByRole('dialog', { name: 'Bot' })).not.toBeInTheDocument();
+  });
+
   it('menu bar opens the About window and the dock lists it', async () => {
     ui();
     await userEvent.click(screen.getByRole('button', { name: 'About EzraOS' }));
@@ -54,11 +80,11 @@ describe('EzraOS desktop', () => {
 
   it('desktop icons open apps with Enter (keyboard path)', async () => {
     ui();
+    await closeBot(); // Bot auto-opens after boot; close it so Enter has something to prove
     const icon = screen.getByRole('button', { name: 'Bot' });
     icon.focus();
     await userEvent.keyboard('{Enter}');
-    // bot app arrives in Task 10; today an unknown id is a safe no-op — no crash, no window
-    expect(screen.queryByRole('dialog', { name: 'Bot' })).not.toBeInTheDocument();
+    expect(screen.getByRole('dialog', { name: 'Bot' })).toHaveClass('active');
   });
 
   it('dock button minimizes a focused window and restores a minimized one', async () => {
@@ -73,6 +99,7 @@ describe('EzraOS desktop', () => {
 
   it('minimizing the last visible window moves focus to its dock entry', async () => {
     ui();
+    await closeBot(); // make About the only window
     await userEvent.click(screen.getByRole('button', { name: 'About EzraOS' }));
     await screen.findByRole('dialog', { name: 'About EzraOS' });
     await userEvent.click(screen.getByRole('button', { name: 'Minimize About EzraOS' }));
@@ -82,9 +109,13 @@ describe('EzraOS desktop', () => {
   it('Ctrl+` cycles focus between open windows', async () => {
     ui();
     await openAboutThenProbe();
+    // each press raises the back-most window: Bot, then About, then Probe again
     await userEvent.keyboard('{Control>}`{/Control}');
-    expect(screen.getByRole('dialog', { name: 'About EzraOS' })).toHaveClass('active');
-    expect(screen.getByRole('dialog', { name: 'Probe' })).not.toHaveClass('active');
+    expect(activeDialogs()).toEqual(['bot']);
+    await userEvent.keyboard('{Control>}`{/Control}');
+    expect(activeDialogs()).toEqual(['about']);
+    await userEvent.keyboard('{Control>}`{/Control}');
+    expect(activeDialogs()).toEqual(['probe']);
   });
 
   it('Ctrl+` is claimed by the OS (default prevented)', () => {
@@ -97,14 +128,14 @@ describe('EzraOS desktop', () => {
     ui();
     await openAboutThenProbe();
     expect(fireEvent.keyDown(window, { key: 'Dead', code: 'Backquote', ctrlKey: true })).toBe(false);
-    expect(await screen.findByRole('dialog', { name: 'About EzraOS' })).toHaveClass('active');
+    expect(await screen.findByRole('dialog', { name: 'Bot' })).toHaveClass('active');
     expect(screen.getByRole('dialog', { name: 'Probe' })).not.toHaveClass('active');
   });
 
   it('with one window, Ctrl+` is a harmless no-op', async () => {
-    ui();
-    await userEvent.click(screen.getByRole('button', { name: 'About EzraOS' }));
+    ui(); // only the auto-opened Bot window
+    expect(screen.getAllByRole('dialog')).toHaveLength(1);
     await userEvent.keyboard('{Control>}`{/Control}');
-    expect(screen.getByRole('dialog', { name: 'About EzraOS' })).toHaveClass('active');
+    expect(screen.getByRole('dialog', { name: 'Bot' })).toHaveClass('active');
   });
 });
