@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildReceipt, RECEIPT_WIDTH, wibStamp } from './receipt';
+import { buildReceipt, RECEIPT_WIDTH, wibStamp, wrap } from './receipt';
 import { contactItem, messageItem, projectsItem, resumeItem } from './kasir-items';
 
 describe('buildReceipt', () => {
@@ -59,5 +59,19 @@ describe('messageItem', () => {
 describe('wibStamp', () => {
   it('formats in Asia/Jakarta', () => {
     expect(wibStamp(new Date('2026-09-27T05:00:00Z'))).toBe('27/09/2026 12:00 WIB');
+  });
+  it('prints the minutes after midnight as 00, never 24', () => {
+    expect(wibStamp(new Date('2026-09-26T17:05:00Z'))).toBe('27/09/2026 00:05 WIB');
+  });
+});
+
+describe('wrap', () => {
+  it('wrap never hangs at width 0', () => {
+    for (const w of [0, -3]) {
+      const out = wrap('halo ezra', w);
+      expect(out.length).toBeGreaterThan(0);
+      for (const l of out) expect(l.length).toBeGreaterThan(0);
+      expect(out.join('')).toBe('haloezra');
+    }
   });
 });
