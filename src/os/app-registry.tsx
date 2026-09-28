@@ -7,6 +7,7 @@ const CaseWindow = lazy(() => import('@/apps/CaseWindow'));
 const MonitorApp = lazy(() => import('@/apps/MonitorApp'));
 const FilesApp = lazy(() => import('@/apps/FilesApp'));
 const BotApp = lazy(() => import('@/apps/BotApp'));
+const TerminalApp = lazy(() => import('@/apps/TerminalApp'));
 
 export const CYCLE_SHORTCUT_LABEL = 'ctrl+`';
 
@@ -25,6 +26,7 @@ const REGISTRY: Record<string, AppDef> = {
   monitor: { title: 'Monitor', width: 680, render: () => lazily(<MonitorApp />) },
   files: { title: 'Files', width: 440, height: 380, render: () => lazily(<FilesApp />) },
   bot: { title: 'Bot', width: 380, height: 520, render: () => lazily(<BotApp />) },
+  terminal: { title: 'Terminal', width: 580, height: 360, render: () => lazily(<TerminalApp />) },
 };
 
 export function getAppDef(id: WindowId): AppDef | null {

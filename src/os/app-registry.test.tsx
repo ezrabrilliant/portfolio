@@ -13,4 +13,8 @@ describe('app registry', () => {
     expect(getAppDef('constructor')).toBeNull();
     expect(getAppDef('nope')).toBeNull();
   });
+
+  it('registers the terminal', () => {
+    expect(getAppDef('terminal')?.title).toBe('Terminal');
+  });
 });

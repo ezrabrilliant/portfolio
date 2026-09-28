@@ -1,0 +1,12 @@
+/* dark surface: .term carries .dark so the global focus ring turns amber (os.css) */
+.term { height: 100%; overflow-y: auto; padding: 12px 14px 16px; background: var(--ink); color: var(--amber); font: 13.5px/1.55 var(--mono); cursor: text; }
+.term .o { white-space: pre-wrap; word-break: break-word; }
+.term .line { display: flex; gap: 0.6em; margin-top: 2px; align-items: baseline; }
+.term .tin { flex: 1; min-width: 0; border: 0; padding: 0; font: inherit; color: var(--amber); background: transparent; caret-color: var(--amber); }
+.term .tin:focus, .term .tin:focus-visible { outline: none; }
+.term .line:focus-within { outline: 2px solid var(--amber); outline-offset: 3px; }
+/* the native caret blink is the only ambient motion here; hold it steady under reduced motion
+   (caret-animation: manual stops the blink where supported; elsewhere the OS caret setting applies) */
+@media (prefers-reduced-motion: reduce) {
+  .term .tin { caret-animation: manual; }
+}
