@@ -61,11 +61,12 @@ describe('BotApp', () => {
     expect(screen.getByTestId('open-ids')).toHaveTextContent('monitor');
   });
 
-  it('hides an action whose app is not installed yet (Kasir) instead of opening a blank window', async () => {
+  it('/contact offers the Kasir action now that Kasir is installed, and it opens kasir', async () => {
     ui();
     await userEvent.click(screen.getByRole('button', { name: '/contact' }));
     expect(log()).toHaveTextContent('ezrakonterliem@gmail.com');
-    expect(screen.queryByRole('button', { name: 'buka Kasir' })).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'buka Kasir' }));
+    expect(screen.getByTestId('open-ids')).toHaveTextContent('kasir');
   });
 
   it('with motion allowed, shows a typing indicator before each message (and survives StrictMode)', async () => {

@@ -17,4 +17,8 @@ describe('app registry', () => {
   it('registers the terminal', () => {
     expect(getAppDef('terminal')?.title).toBe('Terminal');
   });
+
+  it('registers the kasir', () => {
+    expect(getAppDef('kasir')?.title).toBe('Kasir');
+  });
 });
