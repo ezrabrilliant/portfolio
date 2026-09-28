@@ -129,4 +129,53 @@ describe('KasirApp', () => {
     await userEvent.keyboard(' ');
     expect(contact).toHaveAttribute('aria-pressed', 'false');
   });
+
+  // final review F4: with the message form open, the receipt area was squeezed to ~0 px in a
+  // 560 px window — the visitor pressed Order and saw nothing. A printed receipt now takes the window.
+  const fillMessage = async () => {
+    await userEvent.click(screen.getByRole('button', { name: /Kirim pesan/ }));
+    await userEvent.type(screen.getByLabelText('nama'), 'Budi');
+    await userEvent.type(screen.getByLabelText('email'), 'budi@example.com');
+    await userEvent.type(screen.getByLabelText('pesan'), 'Halo');
+  };
+
+  it('after Order the menu and message form give their space to the receipt', async () => {
+    sendMock.mockRejectedValueOnce(new Error('network'));
+    ui();
+    await fillMessage();
+    await userEvent.click(screen.getByRole('button', { name: 'Order' }));
+    const receipt = await screen.findByLabelText('Receipt number 1');
+    expect(receipt).toHaveTextContent('MESSAGE FAILED');
+    expect(screen.queryByRole('group', { name: 'Menu' })).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('nama')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('pesan')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Order' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'new order' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'save receipt' })).toBeEnabled();
+  });
+
+  it('the printed receipt takes keyboard focus (the Order button it replaced is gone)', async () => {
+    ui();
+    await userEvent.click(screen.getByRole('button', { name: /Contact card/ }));
+    await userEvent.click(screen.getByRole('button', { name: 'Order' }));
+    expect(await screen.findByLabelText('Receipt number 1')).toHaveFocus();
+  });
+
+  it('new order returns to the menu with the picks and a failed message kept for a retry', async () => {
+    sendMock.mockRejectedValueOnce(new Error('network'));
+    ui();
+    await fillMessage();
+    await userEvent.click(screen.getByRole('button', { name: 'Order' }));
+    await screen.findByLabelText('Receipt number 1');
+    await userEvent.click(screen.getByRole('button', { name: 'new order' }));
+    expect(screen.getByRole('group', { name: 'Menu' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Kirim pesan/ })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByLabelText('pesan')).toHaveValue('Halo');
+    expect(screen.queryByLabelText('Receipt number 1')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Contact card/ })).toHaveFocus();
+    sendMock.mockResolvedValueOnce({ status: 200 });
+    await userEvent.click(screen.getByRole('button', { name: 'Order' }));
+    expect(await screen.findByLabelText('Receipt number 2')).toHaveTextContent('MESSAGE SENT');
+  });
 });
+

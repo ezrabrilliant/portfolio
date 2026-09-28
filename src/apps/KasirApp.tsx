@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import emailjs from '@emailjs/browser';
 import { buildReceipt, wibStamp, type ReceiptItem } from './receipt';
 import { contactItem, messageItem, projectsItem, resumeItem } from './kasir-items';
@@ -38,6 +38,12 @@ export default function KasirApp() {
   const [receipt, setReceipt] = useState('');
   const [orderNo, setOrderNo] = useState(0);
   const [busy, setBusy] = useState(false);
+  // Order switches the window to the receipt: the menu + form collapse so the receipt is never squeezed
+  // out of a short window (final review F4). "new order" switches back with picks and form intact.
+  const [showReceipt, setShowReceipt] = useState(false);
+  const receiptRef = useRef<HTMLPreElement>(null);
+  const firstItemRef = useRef<HTMLButtonElement>(null);
+  const backToMenu = useRef(false);
   // a second click can land before the disabled state renders; the ref blocks a duplicate send
   const busyRef = useRef(false);
 
@@ -55,6 +61,7 @@ export default function KasirApp() {
     if (!canOrder || busyRef.current) return;
     busyRef.current = true;
     setBusy(true);
+    setShowReceipt(true);
     const items: ReceiptItem[] = [];
     if (picked.has('contact')) items.push(contactItem());
     if (picked.has('projects')) items.push(projectsItem());
@@ -72,6 +79,22 @@ export default function KasirApp() {
     setBusy(false);
   };
 
+  // the Order / new order button that had focus is gone after the switch: hand focus to what replaced it
+  useEffect(() => {
+    if (showReceipt && !busy) receiptRef.current?.focus({ preventScroll: true });
+  }, [showReceipt, busy, orderNo]);
+  useEffect(() => {
+    if (!showReceipt && backToMenu.current) {
+      backToMenu.current = false;
+      firstItemRef.current?.focus({ preventScroll: true });
+    }
+  }, [showReceipt]);
+
+  const newOrder = () => {
+    backToMenu.current = true;
+    setShowReceipt(false);
+  };
+
   const save = () => {
     const a = document.createElement('a');
     a.href = `data:text/plain;charset=utf-8,${encodeURIComponent(receipt + '\n')}`;
@@ -83,31 +106,42 @@ export default function KasirApp() {
 
   return (
     <div className="kasir">
-      <div className="kmenu" role="group" aria-label="Menu">
-        {MENU.map((i) => (
-          <button key={i.k} type="button" className="kitem" aria-pressed={picked.has(i.k)} onClick={() => toggle(i.k)}>
-            <span className="box" aria-hidden="true">{picked.has(i.k) ? '[x]' : '[ ]'}</span>
-            <span className="kn">{i.n}</span>
-            <span className="kd">{i.d} — Rp 0</span>
-          </button>
-        ))}
-      </div>
-      {picked.has('message') && (
-        <div className="kform">
-          <label>nama<input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} autoComplete="name" /></label>
-          <label>email<input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} autoComplete="email" /></label>
-          <label>pesan<textarea rows={3} value={form.message} onChange={(e) => setForm({ ...form, message: e.target.value })} /></label>
-        </div>
+      {!showReceipt && (
+        <>
+          <div className="kmenu" role="group" aria-label="Menu">
+            {MENU.map((i, idx) => (
+              <button key={i.k} ref={idx === 0 ? firstItemRef : undefined} type="button" className="kitem"
+                aria-pressed={picked.has(i.k)} onClick={() => toggle(i.k)}>
+                <span className="box" aria-hidden="true">{picked.has(i.k) ? '[x]' : '[ ]'}</span>
+                <span className="kn">{i.n}</span>
+                <span className="kd">{i.d} — Rp 0</span>
+              </button>
+            ))}
+          </div>
+          {picked.has('message') && (
+            <div className="kform">
+              <label>nama<input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} autoComplete="name" /></label>
+              <label>email<input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} autoComplete="email" /></label>
+              <label>pesan<textarea rows={3} value={form.message} onChange={(e) => setForm({ ...form, message: e.target.value })} /></label>
+            </div>
+          )}
+        </>
       )}
       <div className="kact">
-        <button type="button" className="kbtn" disabled={!canOrder} onClick={order}>Order</button>
-        <button type="button" className="kbtn alt" disabled={!receipt} onClick={save}>save receipt</button>
+        {showReceipt ? (
+          <>
+            <button type="button" className="kbtn" disabled={busy} onClick={newOrder}>new order</button>
+            <button type="button" className="kbtn alt" disabled={busy || !receipt} onClick={save}>save receipt</button>
+          </>
+        ) : (
+          <button type="button" className="kbtn" disabled={!canOrder} onClick={order}>Order</button>
+        )}
       </div>
       <div className="rwrap" aria-live="polite">
         {busy
           ? <p className="khint">mencetak struk...</p>
-          : receipt
-            ? <pre className="rcpt" tabIndex={0} aria-label={`Receipt number ${orderNo}`}>{receipt}</pre>
+          : showReceipt && receipt
+            ? <pre ref={receiptRef} className="rcpt" tabIndex={0} aria-label={`Receipt number ${orderNo}`}>{receipt}</pre>
             : <p className="khint">pick from the menu, then Order. semuanya gratis.</p>}
       </div>
     </div>
