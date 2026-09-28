@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { DesktopIcon } from './DesktopIcon';
 import { GLYPHS } from './icons';
+import { PetakIcon } from './PetakIcon';
 import { WindowFrame } from './WindowFrame';
 import { focusedId } from './window-manager';
 import { getAppDef } from './app-registry';
@@ -62,6 +63,7 @@ export function Desktop() {
               onOpen={(el) => openApp(i.app, el)} />
           ))}
         </div>
+        <PetakIcon />
       </div>
       <div id="wins">
         {wm.state.windows.map((w) => {

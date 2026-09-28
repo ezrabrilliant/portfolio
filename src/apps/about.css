@@ -16,3 +16,5 @@
 .lamp { display: inline-block; width: 11px; height: 11px; margin-right: 8px; vertical-align: -1px; border: 1px dashed var(--muted); background: transparent; }
 .lamp.on { border: 1px solid var(--ink); }
 .lamp.on.live { background: var(--amber); }
+.petakwin .lead { font: 600 18px/1.35 var(--sans); margin-bottom: 12px; }
+.petakwin .joke { font-weight: 600; }

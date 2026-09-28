@@ -21,4 +21,8 @@ describe('app registry', () => {
   it('registers the kasir', () => {
     expect(getAppDef('kasir')?.title).toBe('Kasir');
   });
+
+  it('registers petak', () => {
+    expect(getAppDef('petak')?.title).toBe('Petak Umpet');
+  });
 });
