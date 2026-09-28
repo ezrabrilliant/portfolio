@@ -4,6 +4,14 @@
 .mon td.what { font-family: var(--sans); font-size: 14px; }
 .mon td.st { white-space: nowrap; }
 .mon tr.dim td { color: var(--muted); }
-.mon .proc { padding: 0; border: 0; background: none; color: var(--ink); font: inherit; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+.mon .proc { padding: 0; border: 0; background: none; color: var(--ink); font: inherit; cursor: pointer; text-align: left; text-decoration: underline; text-underline-offset: 3px; }
 .mon .proc:hover { background: var(--amber); }
 .mon .foot { font: 12px/1.4 var(--mono); padding: 10px 12px; color: var(--muted); margin: 0; }
+.mon .what-sub { display: none; }
+
+/* phone (360 px min): no min-width; What stacks under Process so Metric and Status stay on screen */
+.phone .mon table { min-width: 0; }
+.phone .mon th, .phone .mon td { padding: 8px; }
+.phone .mon th.what, .phone .mon td.what { display: none; }
+.phone .mon .proc { white-space: nowrap; }
+.phone .mon .what-sub { display: block; margin-top: 3px; font: 12.5px/1.35 var(--sans); color: var(--muted); }

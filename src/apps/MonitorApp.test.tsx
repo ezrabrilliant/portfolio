@@ -47,5 +47,15 @@ describe('MonitorApp', () => {
     }
     expect(screen.getByRole('button', { name: 'orbit-store, open Orbit Store case' })).toBeInTheDocument();
   });
+
+  it('each process cell also carries its "What" line, for the phone layout that hides the What column', () => {
+    ui();
+    const rows = screen.getAllByRole('row').slice(1, 6);
+    for (const r of rows) {
+      const [proc, what] = within(r).getAllByRole('cell');
+      expect(proc.querySelector('.what-sub')).toHaveTextContent(what.textContent!);
+    }
+    expect(screen.getByRole('columnheader', { name: 'What' })).toHaveClass('what');
+  });
 });
 

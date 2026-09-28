@@ -13,7 +13,7 @@ export default function MonitorApp() {
     <div className="mon">
       <table>
         <thead>
-          <tr><th scope="col">Process</th><th scope="col">What</th><th scope="col">Metric</th><th scope="col">Status</th></tr>
+          <tr><th scope="col">Process</th><th scope="col" className="what">What</th><th scope="col">Metric</th><th scope="col">Status</th></tr>
         </thead>
         <tbody>
           {systems.map((s) => (
@@ -23,6 +23,8 @@ export default function MonitorApp() {
                   onClick={(e) => wm.open(`case:${s.slug}`, e.currentTarget)}>
                   {s.proc}
                 </button>
+                {/* phone: "What" stacks under the process name (the What column is hidden at 360 px) */}
+                <span className="what-sub">{s.what}</span>
               </td>
               <td className="what">{s.what}</td>
               <td>{s.metric}</td>
