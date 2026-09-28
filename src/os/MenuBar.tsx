@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useWM } from './WindowManagerContext';
+import { usePhoneMode } from './usePhoneMode';
 
 const wibFmt = new Intl.DateTimeFormat('en-GB', {
   // hourCycle, not hour12:false — some ICU builds map hour12:false to h24 and print midnight as "24:00"
@@ -14,6 +15,7 @@ export function formatWib(d: Date): string {
 
 export function MenuBar() {
   const wm = useWM();
+  const phone = usePhoneMode();
   const [now, setNow] = useState(() => new Date());
 
   useEffect(() => {
@@ -31,7 +33,8 @@ export function MenuBar() {
       <button type="button" onClick={(e) => wm.open('about', e.currentTarget)}>About EzraOS</button>
       <div className="right">
         <span aria-label="Local time in Surabaya">{formatWib(now)}</span>
-        <span>all systems live</span>
+        {/* phone: dropped so clock + location fit a 360px status bar (~419px of mono text otherwise) */}
+        {!phone && <span>all systems live</span>}
         <span>Surabaya, ID</span>
       </div>
     </header>

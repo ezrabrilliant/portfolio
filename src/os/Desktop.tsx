@@ -41,6 +41,7 @@ function PetakPhoneIcon() {
         const next = taps + 1;
         setTaps(next);
         if (petakTapAction(next, prefersReducedMotion()) === 'open') {
+          setTaps(0); // after open → back, the hop game replays from tap 1
           wm.open('petak', e.currentTarget);
         } else {
           const free = PETAK_SLOTS.filter((s) => s !== slot);

@@ -118,4 +118,38 @@ describe('phone-OS mode', () => {
     await userEvent.keyboard('{Enter}');
     expect(await screen.findByRole('dialog', { name: 'Petak Umpet' })).toBeInTheDocument();
   });
+
+  it('status bar: phone drops "all systems live" so the clock and "Surabaya, ID" fit at 360px', () => {
+    ui([PHONE, 'prefers-reduced-motion']);
+    const bar = document.getElementById('menubar')!;
+    expect(bar).not.toHaveTextContent('all systems live');
+    expect(bar).toHaveTextContent('Surabaya, ID');
+    expect(screen.getByLabelText('Local time in Surabaya')).toBeInTheDocument();
+  });
+
+  it('status bar: desktop still shows "all systems live"', () => {
+    ui(['prefers-reduced-motion']);
+    expect(document.getElementById('menubar')).toHaveTextContent('all systems live');
+  });
+
+  it('flipping to phone restores minimized windows (no dock = no other restore path)', async () => {
+    ui(['prefers-reduced-motion']);
+    await userEvent.click(screen.getByRole('button', { name: 'Minimize Bot' }));
+    expect(screen.getByRole('dialog', { name: 'Bot', hidden: true })).not.toBeVisible();
+    act(() => setMatchMedia([PHONE, 'prefers-reduced-motion']));
+    expect(dock()).toBeNull();
+    expect(screen.getByRole('dialog', { name: 'Bot' })).toBeVisible();
+  });
+
+  it('Petak replays the hop game after open → back', async () => {
+    ui([PHONE]);
+    tap(petak()); tap(petak()); tap(petak());
+    await screen.findByRole('dialog', { name: 'Petak Umpet' });
+    await userEvent.click(screen.getByRole('button', { name: 'Back, close Petak Umpet' }));
+    expect(petakWin()).not.toBeInTheDocument();
+    const slot = petak().style.order;
+    tap(petak()); // counter restarted: this is tap 1 again, so it hops instead of opening
+    expect(petakWin()).not.toBeInTheDocument();
+    expect(petak().style.order).not.toBe(slot);
+  });
 });
