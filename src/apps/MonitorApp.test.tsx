@@ -35,4 +35,17 @@ describe('MonitorApp', () => {
     await userEvent.click(screen.getByRole('button', { name: /open POS Monosuko case/ }));
     expect(screen.getByTestId('open-ids')).toHaveTextContent('case:pos-monosuko');
   });
+
+  it('each process link’s accessible name contains its visible text (WCAG 2.5.3 Label in Name)', () => {
+    ui();
+    const table = screen.getByRole('table');
+    const procs = within(table).getAllByRole('button');
+    expect(procs).toHaveLength(5);
+    for (const b of procs) {
+      const visible = b.textContent!.trim();
+      expect(b).toHaveAccessibleName(expect.stringContaining(visible));
+    }
+    expect(screen.getByRole('button', { name: 'orbit-store, open Orbit Store case' })).toBeInTheDocument();
+  });
 });
+

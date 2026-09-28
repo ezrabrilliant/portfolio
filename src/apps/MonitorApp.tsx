@@ -19,7 +19,7 @@ export default function MonitorApp() {
           {systems.map((s) => (
             <tr key={s.proc}>
               <td>
-                <button type="button" className="proc" aria-label={`open ${s.name} case`}
+                <button type="button" className="proc" aria-label={`${s.proc}, open ${s.name} case`}
                   onClick={(e) => wm.open(`case:${s.slug}`, e.currentTarget)}>
                   {s.proc}
                 </button>
