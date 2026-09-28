@@ -72,12 +72,11 @@ export function WindowFrame({ id, title, width, height, x, y, z, focused, minimi
     }
   }, [focused]);
 
-  /** Close; on phone, "back" lands on the home screen: if the window had no opener to hand focus
-   *  back to (the auto-opened Bot), focus its home-screen icon instead of dropping to <body>. */
+  /** Close; if the window had no opener to hand focus back to (the auto-opened Bot) and no other
+   *  window takes focus, focus its desktop / home-screen icon instead of dropping to <body>. */
   const close = () => {
     wm.close(id);
-    if (!phone) return;
-    // queued after wm.close's own opener-focus frame, so an opener still wins
+    // queued after wm.close's own opener-focus frame, so an opener (or the next window) still wins
     requestAnimationFrame(() => {
       const a = document.activeElement;
       if (a && a !== document.body && a.isConnected) return;

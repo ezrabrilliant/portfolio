@@ -158,5 +158,11 @@ describe('EzraOS desktop', () => {
     ui();
     expect(screen.getByRole('dialog', { name: 'Bot' }).style.left).toBe('124px');
   });
+
+  it('closing the auto-opened Bot (no opener) with no other window focuses its desktop icon (M5)', async () => {
+    ui();
+    await closeBot();
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Bot' })).toHaveFocus());
+  });
 });
 
