@@ -20,15 +20,6 @@ export const config = {
     instagram: "https://instagram.com/ezrabrilliant",
   },
 
-  navigation: [
-    { name: "Home", href: "#home" },
-    { name: "About", href: "#about" },
-    { name: "Skills", href: "#skills" },
-    { name: "Projects", href: "#projects" },
-    { name: "Experience", href: "#experience" },
-    { name: "Contact", href: "#contact" },
-  ],
-
   about: {
     introduction:
       "I build systems that real people use and pay through, then I keep them running. Orbit Store took 2,700+ paid orders from 370+ buyers over QRIS. GTID's public API answers around 14.5k requests a day. Petak Umpet has passed 3.1M visits, and Ezra Bot looks after a 1,000+ member community around the clock. I study Business Information Systems, so I care about the checkout queue as much as the code behind it.",
