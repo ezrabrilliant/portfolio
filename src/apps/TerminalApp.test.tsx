@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { mockMatchMedia } from '@/test/match-media';
 import TerminalApp from './TerminalApp';
 
 const log = () => screen.getByRole('log', { name: 'Terminal output' });
@@ -41,4 +42,13 @@ describe('TerminalApp', () => {
     await userEvent.type(prompt(), 'clear{Enter}');
     expect(log()).toBeEmptyDOMElement();
   });
+
+  it('phone mode does not auto-focus the prompt (no virtual keyboard popping up on open, M3)', async () => {
+    mockMatchMedia(['max-width: 767.98px']);
+    render(<TerminalApp />);
+    expect(prompt()).not.toHaveFocus();
+    await userEvent.click(prompt()); // a tap still focuses it
+    expect(prompt()).toHaveFocus();
+  });
 });
+

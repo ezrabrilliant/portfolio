@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { runCommand } from './terminal-commands';
+import { usePhoneMode } from '@/os/usePhoneMode';
 import './terminal.css';
 
 const PS = 'ezra@ezraos:~$';
@@ -11,13 +12,18 @@ export default function TerminalApp() {
   const hiRef = useRef(0);
   const termRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const phone = usePhoneMode();
 
   // the prompt is ready to type into when the window opens. WindowFrame focuses the window itself
   // only when focus is outside it, so focusing the input here is not undone. Skip if this window
-  // is not the active one (it may have mounted behind another window).
+  // is not the active one (it may have mounted behind another window). Not on phone: focusing an
+  // input there pops the virtual keyboard over the output before the visitor asked to type.
   useEffect(() => {
+    if (phone) return;
     const win = inputRef.current?.closest('.win');
     if (!win || win.classList.contains('active')) inputRef.current?.focus({ preventScroll: true });
+    // open-time only: a later phone/desktop flip must not pull focus into the prompt
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // keep the prompt in view; scrolls .term only, never the page (scrollTop: jsdom has no Element.scrollTo)
