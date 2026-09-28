@@ -6,17 +6,23 @@ export interface DesktopIconProps {
   selected: boolean;
   onSelect: () => void;
   onOpen: (opener: HTMLElement) => void;
+  /** Phone mode: a single tap opens (no double-click on a home screen). */
+  tapOpens?: boolean;
+  /** Phone-grid position (CSS `order`); desktop leaves it in document order. */
+  order?: number;
 }
 
-export function DesktopIcon({ app, label, selected, onSelect, onOpen }: DesktopIconProps) {
+export function DesktopIcon({ app, label, selected, onSelect, onOpen, tapOpens, order }: DesktopIconProps) {
   return (
     <button
       type="button"
       className={`icon${selected ? ' sel' : ''}`}
+      data-app={app}
+      style={order === undefined ? undefined : { order }}
       onClick={(e) => {
         const keyboardOrTouch = e.detail === 0;
         onSelect();
-        if (keyboardOrTouch) onOpen(e.currentTarget);
+        if (keyboardOrTouch || tapOpens) onOpen(e.currentTarget);
       }}
       onDoubleClick={(e) => onOpen(e.currentTarget)}
     >

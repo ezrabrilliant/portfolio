@@ -122,3 +122,20 @@ a { color: inherit; }
 #dock button.on .sq { background: var(--ink); }
 #dock button.min { border-style: dashed; }
 #dock button:hover:not(.on) { background: var(--paper); color: var(--ink); }
+
+/* ---------- phone-OS mode (spec §2.4; min supported width 360px) ---------- */
+.phone #desk { bottom: 0; }
+.phone #dock { display: none; }
+.phone #menubar .right { gap: 12px; }
+.phone #icons { display: grid; grid-template-columns: repeat(4, 1fr); align-content: start; justify-items: center; gap: 14px 0; padding: 22px 6px; }
+.phone .icon-col { display: contents; }
+.phone .icon { width: 80px; }
+.phone .icon.petak { position: static; left: auto; top: auto; transform: none; }
+.phone #counter { display: none; }
+.phone .win { left: 0 !important; top: 0 !important; width: 100% !important; height: 100% !important; max-height: none !important; border: 0; box-shadow: none; }
+.phone .tb { height: 46px; cursor: default; padding: 0 8px 0 4px; font-size: 14px; }
+.phone .tb .min, .phone .tb .close { display: none; }
+.phone .tb .back { display: grid; width: 38px; height: 38px; border: 0; font-size: 26px; }
+/* status bar at 360px: the row is ~420px of mono text, so keep the overflow inside the bar
+   (clock first, trailing text clips) instead of pushing past the viewport edge */
+.phone #menubar .right { min-width: 0; overflow: hidden; }

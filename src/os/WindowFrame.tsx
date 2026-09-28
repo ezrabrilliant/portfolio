@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useRef, type KeyboardEvent, type PointerEve
 import { clampToDesk, type WindowId } from './window-manager';
 import { useWM } from './WindowManagerContext';
 import { snapIn } from '@/lib/motion';
+import { usePhoneMode } from './usePhoneMode';
 
 export interface WindowFrameProps {
   id: WindowId;
@@ -45,6 +46,7 @@ function containTab(e: KeyboardEvent, root: HTMLElement) {
 
 export function WindowFrame({ id, title, width, height, x, y, z, focused, minimized, children }: WindowFrameProps) {
   const wm = useWM();
+  const phone = usePhoneMode();
   const ref = useRef<HTMLElement>(null);
   const labelId = `wt-${id.replace(/[^a-z0-9]/gi, '-')}`;
 
@@ -70,16 +72,31 @@ export function WindowFrame({ id, title, width, height, x, y, z, focused, minimi
     }
   }, [focused]);
 
+  /** Close; on phone, "back" lands on the home screen: if the window had no opener to hand focus
+   *  back to (the auto-opened Bot), focus its home-screen icon instead of dropping to <body>. */
+  const close = () => {
+    wm.close(id);
+    if (!phone) return;
+    // queued after wm.close's own opener-focus frame, so an opener still wins
+    requestAnimationFrame(() => {
+      const a = document.activeElement;
+      if (a && a !== document.body && a.isConnected) return;
+      const home = Array.from(document.querySelectorAll<HTMLElement>('#icons [data-app]')).find((el) => el.dataset.app === id);
+      home?.focus({ preventScroll: true });
+    });
+  };
+
   const onKeyDown = (e: KeyboardEvent) => {
     if (e.key === 'Escape') {
       e.stopPropagation();
-      wm.close(id);
+      close();
     } else if (e.key === 'Tab' && ref.current) {
       containTab(e, ref.current);
     }
   };
 
   const onTitlePointerDown = (e: PointerEvent) => {
+    if (phone) return; // no window dragging on touch (spec §2.4)
     const el = ref.current;
     const desk = el?.offsetParent as HTMLElement | null;
     if (!el || !desk || e.button !== 0 || (e.target as HTMLElement).closest('button')) return;
@@ -124,10 +141,10 @@ export function WindowFrame({ id, title, width, height, x, y, z, focused, minimi
         onPointerDownCapture={() => { if (!focused) wm.focus(id); }}
       >
         <header className={`tb${focused ? '' : ' dark'}`} onPointerDown={onTitlePointerDown}>
-          <button type="button" className="back" aria-label={`Back, close ${title}`} onClick={() => wm.close(id)}>‹</button>
+          <button type="button" className="back" aria-label={`Back, close ${title}`} onClick={close}>‹</button>
           <h2 id={labelId}>{title}</h2>
           <button type="button" className="min" aria-label={`Minimize ${title}`} onClick={() => wm.minimize(id)}>–</button>
-          <button type="button" className="close" aria-label={`Close ${title}`} onClick={() => wm.close(id)}>×</button>
+          <button type="button" className="close" aria-label={`Close ${title}`} onClick={close}>×</button>
         </header>
         <div className="body">{children}</div>
       </section>
