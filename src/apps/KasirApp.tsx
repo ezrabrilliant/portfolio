@@ -114,7 +114,7 @@ export default function KasirApp() {
                 aria-pressed={picked.has(i.k)} onClick={() => toggle(i.k)}>
                 <span className="box" aria-hidden="true">{picked.has(i.k) ? '[x]' : '[ ]'}</span>
                 <span className="kn">{i.n}</span>
-                <span className="kd">{i.d} — Rp 0</span>
+                <span className="kd">{i.d} <span className="price">— Rp 0</span></span>
               </button>
             ))}
           </div>

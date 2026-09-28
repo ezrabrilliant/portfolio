@@ -8,6 +8,7 @@
 .kitem .box { font: 600 13px/1 var(--mono); grid-row: span 2; }
 .kitem .kn { font: 600 14.5px/1.2 var(--sans); }
 .kitem .kd { font: 12.5px/1.3 var(--mono); color: var(--muted); grid-column: 2; }
+.kitem .price { white-space: nowrap; } /* "— Rp 0" wraps as one unit, never "Rp" / "0" */
 .kitem[aria-pressed="true"] { background: var(--amber); }
 .kitem[aria-pressed="true"] .kd { color: var(--ink); }
 .kform { flex: none; display: grid; gap: 6px; padding: 10px 12px 0; }
