@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { config } from '@/config/portfolio';
 import { runCommand } from './terminal-commands';
 
 describe('runCommand', () => {
@@ -13,6 +14,9 @@ describe('runCommand', () => {
     const { output } = runCommand('whoami');
     expect(output).toContain('Ezra Brilliant');
     expect(output).toContain('Surabaya');
+    // degree comes from config.education verbatim, never retyped
+    const petra = config.education.find((e) => e.institution === 'Petra Christian University')!;
+    expect(output).toContain(`${petra.degree}, ${petra.institution}`);
   });
 
   it('projects prints the five systems with metric and status columns', () => {

@@ -1,12 +1,9 @@
-import { getContact, getFeaturedCases, getLiveSystems, getShipLog } from '@/config/os-content';
+import { bare, getContact, getFeaturedCases, getLiveSystems, getShipLog } from '@/config/os-content';
 
 export const BOT_COMMANDS = ['/projects', '/systems', '/experience', '/contact'] as const;
 
 export interface BotAction { label: string; open: string }
 export interface BotMessage { text: string; action?: BotAction }
-
-/** strips scheme and www: "https://github.com/ezrabrilliant" becomes "github.com/ezrabrilliant" */
-const bare = (url: string) => url.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '');
 
 export function botGreeting(): BotMessage {
   // the member count is read from the Ezra Bot row in liveSystems ("1,000+ members"), never typed twice

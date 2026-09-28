@@ -3,6 +3,7 @@ import { config } from './portfolio';
 import {
   FEATURED_ORDER, getCaseStudy, getFeaturedCases, getFoldersByYear,
   getLiveSystems, getMarketList, getProjectCount, getShipLog, getContact,
+  getEducation, bare,
 } from './os-content';
 
 describe('content rules (locked)', () => {
@@ -73,5 +74,17 @@ describe('selectors', () => {
 
   it('contact carries the resume path for Kasir', () => {
     expect(getContact().resume).toBe('/resume.pdf');
+  });
+});
+
+describe('getEducation and bare', () => {
+  it('getEducation returns the Petra entry verbatim from config.education', () => {
+    const petra = config.education.find((e) => e.institution === 'Petra Christian University')!;
+    expect(getEducation()).toEqual({ degree: petra.degree, institution: petra.institution });
+  });
+
+  it('bare strips scheme, www and a trailing slash', () => {
+    expect(bare('https://www.github.com/ezrabrilliant/')).toBe('github.com/ezrabrilliant');
+    expect(bare('http://linkedin.com/in/ezrabrilliant')).toBe('linkedin.com/in/ezrabrilliant');
   });
 });

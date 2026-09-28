@@ -1,13 +1,10 @@
-import { getBio, getContact, getLiveSystems } from '@/config/os-content';
+import { bare, getBio, getContact, getEducation, getLiveSystems } from '@/config/os-content';
 import { CYCLE_SHORTCUT_LABEL } from '@/os/app-registry';
 
 export interface CmdResult { output: string; clear?: boolean }
 
 /** right-pads to a column width, always leaving at least one space so columns never touch */
 const pad = (s: string, n: number) => s + ' '.repeat(Math.max(1, n - s.length));
-
-/** strips scheme and www: "https://github.com/ezrabrilliant" becomes "github.com/ezrabrilliant" */
-const bare = (url: string) => url.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '');
 
 const CMDS: Record<string, () => CmdResult> = {
   help: () => ({
@@ -23,8 +20,9 @@ const CMDS: Record<string, () => CmdResult> = {
   }),
   whoami: () => {
     const b = getBio();
+    const e = getEducation();
     return {
-      output: `${b.name}, Business Information Systems, Petra Christian University\nbased in ${b.location}\nbuilds production systems, then keeps them running`,
+      output: `${b.name}, ${e.degree}, ${e.institution}\nbased in ${b.location}\nbuilds production systems, then keeps them running`,
     };
   },
   projects: () => ({

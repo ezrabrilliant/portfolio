@@ -98,3 +98,17 @@ export function getBio(): { name: string; location: string; paragraph: string } 
     paragraph: config.about.introduction,
   };
 }
+
+/** The university entry shown by whoami: chosen by degree text, not array position, so reordering
+ *  config.education cannot swap in Bangkit. Falls back to the most recent entry by startDate. */
+export function getEducation(): { degree: string; institution: string } {
+  const pick = config.education.find((e) => e.degree.includes('Business Information Systems'))
+    ?? [...config.education].sort((a, b) => b.startDate.localeCompare(a.startDate))[0];
+  return { degree: pick.degree, institution: pick.institution };
+}
+
+/** Link text from a configured URL: strips scheme, "www." and a trailing slash,
+ *  so "https://github.com/ezrabrilliant/" becomes "github.com/ezrabrilliant". */
+export function bare(url: string): string {
+  return url.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '');
+}

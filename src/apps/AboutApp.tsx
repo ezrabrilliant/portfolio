@@ -1,9 +1,6 @@
-import { getBio, getContact, getShipLog } from '@/config/os-content';
+import { bare, getBio, getContact, getShipLog } from '@/config/os-content';
 import { CYCLE_SHORTCUT_LABEL } from '@/os/app-registry';
 import './about.css';
-
-/** Link text comes from the configured URL itself, so it can never drift from src/config/portfolio.ts. */
-const bare = (url: string) => url.replace(/^https?:\/\/(www\.)?/, '');
 
 export default function AboutApp() {
   const bio = getBio();
