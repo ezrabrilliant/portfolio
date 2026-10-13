@@ -6,7 +6,9 @@ import tseslint from 'typescript-eslint'
 import { globalIgnores } from 'eslint/config'
 
 export default tseslint.config([
-  globalIgnores(['dist']),
+  // The old site (src/App.tsx, src/components/**) is frozen until Phase 2: it is not edited, so it is not linted.
+  // .superpowers holds agent scratch files.
+  globalIgnores(['dist', '.superpowers', 'src/App.tsx', 'src/components/**']),
   {
     files: ['**/*.{ts,tsx}'],
     extends: [

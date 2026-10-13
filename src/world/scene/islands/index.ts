@@ -1,14 +1,27 @@
+import type { FC } from "react";
+import type { IslandPlacement } from "@/world/engine/gen/layout";
 import type { StarIslandModule } from "./types";
-import { heroIsland } from "./Hero";
-import { gtidIsland } from "./Gtid";
-import { petakUmpetIsland } from "./PetakUmpet";
-import { orbitStoreIsland } from "./OrbitStore";
-import { ezraBotIsland } from "./EzraBot";
+import { FOOTPRINTS } from "./layouts";
+import { tourStopFor } from "./framing";
+import { stampCells } from "./shared/local";
+import { HeroIsland } from "./Hero";
+import { GtidIsland } from "./Gtid";
+import { PetakUmpetIsland } from "./PetakUmpet";
+import { OrbitStoreIsland } from "./OrbitStore";
+import { EzraBotIsland } from "./EzraBot";
+
+/** Every star island shares one tour framing (framing.ts) and stamps its FOOTPRINTS cells as barrier collision. */
+const star = (id: string, Component: FC<{ placement: IslandPlacement }>): StarIslandModule => ({
+  id,
+  Component,
+  tourStop: tourStopFor,
+  stamp: (grid, p) => stampCells(grid, p, FOOTPRINTS[id]),
+});
 
 export const STAR_ISLANDS: Record<string, StarIslandModule> = {
-  hero: heroIsland,
-  gtid: gtidIsland,
-  "petak-umpet": petakUmpetIsland,
-  "orbit-store": orbitStoreIsland,
-  "ezra-bot": ezraBotIsland,
+  hero: star("hero", HeroIsland),
+  gtid: star("gtid", GtidIsland),
+  "petak-umpet": star("petak-umpet", PetakUmpetIsland),
+  "orbit-store": star("orbit-store", OrbitStoreIsland),
+  "ezra-bot": star("ezra-bot", EzraBotIsland),
 };

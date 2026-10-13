@@ -3,21 +3,18 @@ import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import type { IslandPlacement } from "@/world/engine/gen/layout";
-import type { VoxelGrid } from "@/world/engine/voxel/grid";
 import { mulberry32 } from "@/world/engine/gen/rng";
 import { playSfx } from "@/world/engine/audio/sfx";
 import { Interactable } from "@/world/scene/Interactable";
 import { runtime } from "@/world/state/runtime";
 import { useWorld } from "@/world/state/store";
-import type { StarIslandModule } from "./types";
-import { FOOTPRINTS, PETAK } from "./layouts";
-import { tourStopFor } from "./framing";
+import { PETAK } from "./layouts";
 import { CANVAS_FONTS } from "./shared/canvasFonts";
 import { InfoBoard } from "./shared/InfoBoard";
 import { Signpost } from "./shared/Signpost";
 import { PropBlocks } from "./shared/PropBlocks";
 import { PALETTE, pickColor, treeBlocks, type PropBlock } from "./shared/props";
-import { islandFrame, stampCells, worldOf } from "./shared/local";
+import { islandFrame, worldOf } from "./shared/local";
 import { projectById } from "./shared/project";
 import { useCanvasTexture } from "./shared/useCanvasTexture";
 
@@ -481,7 +478,7 @@ function HidingKid({ placement }: { placement: IslandPlacement }) {
   );
 }
 
-function PetakUmpetIsland({ placement }: { placement: IslandPlacement }) {
+export function PetakUmpetIsland({ placement }: { placement: IslandPlacement }) {
   const blocks = useMemo(
     () => [
       ...houseBlocks(),
@@ -508,10 +505,3 @@ function PetakUmpetIsland({ placement }: { placement: IslandPlacement }) {
     </>
   );
 }
-
-export const petakUmpetIsland: StarIslandModule = {
-  id: "petak-umpet",
-  Component: PetakUmpetIsland,
-  stamp: (grid: VoxelGrid, p: IslandPlacement) => stampCells(grid, p, FOOTPRINTS["petak-umpet"]),
-  tourStop: tourStopFor,
-};

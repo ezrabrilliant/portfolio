@@ -4,17 +4,14 @@ import * as THREE from "three";
 import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import type { IslandPlacement } from "@/world/engine/gen/layout";
-import type { VoxelGrid } from "@/world/engine/voxel/grid";
 import { playSfx } from "@/world/engine/audio/sfx";
 import { Interactable } from "@/world/scene/Interactable";
 import { useWorld } from "@/world/state/store";
-import type { StarIslandModule } from "./types";
-import { EZRA, FOOTPRINTS } from "./layouts";
-import { tourStopFor } from "./framing";
+import { EZRA } from "./layouts";
 import { InfoBoard } from "./shared/InfoBoard";
 import { Signpost } from "./shared/Signpost";
 import { PALETTE } from "./shared/props";
-import { islandFrame, stampCells, worldTuple } from "./shared/local";
+import { islandFrame, worldTuple } from "./shared/local";
 import { projectById } from "./shared/project";
 import { useCanvasTexture } from "./shared/useCanvasTexture";
 import { useHoverLift } from "./shared/useHoverLift";
@@ -190,7 +187,7 @@ function BotScreen() {
   );
 }
 
-function EzraBotIsland({ placement }: { placement: IslandPlacement }) {
+export function EzraBotIsland({ placement }: { placement: IslandPlacement }) {
   const project = projectById("ezra-bot");
   const [log, setLog] = useState(() => startLog(new Date()));
   const window3 = useMemo(() => visibleWindow(log.latest, log.times.length), [log]);
@@ -251,10 +248,3 @@ function EzraBotIsland({ placement }: { placement: IslandPlacement }) {
     </>
   );
 }
-
-export const ezraBotIsland: StarIslandModule = {
-  id: "ezra-bot",
-  Component: EzraBotIsland,
-  stamp: (grid: VoxelGrid, p: IslandPlacement) => stampCells(grid, p, FOOTPRINTS["ezra-bot"]),
-  tourStop: tourStopFor,
-};

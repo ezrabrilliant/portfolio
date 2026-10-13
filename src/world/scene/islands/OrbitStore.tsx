@@ -2,21 +2,18 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import type { IslandPlacement } from "@/world/engine/gen/layout";
-import type { VoxelGrid } from "@/world/engine/voxel/grid";
 import { mulberry32 } from "@/world/engine/gen/rng";
 import { playSfx } from "@/world/engine/audio/sfx";
 import { Interactable } from "@/world/scene/Interactable";
 import { useWorld } from "@/world/state/store";
-import type { StarIslandModule } from "./types";
-import { FOOTPRINTS, ORBIT } from "./layouts";
-import { tourStopFor } from "./framing";
+import { ORBIT } from "./layouts";
 import { CANVAS_FONTS } from "./shared/canvasFonts";
 import { disposeObject } from "./shared/dispose";
 import { InfoBoard } from "./shared/InfoBoard";
 import { Signpost } from "./shared/Signpost";
 import { PropBlocks } from "./shared/PropBlocks";
 import { PALETTE, type PropBlock } from "./shared/props";
-import { islandFrame, stampCells, worldTuple } from "./shared/local";
+import { islandFrame, worldTuple } from "./shared/local";
 import { projectById } from "./shared/project";
 import { useCanvasTexture } from "./shared/useCanvasTexture";
 import { useHoverLift } from "./shared/useHoverLift";
@@ -85,7 +82,7 @@ const RECEIPT_PY = Math.round((RECEIPT_PX * ORBIT.receipt.maxLen) / ORBIT.receip
 const PARCEL_GEO = new THREE.BoxGeometry(0.5, 0.42, 0.5);
 const TAPE_GEO = new THREE.BoxGeometry(0.52, 0.44, 0.1);
 
-function OrbitStoreIsland({ placement }: { placement: IslandPlacement }) {
+export function OrbitStoreIsland({ placement }: { placement: IslandPlacement }) {
   const blocks = useMemo(stallBlocks, []);
   const project = projectById("orbit-store");
   const logo = useMemo(() => createOrbitLogoTile(), []);
@@ -191,10 +188,3 @@ function OrbitStoreIsland({ placement }: { placement: IslandPlacement }) {
     </>
   );
 }
-
-export const orbitStoreIsland: StarIslandModule = {
-  id: "orbit-store",
-  Component: OrbitStoreIsland,
-  stamp: (grid: VoxelGrid, p: IslandPlacement) => stampCells(grid, p, FOOTPRINTS["orbit-store"]),
-  tourStop: tourStopFor,
-};

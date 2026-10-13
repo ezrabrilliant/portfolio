@@ -2,19 +2,16 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import type { IslandPlacement } from "@/world/engine/gen/layout";
-import type { VoxelGrid } from "@/world/engine/voxel/grid";
 import { Interactable } from "@/world/scene/Interactable";
 import { runtime } from "@/world/state/runtime";
 import { useWorld } from "@/world/state/store";
-import type { StarIslandModule } from "./types";
-import { FOOTPRINTS, GTID } from "./layouts";
-import { tourStopFor } from "./framing";
+import { GTID } from "./layouts";
 import { VoxelTitle } from "./VoxelTitle";
 import { InfoBoard } from "./shared/InfoBoard";
 import { Signpost } from "./shared/Signpost";
 import { PropBlocks } from "./shared/PropBlocks";
 import { PALETTE, type PropBlock } from "./shared/props";
-import { islandFrame, stampCells, worldOf, worldTuple } from "./shared/local";
+import { islandFrame, worldOf, worldTuple } from "./shared/local";
 import { projectById } from "./shared/project";
 import { useCanvasTexture } from "./shared/useCanvasTexture";
 import { useHoverLift } from "./shared/useHoverLift";
@@ -153,7 +150,7 @@ function PriceBoard({ placement, data }: { placement: IslandPlacement; data: Gti
   );
 }
 
-function GtidIsland({ placement }: { placement: IslandPlacement }) {
+export function GtidIsland({ placement }: { placement: IslandPlacement }) {
   const data = useGtidData();
   const blocks = useMemo(chartBlocks, []);
   const project = projectById("gtid");
@@ -172,10 +169,3 @@ function GtidIsland({ placement }: { placement: IslandPlacement }) {
     </>
   );
 }
-
-export const gtidIsland: StarIslandModule = {
-  id: "gtid",
-  Component: GtidIsland,
-  stamp: (grid: VoxelGrid, p: IslandPlacement) => stampCells(grid, p, FOOTPRINTS.gtid),
-  tourStop: tourStopFor,
-};

@@ -2,16 +2,13 @@ import { useEffect, useMemo } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import type { IslandPlacement } from "@/world/engine/gen/layout";
-import type { VoxelGrid } from "@/world/engine/voxel/grid";
 import { worldCopy } from "@/config/portfolio";
 import { useWorld } from "@/world/state/store";
-import type { StarIslandModule } from "./types";
-import { FOOTPRINTS, HERO } from "./layouts";
-import { tourStopFor } from "./framing";
+import { HERO } from "./layouts";
 import { VoxelTitle } from "./VoxelTitle";
 import { InfoBoard } from "./shared/InfoBoard";
 import { PropBlocks } from "./shared/PropBlocks";
-import { islandFrame, stampCells } from "./shared/local";
+import { islandFrame } from "./shared/local";
 import { PALETTE, treeBlocks, type PropBlock } from "./shared/props";
 
 const POLE_H = 2.6;
@@ -80,7 +77,7 @@ function FlagCloth() {
  * The first stop: Ezra's name in punchable voxel letters at the back, a board with where he is and what he builds at
  * the front right, a tree and a flag. The front rim stays clear: Ezra sits there (Ezra.tsx, runtime.seat).
  */
-function HeroIsland({ placement }: { placement: IslandPlacement }) {
+export function HeroIsland({ placement }: { placement: IslandPlacement }) {
   const blocks = useMemo(
     () => [...treeBlocks(HERO.tree.x, HERO.tree.z, HERO.tree.h, HERO.tree.seed), ...FLOWERS, ...POLE],
     [],
@@ -96,10 +93,3 @@ function HeroIsland({ placement }: { placement: IslandPlacement }) {
     </>
   );
 }
-
-export const heroIsland: StarIslandModule = {
-  id: "hero",
-  Component: HeroIsland,
-  stamp: (grid: VoxelGrid, p: IslandPlacement) => stampCells(grid, p, FOOTPRINTS.hero),
-  tourStop: tourStopFor,
-};
