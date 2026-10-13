@@ -14,11 +14,14 @@ const FOG_FAR = 210;
 
 // One gradient for the sky dome and for the clouds' distance fade, so far clouds melt into exactly the sky
 // behind them. Mirrored below the horizon: the tour cameras look ~25° down, so that half is what shows.
+// abs(h) is rounded off over ±~2° (sqrt(h² + k²) − k): pow(abs(h), 0.75) alone has an infinite slope at the
+// horizon, which a level Play camera shows as a thin bright crease.
 const SKY_GLSL = /* glsl */ `
 uniform vec3 uSkyTop;
 uniform vec3 uSkyHorizon;
 vec3 skyGradient( float h ) {
-  return mix( uSkyHorizon, uSkyTop, pow( min( 1.0, abs( h ) * 1.35 ), 0.75 ) );
+  float a = max( 0.0, sqrt( h * h + 0.035 * 0.035 ) - 0.035 );
+  return mix( uSkyHorizon, uSkyTop, pow( min( 1.0, a * 1.35 ), 0.75 ) );
 }
 `;
 

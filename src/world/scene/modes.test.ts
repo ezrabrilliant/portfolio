@@ -69,6 +69,41 @@ describe("landingColumn", () => {
   it("falls back to the centre column when nothing is free", () => {
     expect(landingColumn(() => false, p, { x: 0, z: 0 })).toEqual(centre);
   });
+
+  describe("with the camera's eye", () => {
+    // a 5-wide, 3-deep, 5-tall house on the centre; the camera looks at it from the front (+z), like a tour stop
+    const box = (x0: number, x1: number) => {
+      const out: Array<[number, number, number]> = [];
+      for (let x = x0; x <= x1; x++) for (let z = -1; z <= 1; z++) for (let y = 1; y <= 5; y++) out.push([p.origin.x + x, p.origin.y + y, p.origin.z + z]);
+      return out;
+    };
+    const house = box(-2, 2);
+    const eye = { x: p.origin.x + 0.5, y: p.origin.y + 7.5, z: p.origin.z + 20 };
+    const behind = { x: p.origin.x + 0.5, z: p.origin.z - 1.2 }; // aim just behind the house's middle
+    const hiddenSpot = { x: p.origin.x + 0.5, z: p.origin.z - 1.5 }; // the free cell right behind the house
+
+    it("without it, lands on the nearest free cell even if that is behind a prop", () => {
+      expect(landingColumn(island(house), p, behind)).toEqual(hiddenSpot);
+    });
+
+    it("lands where the camera can see him: past the house's side, or in front of a wall across the island", () => {
+      const c = landingColumn(island(house), p, behind, eye);
+      expect(c).not.toEqual(hiddenSpot);
+      expect(Math.abs(c.x - behind.x)).toBeGreaterThan(2); // beside the house's footprint (x within ±2.5)
+      const wall = landingColumn(island(box(-10, 10)), p, behind, eye);
+      expect(wall.z).toBeGreaterThan(p.origin.z + 2); // in front of the wall's front face
+      expect(Math.abs(wall.x - behind.x)).toBeLessThanOrEqual(1);
+    });
+
+    it("keeps the nearest cell when nothing hides it", () => {
+      expect(landingColumn(island(), p, { x: 61.2, z: -15.9 }, eye)).toEqual({ x: 61.5, z: -15.5 });
+    });
+
+    it("ignores the camera when it can see no free cell at all", () => {
+      const walled = landingColumn(island(house), p, behind, { x: p.origin.x + 0.5, y: p.origin.y + 3, z: p.origin.z + 0.5 });
+      expect(walled).toEqual({ x: p.origin.x + 0.5, z: p.origin.z - 1.5 });
+    });
+  });
 });
 
 describe("watchPoint (resuming the tour after Play)", () => {

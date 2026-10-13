@@ -38,13 +38,13 @@ function enterPlay() {
     p.sinceGround = 0;
     p.locked = true;
   } else {
-    // drop from the sky onto open ground of the island in view, at the tour's look target, back to the camera;
-    // reduced motion: no fall, he is simply there (cuts instead of flights)
+    // drop from the sky onto open ground of the island in view, at the tour's look target, back to the camera
+    // and where the camera can see him (not behind a house); reduced motion: no fall, he is simply there
     runtime.seated = false;
     runtime.standUp = 0;
     const island = runtime.islandById(world.activeIsland);
     const aim = runtime.tourPath?.stops.find((s) => s.id === island.id)?.target ?? islandTop(island);
-    const column = solid ? landingColumn(solid, island, aim) : undefined;
+    const column = solid ? landingColumn(solid, island, aim, runtime.cameraPos) : undefined;
     Object.assign(p.pos, dropStart(island, column));
     p.lastSafe.x = p.pos.x;
     p.lastSafe.y = island.origin.y + 1;

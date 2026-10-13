@@ -19,26 +19,48 @@ export function dropStart(p: IslandPlacement, column?: { x: number; z: number })
 /**
  * Where a drop onto island `p` lands: the centre of the cell nearest `aim` with grass floor under it and its four
  * neighbours (no rim landings) and nothing solid from the floor up past the drop start, so Ezra falls past no prop
- * and stands on open ground. Falls back to the centre column if no cell qualifies.
+ * and stands on open ground. Given the camera's `eye`, it first only takes cells the eye can see Ezra standing on
+ * (no solid block between the eye and his chest), so he never lands hidden behind a house; when the eye sees no such
+ * cell, any cell. Falls back to the centre column if no cell qualifies.
  */
-export function landingColumn(isSolid: IsSolid, p: IslandPlacement, aim: { x: number; z: number }): { x: number; z: number } {
+export function landingColumn(isSolid: IsSolid, p: IslandPlacement, aim: { x: number; z: number }, eye?: Vec3): { x: number; z: number } {
   const { x: ox, y: floor, z: oz } = p.origin;
   const reach = Math.ceil(p.radius * 1.25) + 1; // the island generator's extent
-  let best = { x: ox + 0.5, z: oz + 0.5 };
-  let bestD = Infinity;
-  for (let x = ox - reach; x <= ox + reach; x++) {
-    for (let z = oz - reach; z <= oz + reach; z++) {
-      const d = (x + 0.5 - aim.x) ** 2 + (z + 0.5 - aim.z) ** 2;
-      if (d >= bestD) continue;
-      if (!isSolid(x, floor, z) || !isSolid(x + 1, floor, z) || !isSolid(x - 1, floor, z) || !isSolid(x, floor, z + 1) || !isSolid(x, floor, z - 1)) continue;
-      let clear = true;
-      for (let y = floor + 1; clear && y <= floor + DROP + 2; y++) clear = !isSolid(x, y, z);
-      if (!clear) continue;
-      best = { x: x + 0.5, z: z + 0.5 };
-      bestD = d;
+  const pick = (seen: Vec3 | undefined) => {
+    let best: { x: number; z: number } | null = null;
+    let bestD = Infinity;
+    for (let x = ox - reach; x <= ox + reach; x++) {
+      for (let z = oz - reach; z <= oz + reach; z++) {
+        const d = (x + 0.5 - aim.x) ** 2 + (z + 0.5 - aim.z) ** 2;
+        if (d >= bestD) continue;
+        if (!isSolid(x, floor, z) || !isSolid(x + 1, floor, z) || !isSolid(x - 1, floor, z) || !isSolid(x, floor, z + 1) || !isSolid(x, floor, z - 1)) continue;
+        let clear = true;
+        for (let y = floor + 1; clear && y <= floor + DROP + 2; y++) clear = !isSolid(x, y, z);
+        if (!clear) continue;
+        if (seen && !sees(isSolid, seen, x + 0.5, floor + 1 + CHEST, z + 0.5)) continue;
+        best = { x: x + 0.5, z: z + 0.5 };
+        bestD = d;
+      }
     }
+    return best;
+  };
+  return (eye && pick(eye)) || pick(undefined) || { x: ox + 0.5, z: oz + 0.5 };
+}
+
+/** Chest height above the feet: what the camera must see for Ezra to read as standing there. */
+const CHEST = 1;
+/** Sight-line sample spacing, in blocks. */
+const SIGHT_STEP = 0.3;
+
+/** True when no solid block lies on the segment from `eye` to (x, y, z). */
+function sees(isSolid: IsSolid, eye: Vec3, x: number, y: number, z: number): boolean {
+  const dx = x - eye.x, dy = y - eye.y, dz = z - eye.z;
+  const n = Math.ceil(Math.hypot(dx, dy, dz) / SIGHT_STEP);
+  for (let i = 1; i < n; i++) {
+    const t = i / n;
+    if (isSolid(eye.x + dx * t, eye.y + dy * t, eye.z + dz * t)) return false;
   }
-  return best;
+  return true;
 }
 
 /**
