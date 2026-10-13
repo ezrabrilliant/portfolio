@@ -1,10 +1,7 @@
-import { placeholderIsland } from "./placeholder";
 import type { StarIslandModule } from "./types";
+import { PLACEHOLDER_ISLANDS } from "./placeholders";
 
-export const STAR_ISLANDS: Record<string, StarIslandModule> = {
-  hero: placeholderIsland("hero", "Ezra Brilliant", 1.3),
-  gtid: placeholderIsland("gtid", "GTID"),
-  "petak-umpet": placeholderIsland("petak-umpet", "Petak Umpet"),
-  "orbit-store": placeholderIsland("orbit-store", "Orbit Store"),
-  "ezra-bot": placeholderIsland("ezra-bot", "Ezra Bot"),
-};
+// Real islands replace placeholders one by one (Tasks 5–9); Task 10 removes the placeholders.
+const REAL_ISLANDS: Record<string, StarIslandModule> = {};
+
+export const STAR_ISLANDS: Record<string, StarIslandModule> = { ...PLACEHOLDER_ISLANDS, ...REAL_ISLANDS };
