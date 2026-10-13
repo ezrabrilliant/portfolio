@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { cycleFocus } from "./focus";
+import { cycleFocus, isFocusStale } from "./focus";
 
 describe("cycleFocus", () => {
   const ids = ["a", "b", "c"];
@@ -20,5 +20,18 @@ describe("cycleFocus", () => {
   });
   it("returns null for an empty list", () => {
     expect(cycleFocus([], null, 1)).toBeNull();
+  });
+});
+
+describe("isFocusStale", () => {
+  it("is stale when the focused item becomes disabled", () => {
+    expect(isFocusStale(true, false)).toBe(true);
+  });
+  it("is not stale while the focused item stays enabled", () => {
+    expect(isFocusStale(true, true)).toBe(false);
+  });
+  it("is never stale for an item that isn't focused", () => {
+    expect(isFocusStale(false, false)).toBe(false);
+    expect(isFocusStale(false, true)).toBe(false);
   });
 });

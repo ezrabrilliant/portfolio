@@ -7,6 +7,7 @@ import { playSfx } from "@/world/engine/audio/sfx";
 import { runtime } from "@/world/state/runtime";
 import { useWorld } from "@/world/state/store";
 import { FONT_URLS } from "./fonts";
+import { isFocusStale } from "./interaction/focus";
 
 export function Interactable({
   id,
@@ -60,7 +61,13 @@ export function Interactable({
   );
 
   useFrame((_, dt) => {
-    const on = runtime.hoverId === id || runtime.focusId === id;
+    const isEnabledNow = isEnabled.current ? isEnabled.current() : true;
+    const focused = runtime.focusId === id;
+    if (isFocusStale(focused, isEnabledNow)) {
+      runtime.focusId = null;
+      useWorld.getState().setPrompt(null);
+    }
+    const on = isEnabledNow && (runtime.hoverId === id || runtime.focusId === id);
     if (lift.current) lift.current.position.y = THREE.MathUtils.damp(lift.current.position.y, on ? 0.1 : 0, 12, dt);
     if (outline.current) outline.current.visible = on;
     if (tag.current) tag.current.visible = on;
@@ -84,6 +91,8 @@ export function Interactable({
             outlineColor="#13212b"
             anchorX="center"
             anchorY="middle"
+            renderOrder={999}
+            material-depthTest={false}
           >
             {mode === "play" ? `E  ${label}` : label}
           </Text>

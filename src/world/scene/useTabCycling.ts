@@ -28,7 +28,8 @@ export function useTabCycling(ref: RefObject<HTMLElement | null>) {
         const item = runtime.registry.get(next);
         if (item) s.setPrompt({ id: item.id, label: item.label });
       } else if (e.key === "Enter" && runtime.focusId) {
-        runtime.registry.get(runtime.focusId)?.onActivate();
+        const item = runtime.registry.get(runtime.focusId);
+        if (item && (item.enabled ? item.enabled() : true)) item.onActivate();
       } else if (e.key === "Escape") {
         clear();
       }

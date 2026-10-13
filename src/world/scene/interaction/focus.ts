@@ -5,3 +5,8 @@ export function cycleFocus(ids: readonly string[], current: string | null, dir: 
   const next = i + dir;
   return next < 0 || next >= ids.length ? null : ids[next];
 }
+
+/** True when a focused item is no longer a valid focus target (disabled, or gone from the registry). */
+export function isFocusStale(focused: boolean, enabled: boolean): boolean {
+  return focused && !enabled;
+}
