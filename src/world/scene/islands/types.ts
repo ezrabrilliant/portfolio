@@ -11,9 +11,12 @@ export interface StarIslandModule {
   tourStop: (placement: IslandPlacement) => TourStop;
 }
 
-/** Horizontal forward of every tour camera (looks toward +x, −z) and its right vector. */
-export const VIEW_F = { x: 0.582, z: -0.813 };
-export const VIEW_R = { x: 0.813, z: 0.582 };
+/** Heading of every tour camera (looks toward +x, −z); ≈ (0.582, −0.813), derived from one angle so it is exactly unit length. */
+const VIEW_YAW = Math.atan2(0.582, -0.813);
+
+/** Horizontal forward of every tour camera and its right vector (unit length, perpendicular). */
+export const VIEW_F = { x: Math.sin(VIEW_YAW), z: Math.cos(VIEW_YAW) };
+export const VIEW_R = { x: -VIEW_F.z, z: VIEW_F.x };
 
 export function islandTop(p: IslandPlacement): Vec3 {
   return { x: p.origin.x + 0.5, y: p.origin.y + 1, z: p.origin.z + 0.5 };

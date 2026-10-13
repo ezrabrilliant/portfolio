@@ -9,12 +9,18 @@ export function RoomEnv({ intensity = 0.3 }: { intensity?: number }) {
   const scene = useThree((s) => s.scene);
   useEffect(() => {
     const pmrem = new THREE.PMREMGenerator(gl);
-    const env = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+    const room = new RoomEnvironment();
+    const env = pmrem.fromScene(room, 0.04).texture;
+    room.dispose();
     pmrem.dispose();
+    const previousIntensity = scene.environmentIntensity;
     scene.environment = env;
     scene.environmentIntensity = intensity;
     return () => {
-      if (scene.environment === env) scene.environment = null;
+      if (scene.environment === env) {
+        scene.environment = null;
+        scene.environmentIntensity = previousIntensity;
+      }
       env.dispose();
     };
   }, [gl, scene, intensity]);

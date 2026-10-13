@@ -10,9 +10,19 @@ describe("tour framing helpers", () => {
   });
 
   it("VIEW_F and VIEW_R are unit length and perpendicular", () => {
-    expect(Math.hypot(VIEW_F.x, VIEW_F.z)).toBeCloseTo(1, 2);
-    expect(Math.hypot(VIEW_R.x, VIEW_R.z)).toBeCloseTo(1, 2);
-    expect(VIEW_F.x * VIEW_R.x + VIEW_F.z * VIEW_R.z).toBeCloseTo(0, 2);
+    expect(Math.hypot(VIEW_F.x, VIEW_F.z)).toBeCloseTo(1, 10);
+    expect(Math.hypot(VIEW_R.x, VIEW_R.z)).toBeCloseTo(1, 10);
+    expect(VIEW_F.x * VIEW_R.x + VIEW_F.z * VIEW_R.z).toBeCloseTo(0, 10);
+  });
+
+  it("VIEW_F and VIEW_R match the contract values (0.582, −0.813) and (0.813, 0.582)", () => {
+    expect(Math.abs(VIEW_F.x - 0.582)).toBeLessThan(2e-4);
+    expect(Math.abs(VIEW_F.z + 0.813)).toBeLessThan(2e-4);
+    expect(Math.abs(VIEW_R.x - 0.813)).toBeLessThan(2e-4);
+    expect(Math.abs(VIEW_R.z - 0.582)).toBeLessThan(2e-4);
+    // VIEW_R is the camera's right: forward × up = (−F.z, 0, F.x)
+    expect(VIEW_R.x).toBe(-VIEW_F.z);
+    expect(VIEW_R.z).toBe(VIEW_F.x);
   });
 
   it("defaultTourStop looks along VIEW_F and puts the island right of centre", () => {
@@ -32,9 +42,7 @@ describe("tour framing helpers", () => {
 
   it("respects options", () => {
     const s = defaultTourStop(p, { distance: 10, height: 4, shift: 0, dwell: 2 });
-    // VIEW_F/VIEW_R are rounded to 3 decimals (not exactly unit length, see the test above),
-    // so distances derived from them are only accurate to ~3 decimals, not 4.
-    expect(Math.hypot(s.target.x - s.camera.x, s.target.z - s.camera.z)).toBeCloseTo(10, 2);
+    expect(Math.hypot(s.target.x - s.camera.x, s.target.z - s.camera.z)).toBeCloseTo(10, 4);
     expect(s.camera.y - s.target.y).toBeCloseTo(4, 4);
     expect(s.dwell).toBe(2);
   });
