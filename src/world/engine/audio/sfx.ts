@@ -30,8 +30,9 @@ function load(): Promise<void> {
         zz = m;
         m.ZZFX.volume = 0.25;
       })
-      .catch(() => {
+      .catch((err: unknown) => {
         loading = null;
+        console.warn("[sfx] audio failed to load; staying silent", err);
       });
   }
   return loading;

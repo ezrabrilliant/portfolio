@@ -47,4 +47,26 @@ describe("sfx", () => {
       expect(params[0]).toBeLessThanOrEqual(1);
     }
   });
+
+  it("stays silent and logs when zzfx fails to load", async () => {
+    vi.resetModules();
+    vi.doMock("zzfx", () => {
+      throw new Error("zzfx load failed");
+    });
+
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      const sfx = await import("@/world/engine/audio/sfx");
+
+      expect(() => sfx.setMuted(false)).not.toThrow();
+      await expect(sfx.whenAudioReady()).resolves.toBeUndefined();
+      expect(() => sfx.playSfx("click")).not.toThrow();
+
+      expect(warnSpy).toHaveBeenCalledOnce();
+      const [msg] = warnSpy.mock.calls[0];
+      expect(String(msg)).toContain("[sfx] audio failed to load");
+    } finally {
+      warnSpy.mockRestore();
+    }
+  });
 });
