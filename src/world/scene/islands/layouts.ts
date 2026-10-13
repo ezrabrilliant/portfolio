@@ -34,11 +34,11 @@ export const PETAK = {
     { x: -5, z: -3, h: 2, seed: 13 },
   ],
   lanterns: [
-    { x: 1.4, z: 1.6 },
-    { x: -4.6, z: 1.2 },
+    { x: -3.0, z: 1.5 },
+    { x: -0.4, z: 1.5 },
   ],
   sign: { x: 2.6, z: 3, ry: -0.2 },
-  kid: { home: { x: 3, z: -1.65 }, peek: 0.62, hide: { x: -1.5, z: -3.6 } },
+  kid: { home: { x: 3.2, z: -1.65 }, peek: -0.45, hide: { x: -1.5, z: -4.3 } },
   info: { x: -4.6, z: 3.2, ry: 0.2 },
   link: { x: 4.6, z: 4, ry: -0.2 },
 } as const;
