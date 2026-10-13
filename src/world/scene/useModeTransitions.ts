@@ -114,8 +114,9 @@ export function useModeTransitions(enabled: boolean) {
       else if (s.mode === "play" && e.code === "Space" && t?.tagName === "BUTTON" && t.closest(".hud")) e.preventDefault();
     };
     window.addEventListener("keydown", onKey);
-    // ?play deep link (screenshots / sharing): wait until the world is built and the tour camera
-    // has picked the active island (it does so on its first frame), then enter Play there.
+    // ?play deep link (screenshots / sharing): wait until the world is built and ready (the store ignores
+    // Play before `ready`) and the tour camera has picked the active island (it does so on its first
+    // frame), then enter Play there.
     // runtime.built / tourPath are set while rendering, which can precede the commit by a while (the
     // world suspends on its fonts), so wait for the tour camera's first frame: it writes cameraPos
     let raf = 0;

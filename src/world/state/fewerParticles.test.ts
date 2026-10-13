@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createParticlePool } from "@/world/engine/particles/particles";
-import type { ParticlePreset } from "@/world/engine/particles/particles";
+import type { ParticlePool, ParticlePreset } from "@/world/engine/particles/particles";
 import { PRESET_COUNTS, reducedCount, withFewerParticles } from "./fewerParticles";
 
 const AT = { x: 0, y: 0, z: 0 };
@@ -42,6 +42,23 @@ describe("withFewerParticles (prefers-reduced-motion)", () => {
     expect(pool.colors[0]).toBeCloseTo(1, 5);
     expect(pool.colors[1]).toBeCloseTo(0, 5);
     expect(pool.colors[2]).toBeCloseTo(0, 5);
+  });
+
+  it("wraps a pool only once", () => {
+    const pool = createParticlePool(240);
+    withFewerParticles(withFewerParticles(pool));
+    pool.burst(AT, "confetti");
+    expect(pool.alive).toBe(13); // not 40 → 13 → 4
+  });
+
+  it("passes every burst option through, only the count changes", () => {
+    const seen: unknown[] = [];
+    const fake = { burst: (_at: unknown, _p: unknown, o: unknown) => seen.push(o) } as unknown as ParticlePool;
+    withFewerParticles(fake);
+    const opts = { color: "#ffffff", count: 6, spread: 2 } as Parameters<ParticlePool["burst"]>[2];
+    fake.burst(AT, "dust", opts);
+    expect(seen[0]).toEqual({ color: "#ffffff", count: 2, spread: 2 });
+    expect(opts).toEqual({ color: "#ffffff", count: 6, spread: 2 }); // the caller's object is left alone
   });
 });
 

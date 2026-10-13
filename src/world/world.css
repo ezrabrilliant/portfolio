@@ -97,20 +97,26 @@ html.world-playing, html.world-playing body { overflow: hidden; }
 
 .loader {
   position: fixed; inset: 0; z-index: 20; display: grid; place-content: center; justify-items: center; gap: 18px;
-  background: #cbdce4; transition: opacity 0.6s ease;
+  background: #cbdce4; transition: opacity 0.6s ease, background-color 0.6s ease;
 }
 .loader--done { opacity: 0; pointer-events: none; }
-.loader-island { position: relative; width: 90px; height: 72px; }
+/* never ready: the overlay clears so the HUD and the page stay usable; only the honest line stays */
+.loader--stuck { background-color: transparent; pointer-events: none; }
+.loader-island { position: relative; width: 90px; height: 72px; transition: opacity 0.6s ease; }
+.loader--stuck .loader-island { opacity: 0; }
+/* assembles once and stays (delays set per block in Loader.tsx), no overshoot */
 .loader-block {
-  position: absolute; width: 17px; height: 17px; border-radius: 3px;
-  animation: loader-drop 0.9s cubic-bezier(0.3, 0.7, 0.25, 1.15) both infinite alternate;
+  position: absolute; width: 17px; height: 17px; border-radius: 1px;
+  animation: loader-drop 0.6s cubic-bezier(0.22, 0.75, 0.35, 1) both;
 }
 @keyframes loader-drop {
-  0% { transform: translateY(-60px); opacity: 0; }
-  45%, 100% { transform: translateY(0); opacity: 1; }
+  0% { transform: translateY(-48px); opacity: 0; }
+  50% { opacity: 1; }
+  100% { transform: translateY(0); opacity: 1; }
 }
 .loader-text { margin: 0; font: 500 13px/1 ui-monospace, "SFMono-Regular", Menlo, monospace; color: rgba(19, 33, 43, 0.7); }
+.loader--stuck .loader-text { padding: 6px 10px; border-radius: 4px; background: rgba(244, 243, 239, 0.88); color: rgba(19, 33, 43, 0.85); }
 @media (prefers-reduced-motion: reduce) {
   .loader-block { animation: none; }
-  .loader { transition: none; }
+  .loader, .loader-island { transition: none; }
 }
