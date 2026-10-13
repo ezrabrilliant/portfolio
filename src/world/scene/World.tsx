@@ -5,7 +5,9 @@ import type { VoxelGrid } from "@/world/engine/voxel/grid";
 import { runtime } from "@/world/state/runtime";
 import { useWorld } from "@/world/state/store";
 import { STAR_ISLANDS } from "./islands";
-import { islandTop } from "./islands/types";
+import { VIEW_F, islandTop } from "./islands/types";
+import { Ezra } from "./Ezra";
+import { findSeat } from "./ezra/seat";
 import { IslandTerrain } from "./IslandTerrain";
 import { InitialView } from "./InitialView";
 import { InteractionController } from "./InteractionController";
@@ -23,6 +25,15 @@ function build(): BuiltWorld {
   );
   const built = buildWorld(runtime.layout, stamps);
   runtime.built = built;
+  // Ezra sits on the hero island's rim on the camera side, facing the viewer
+  const hero = runtime.islandById("hero");
+  const shape = built.shapes.hero;
+  if (shape) {
+    runtime.seat = findSeat(shape, hero.origin, { x: -VIEW_F.x, z: -VIEW_F.z });
+    Object.assign(runtime.player.pos, runtime.seat.pos);
+    Object.assign(runtime.player.lastSafe, islandTop(hero));
+    runtime.heading = runtime.seat.heading;
+  }
   return built;
 }
 
@@ -57,6 +68,7 @@ export function World() {
       <PlayerController />
       <PlayCamera />
       <TourCamera />
+      <Ezra />
     </>
   );
 }
