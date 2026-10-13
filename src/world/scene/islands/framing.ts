@@ -11,7 +11,7 @@ type V = readonly [number, number, number];
  */
 export const FRAMING: Record<string, { cam: V; target: V; dwell: number }> = {
   hero: { cam: [-4.8, 7.3, 16.1], target: [-1.8, 1, -1], dwell: 1.2 },
-  gtid: { cam: [-4.8, 7.3, 16.1], target: [-1.8, 1, -1], dwell: 1 },
+  gtid: { cam: [-4.8, 8.7, 16.1], target: [-1.8, 2.4, -1], dwell: 1 }, // raised 1.4: the Diamond Lock floats ~8 above the grass
   "petak-umpet": { cam: [-4.9, 6.4, 16.8], target: [-1.8, 0.5, -1], dwell: 1 },
   "orbit-store": { cam: [-6.7, 6.4, 13.3], target: [-1.5, 1.5, -1], dwell: 1 },
   "ezra-bot": { cam: [-4.8, 6.8, 16.1], target: [-1.8, 0.5, -1], dwell: 1 },
