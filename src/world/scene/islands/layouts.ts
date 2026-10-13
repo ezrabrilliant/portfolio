@@ -47,7 +47,7 @@ export const ORBIT = {
   crates: [
     { x: 2.4, z: 0.9, s: 0.85, ry: 0, stack: 0 },
     { x: 2.45, z: 0.85, s: 0.7, ry: 0.35, stack: 0.85 },
-    { x: -2.5, z: 1.1, s: 0.8, ry: -0.2, stack: 0 },
+    { x: -2.4, z: -0.7, s: 0.8, ry: -0.2, stack: 0 }, // left of the stall, out from behind the minecart sign
     { x: 2.9, z: -0.6, s: 0.75, ry: 0.15, stack: 0 },
   ],
   logo: { y: 5.05, z: -0.78 },
