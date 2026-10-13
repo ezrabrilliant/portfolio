@@ -9,15 +9,14 @@ export function Hud() {
   const prompt = useWorld((s) => s.prompt);
   return (
     <div className="hud">
-      <div className="hud-bar" role="toolbar" aria-label="World controls">
-        <button type="button" className="hud-btn" aria-pressed={mode === "play"} onClick={() => setMode(mode === "play" ? "tour" : "play")}>
+      {/* plain buttons whose visible text is the name (no aria-pressed: the text already flips with the state) */}
+      <div className="hud-bar" role="group" aria-label="World controls">
+        <button type="button" className={mode === "play" ? "hud-btn hud-btn--on" : "hud-btn"} onClick={() => setMode(mode === "play" ? "tour" : "play")}>
           {mode === "play" ? "Tour" : "Play"}
         </button>
         <button
           type="button"
-          className="hud-btn"
-          aria-pressed={!muted}
-          aria-label={muted ? "Turn sound on" : "Turn sound off"}
+          className={muted ? "hud-btn" : "hud-btn hud-btn--on"}
           onClick={() => {
             toggleMuted();
             if (muted) playSfx("click");

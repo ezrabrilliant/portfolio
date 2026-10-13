@@ -14,7 +14,7 @@ import { useTabCycling } from "./useTabCycling";
 export default function WorldApp() {
   const webgl = useMemo(() => hasWebGL(), []);
   const quality = useWorld((s) => s.quality);
-  useModeTransitions();
+  useModeTransitions(webgl);
   const wrap = useRef<HTMLDivElement>(null);
   useTabCycling(wrap);
   if (!webgl) return <NoWebGL />;

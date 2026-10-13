@@ -16,9 +16,11 @@ function enterPlay() {
   const world = useWorld.getState();
   runtime.hoverId = null;
   world.setHovered(null);
-  // a Space / touch-jump press that switched modes must not become a jump on the first Play frame
+  // presses made in the tour (Space / E / touch buttons) must not fire as a jump or interaction on the first Play frame
   sharedKeyboard.consume("Space");
+  sharedKeyboard.consume("KeyE");
   consumeTouch("jump");
+  consumeTouch("interact");
   const p = runtime.player;
   p.vel.x = p.vel.y = p.vel.z = 0;
   p.jumpTimer = 0;
@@ -36,7 +38,8 @@ function enterPlay() {
     p.sinceGround = 0;
     p.locked = true;
   } else {
-    // drop from the sky onto open ground of the island in view, at the tour's look target, back to the camera
+    // drop from the sky onto open ground of the island in view, at the tour's look target, back to the camera;
+    // reduced motion: no fall, he is simply there (cuts instead of flights)
     runtime.seated = false;
     runtime.standUp = 0;
     const island = runtime.islandById(world.activeIsland);
@@ -47,8 +50,14 @@ function enterPlay() {
     p.lastSafe.y = island.origin.y + 1;
     p.lastSafe.z = p.pos.z;
     runtime.heading = Math.atan2(p.pos.x - runtime.cameraPos.x, p.pos.z - runtime.cameraPos.z);
-    p.onGround = false;
-    p.sinceGround = 1; // past coyote time: no jump in mid-air
+    if (world.reducedMotion) {
+      p.pos.y = p.lastSafe.y;
+      p.onGround = true;
+      p.sinceGround = 0;
+    } else {
+      p.onGround = false;
+      p.sinceGround = 1; // past coyote time: no jump in mid-air
+    }
     p.locked = false;
   }
   playSfx("click");
@@ -79,20 +88,21 @@ function exitPlay() {
   window.scrollTo({ top: progressToScroll(prog), behavior: "auto" });
 }
 
-export function useModeTransitions() {
+/** Tour ↔ Play switching. `enabled` is false on the no-WebGL fallback page, which must keep scrolling normally. */
+export function useModeTransitions(enabled: boolean) {
   // a store listener runs inside setMode itself, so Ezra is placed in the same tick as the switch, whoever
   // switches (HUD, keys, phone button, ?play): the next frame's cameras then blend instead of cutting
-  useEffect(
-    () =>
-      useWorld.subscribe((s, prev) => {
-        if (s.mode === prev.mode) return;
-        if (s.mode === "play") enterPlay();
-        else exitPlay();
-      }),
-    [],
-  );
+  useEffect(() => {
+    if (!enabled) return;
+    return useWorld.subscribe((s, prev) => {
+      if (s.mode === prev.mode) return;
+      if (s.mode === "play") enterPlay();
+      else exitPlay();
+    });
+  }, [enabled]);
 
   useEffect(() => {
+    if (!enabled) return;
     const onKey = (e: KeyboardEvent) => {
       const t = e.target as HTMLElement | null;
       if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
@@ -100,8 +110,8 @@ export function useModeTransitions() {
       const s = useWorld.getState();
       if (s.mode === "tour" && isMoveCode(e.code)) s.setMode("play");
       else if (s.mode === "play" && e.code === "Escape") s.setMode("tour");
-      // Space is jump in Play: it must not also press a focused button (the "Tour" button right after clicking Play)
-      else if (s.mode === "play" && e.code === "Space" && t?.tagName === "BUTTON") e.preventDefault();
+      // Space is jump in Play: it must not also press a focused HUD button (the "Tour" button right after clicking Play)
+      else if (s.mode === "play" && e.code === "Space" && t?.tagName === "BUTTON" && t.closest(".hud")) e.preventDefault();
     };
     window.addEventListener("keydown", onKey);
     // ?play deep link (screenshots / sharing): wait until the world is built and the tour camera
@@ -123,5 +133,5 @@ export function useModeTransitions() {
       window.removeEventListener("keydown", onKey);
       cancelAnimationFrame(raf);
     };
-  }, []);
+  }, [enabled]);
 }
