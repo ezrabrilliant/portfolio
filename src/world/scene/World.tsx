@@ -8,6 +8,7 @@ import { STAR_ISLANDS } from "./islands";
 import { islandTop } from "./islands/types";
 import { IslandTerrain } from "./IslandTerrain";
 import { InitialView } from "./InitialView";
+import { InteractionController } from "./InteractionController";
 import { Lights } from "./Lights";
 import { ParticlesRenderer } from "./ParticlesRenderer";
 import { RoomEnv } from "./RoomEnv";
@@ -49,6 +50,7 @@ export function World() {
         return M ? <M.Component key={`island-${p.id}`} placement={p} /> : null;
       })}
       <ParticlesRenderer />
+      <InteractionController />
     </>
   );
 }
