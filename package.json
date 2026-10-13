@@ -13,7 +13,8 @@
     "gtid:snapshot": "node scripts/gtid-snapshot.mjs",
     "start": "PORT=3000 node server.js",
     "start:dev": "node server.js",
-    "serve": "npm run build && PORT=3000 node server.js"
+    "serve": "npm run build && PORT=3000 node server.js",
+    "shots": "node scripts/shoot-stops.mjs"
   },
   "dependencies": {
     "@emailjs/browser": "^4.4.1",

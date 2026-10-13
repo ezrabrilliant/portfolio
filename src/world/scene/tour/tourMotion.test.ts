@@ -17,11 +17,11 @@ const island = (id: string) => layout.islands.find((i) => i.id === id)!;
 const placeholderStops: TourStop[] = layout.tourOrder.map((id) => defaultTourStop(island(id), { dwell: id === "hero" ? 1.3 : 1 }));
 type T3 = readonly [number, number, number];
 const FRAMING: Record<string, { cam: T3; target: T3; dwell: number }> = {
-  hero: { cam: [-5.5, 5.2, 11.5], target: [-1.4, 1.3, -0.4], dwell: 1.2 },
-  gtid: { cam: [-8, 7, 15], target: [-2.6, 2.6, 0], dwell: 1 },
-  "petak-umpet": { cam: [-7, 4.6, 13], target: [-2.2, 1.8, -0.6], dwell: 1 },
-  "orbit-store": { cam: [-6.5, 5.6, 12], target: [-2, 2.4, 0], dwell: 1 },
-  "ezra-bot": { cam: [-7, 6.2, 13.5], target: [-2, 2.9, 0.2], dwell: 1 },
+  hero: { cam: [-4.8, 7.3, 16.1], target: [-1.8, 1, -1], dwell: 1.2 },
+  gtid: { cam: [-4.8, 7.3, 16.1], target: [-1.8, 1, -1], dwell: 1 },
+  "petak-umpet": { cam: [-4.9, 6.4, 16.8], target: [-1.8, 0.5, -1], dwell: 1 },
+  "orbit-store": { cam: [-6.7, 6.4, 13.3], target: [-1.5, 1.5, -1], dwell: 1 },
+  "ezra-bot": { cam: [-4.8, 6.8, 16.1], target: [-1.8, 0.5, -1], dwell: 1 },
 };
 const islandStops: TourStop[] = layout.tourOrder.map((id) => {
   const t = islandTop(island(id));
