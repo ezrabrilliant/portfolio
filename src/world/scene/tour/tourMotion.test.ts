@@ -4,6 +4,7 @@ import { buildLayout } from "@/world/engine/gen/layout";
 import { buildTourPath, stopProgress } from "@/world/engine/camera/tourPath";
 import type { TourPath, TourStop } from "@/world/engine/camera/tourPath";
 import type { Vec3 } from "@/world/engine/types";
+import { tourStopFor } from "../islands/framing";
 import { defaultTourStop, islandTop } from "../islands/types";
 import { tourVia, trackHeightPx } from "./tourMath";
 import { BLEND_TIME, buildTourTrack, createTourDriver, followProgress, nearestTrackProgress, sampleTrack, stepTourDriver, stopAt } from "./tourMotion";
@@ -12,27 +13,9 @@ import type { TourTrack } from "./tourMotion";
 const layout = buildLayout(worldProjects);
 const island = (id: string) => layout.islands.find((i) => i.id === id)!;
 
-// Today's placeholder stops (Part B) and the framing Part C's islands will use
-// (docs/superpowers/plans/2026-10-13-voxel-world-phase1-c-islands.md, FRAMING in islands/framing.ts).
+// The placeholder stops (defaultTourStop) and the real island framing (islands/framing.ts).
 const placeholderStops: TourStop[] = layout.tourOrder.map((id) => defaultTourStop(island(id), { dwell: id === "hero" ? 1.3 : 1 }));
-type T3 = readonly [number, number, number];
-const FRAMING: Record<string, { cam: T3; target: T3; dwell: number }> = {
-  hero: { cam: [-4.8, 7.3, 16.1], target: [-1.8, 1, -1], dwell: 1.2 },
-  gtid: { cam: [-4.8, 7.3, 16.1], target: [-1.8, 1, -1], dwell: 1 },
-  "petak-umpet": { cam: [-4.9, 6.4, 16.8], target: [-1.8, 0.5, -1], dwell: 1 },
-  "orbit-store": { cam: [-6.7, 6.4, 13.3], target: [-1.5, 1.5, -1], dwell: 1 },
-  "ezra-bot": { cam: [-4.8, 6.8, 16.1], target: [-1.8, 0.5, -1], dwell: 1 },
-};
-const islandStops: TourStop[] = layout.tourOrder.map((id) => {
-  const t = islandTop(island(id));
-  const f = FRAMING[id];
-  return {
-    id,
-    camera: { x: t.x + f.cam[0], y: t.y + f.cam[1], z: t.z + f.cam[2] },
-    target: { x: t.x + f.target[0], y: t.y + f.target[1], z: t.z + f.target[2] },
-    dwell: f.dwell,
-  };
-});
+const islandStops: TourStop[] = layout.tourOrder.map((id) => tourStopFor(island(id)));
 
 const FPS = 60;
 const DT = 1 / FPS;
@@ -122,7 +105,7 @@ describe("tour track", () => {
   }
 
   it("island framing: the flight direction turns smoothly too", () => {
-    // Part C's stop cameras sit behind the crossing vias, so the path never doubles back; the
+    // the island framing puts each stop camera behind the crossing vias, so the path never doubles back; the
     // velocity vector (speed and heading) changes by < 10% of the peak speed per frame.
     const path = buildTourPath(islandStops, tourVia(layout));
     const track = buildTourTrack(path);
@@ -213,6 +196,23 @@ describe("tour driver: Play → tour hand-off", () => {
     expect(w[end - 2] - w[end - 1]).toBeLessThan(0.002);
     // steepest around the middle: 1.875 / 48 frames ≈ 0.04 per frame
     expect(Math.max(...w.slice(1, end).map((x, k) => w[k] - x))).toBeLessThan(0.045);
+  });
+
+  it("waits about half a second for the page scroll, at any frame rate", () => {
+    for (const fps of [30, 60, 144]) {
+      const d = createTourDriver();
+      const input = { playing: true, scroll: 0.05, handoff: resume, reduced: false, dt: 1 / fps };
+      stepTourDriver(d, track, input);
+      input.playing = false;
+      let waited = 0;
+      while (d.rescroll < 0 && waited < 2) {
+        stepTourDriver(d, track, input);
+        waited += input.dt;
+      }
+      expect(d.rescroll).toBe(resume);
+      expect(waited).toBeGreaterThan(0.5);
+      expect(waited).toBeLessThan(0.5 + 2 / fps);
+    }
   });
 
   it("cuts instead of gliding under reduced motion", () => {

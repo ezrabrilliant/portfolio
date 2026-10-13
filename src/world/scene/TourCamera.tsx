@@ -7,6 +7,7 @@ import { useWorld } from "@/world/state/store";
 import { STAR_ISLANDS } from "./islands";
 import { progressToScroll, refreshScrollMeasure, scrollMeasure, scrollToProgress, stopProgresses, tourVia } from "./tour/tourMath";
 import { createTourDriver, stepTourDriver, stopAt, trackFor } from "./tour/tourMotion";
+import type { DriverInput } from "./tour/tourMotion";
 
 export function TourCamera() {
   const camera = useThree((s) => s.camera);
@@ -19,6 +20,7 @@ export function TourCamera() {
   const st = useMemo(
     () => ({
       driver: createTourDriver(),
+      input: { playing: false, scroll: 0, handoff: 0, reduced: false, dt: 0 } as DriverInput,
       chapter: -1,
       innerH: -1,
       fromPos: new THREE.Vector3(),
@@ -63,15 +65,14 @@ export function TourCamera() {
     if (!playing && window.innerHeight !== st.innerH) st.onViewport();
     const m = scrollMeasure();
     const d = st.driver;
-    const live = stepTourDriver(d, track, {
-      playing,
-      scroll: playing ? 0 : scrollToProgress(window.scrollY, m.trackPx, m.viewportH),
-      handoff: runtime.tourProgress,
-      reduced: world.reducedMotion,
-      dt: Math.min(rawDt, 1 / 30),
-    });
-    if (!live) return;
-    if (d.rescroll >= 0) window.scrollTo(0, progressToScroll(d.rescroll, m.trackPx, m.viewportH));
+    const inp = st.input;
+    inp.playing = playing;
+    inp.scroll = playing ? 0 : scrollToProgress(window.scrollY, m);
+    inp.handoff = runtime.tourProgress;
+    inp.reduced = world.reducedMotion;
+    inp.dt = Math.min(rawDt, 1 / 30);
+    if (!stepTourDriver(d, track, inp)) return;
+    if (d.rescroll >= 0) window.scrollTo(0, progressToScroll(d.rescroll, m));
     runtime.tourProgress = d.follow.x;
 
     // first tour frame after Play: the camera still holds the Play pose, glide from there

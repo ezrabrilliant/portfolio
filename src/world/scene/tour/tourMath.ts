@@ -18,7 +18,8 @@ export function trackHeightPx(stops: number, viewportH: number): number {
  * `vh` where unsupported) and a `100lvh` probe inside it gives the viewport height in the same
  * unit, so a phone's URL bar showing or hiding (which changes `innerHeight`) never moves the tour.
  * Cached; `refreshScrollMeasure()` re-reads it on resize. Everything that converts between scroll
- * and progress (TourCamera, `?stop`, scrollToIsland, leaving Play) uses it via the defaults below.
+ * and progress (TourCamera, `?stop`, scrollToIsland, leaving Play) uses it via the defaults below;
+ * a measure is passed whole, never as separate track and viewport heights.
  */
 export interface ScrollMeasure { trackPx: number; viewportH: number }
 
@@ -54,13 +55,15 @@ export function refreshScrollMeasure(): boolean {
   return changed;
 }
 
-export function scrollToProgress(scrollY: number, trackPx = scrollMeasure().trackPx, viewportH = scrollMeasure().viewportH): number {
-  const max = Math.max(1, trackPx - viewportH);
+/** Page scroll (px) → tour progress 0..1, under one whole measure (the cached one by default). */
+export function scrollToProgress(scrollY: number, m: ScrollMeasure = scrollMeasure()): number {
+  const max = Math.max(1, m.trackPx - m.viewportH);
   return Math.min(1, Math.max(0, scrollY / max));
 }
 
-export function progressToScroll(p: number, trackPx = scrollMeasure().trackPx, viewportH = scrollMeasure().viewportH): number {
-  return Math.min(1, Math.max(0, p)) * Math.max(1, trackPx - viewportH);
+/** Tour progress 0..1 → page scroll (px), under one whole measure (the cached one by default). */
+export function progressToScroll(p: number, m: ScrollMeasure = scrollMeasure()): number {
+  return Math.min(1, Math.max(0, p)) * Math.max(1, m.trackPx - m.viewportH);
 }
 
 const stopCache = new WeakMap<TourPath, number[]>();

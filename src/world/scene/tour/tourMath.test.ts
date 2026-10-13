@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { worldProjects } from "@/config/portfolio";
 import { buildLayout } from "@/world/engine/gen/layout";
 import { buildTourPath, stopProgress } from "@/world/engine/camera/tourPath";
@@ -18,11 +18,12 @@ describe("scroll ↔ progress", () => {
   it("maps the scrollable range to 0..1 and back", () => {
     const track = trackHeightPx(5, 1000);
     expect(track).toBe(7000);
-    expect(scrollToProgress(0, track, 1000)).toBe(0);
-    expect(scrollToProgress(6000, track, 1000)).toBe(1);
-    expect(scrollToProgress(9999, track, 1000)).toBe(1);
-    expect(progressToScroll(0.5, track, 1000)).toBe(3000);
-    expect(scrollToProgress(progressToScroll(0.37, track, 1000), track, 1000)).toBeCloseTo(0.37, 9);
+    const m = { trackPx: track, viewportH: 1000 };
+    expect(scrollToProgress(0, m)).toBe(0);
+    expect(scrollToProgress(6000, m)).toBe(1);
+    expect(scrollToProgress(9999, m)).toBe(1);
+    expect(progressToScroll(0.5, m)).toBe(3000);
+    expect(scrollToProgress(progressToScroll(0.37, m), m)).toBeCloseTo(0.37, 9);
   });
 });
 
@@ -31,8 +32,46 @@ describe("stable scroll measure", () => {
     const m = scrollMeasure();
     expect(m.trackPx).toBe(trackHeightPx(5, m.viewportH));
     expect(refreshScrollMeasure()).toBe(false); // no DOM track to read
-    expect(progressToScroll(0.5)).toBe(progressToScroll(0.5, m.trackPx, m.viewportH));
+    expect(progressToScroll(0.5)).toBe(progressToScroll(0.5, m));
     expect(scrollToProgress(progressToScroll(0.37))).toBeCloseTo(0.37, 9);
+  });
+});
+
+describe("stable scroll measure from the page", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.resetModules();
+  });
+
+  /** A page with the scroll track and its 100-unit probe; heights can change like on a resize. */
+  function stubPage(track: number, probe: number) {
+    const probeEl = { offsetHeight: probe };
+    const trackEl = { offsetHeight: track, querySelector: (sel: string) => (sel === ".tour-track-probe" ? probeEl : null) };
+    vi.stubGlobal("document", { querySelector: (sel: string) => (sel === ".tour-track" ? trackEl : null) });
+    return { trackEl, probeEl };
+  }
+
+  it("reads track and probe heights once, and re-reads them only on refresh", async () => {
+    const page = stubPage(6300, 900);
+    vi.resetModules();
+    const t = await import("./tourMath");
+    expect(t.scrollMeasure()).toEqual({ trackPx: 6300, viewportH: 900 });
+    expect(t.progressToScroll(0.5)).toBe(2700);
+    page.trackEl.offsetHeight = 4900; // window 900 → 700 px tall
+    page.probeEl.offsetHeight = 700;
+    expect(t.scrollMeasure().trackPx).toBe(6300); // cached until refreshed
+    expect(t.refreshScrollMeasure()).toBe(true);
+    expect(t.refreshScrollMeasure()).toBe(false);
+    expect(t.progressToScroll(0.5)).toBe(2100);
+    expect(t.scrollToProgress(2100)).toBe(0.5);
+  });
+
+  it("falls back to the innerHeight geometry while the probe has no height", async () => {
+    stubPage(6300, 0);
+    vi.resetModules();
+    const t = await import("./tourMath");
+    expect(t.refreshScrollMeasure()).toBe(false);
+    expect(t.scrollMeasure()).toEqual({ trackPx: 7000, viewportH: 1000 });
   });
 });
 

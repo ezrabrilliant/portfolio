@@ -297,8 +297,8 @@ export function followProgress(f: Follower, target: number, dt: number, smoothTi
 export const BLEND_TIME = 0.8;
 /** Progress tolerance for "the page scroll has reached the hand-off point". */
 const HANDOFF_EPS = 1e-3;
-/** Frames to wait for the hand-off scroll before scrolling the page ourselves. */
-const HANDOFF_FRAMES = 30;
+/** Seconds to wait for the hand-off scroll before scrolling the page ourselves. */
+const HANDOFF_WAIT = 0.5;
 
 /**
  * Per-frame tour camera state (pure: no DOM, no three). TourCamera feeds it the scroll progress
@@ -316,7 +316,8 @@ export interface TourDriver {
   /** progress the camera is heading for: the scroll, or the hand-off point until the scroll lands */
   target: number;
   handoff: number;
-  handoffFrames: number;
+  /** seconds spent waiting for the hand-off scroll */
+  handoffWait: number;
   wasPlaying: boolean;
   /** linear blend clock, 1 → 0 over BLEND_TIME */
   blend: number;
@@ -345,7 +346,7 @@ export function createTourDriver(): TourDriver {
     follow: { x: -1, v: 0 },
     target: 0,
     handoff: -1,
-    handoffFrames: 0,
+    handoffWait: 0,
     wasPlaying: false,
     blend: 0,
     weight: 0,
@@ -371,7 +372,7 @@ export function stepTourDriver(d: TourDriver, track: TourTrack, inp: DriverInput
     f.x = Math.min(1, Math.max(0, inp.handoff));
     f.v = 0;
     d.handoff = f.x;
-    d.handoffFrames = 0;
+    d.handoffWait = 0;
     d.blend = inp.reduced ? 0 : 1;
   }
 
@@ -380,7 +381,8 @@ export function stepTourDriver(d: TourDriver, track: TourTrack, inp: DriverInput
     if (Math.abs(inp.scroll - d.handoff) <= HANDOFF_EPS) d.handoff = -1;
     else {
       target = d.handoff;
-      if (++d.handoffFrames > HANDOFF_FRAMES) {
+      d.handoffWait += inp.dt;
+      if (d.handoffWait > HANDOFF_WAIT) {
         d.rescroll = d.handoff;
         d.handoff = -1;
       }
