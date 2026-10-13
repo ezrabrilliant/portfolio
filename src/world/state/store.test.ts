@@ -50,12 +50,22 @@ describe("useWorld", () => {
     expect(useWorld.getState().mode).toBe("tour");
   });
 
-  it("setPrompt compares by id", () => {
+  it("setPrompt compares by id and label", () => {
     useWorld.getState().setPrompt({ id: "a", label: "Print a receipt" });
     const listener = vi.fn();
     const unsub = useWorld.subscribe(listener);
     useWorld.getState().setPrompt({ id: "a", label: "Print a receipt" });
     expect(listener).not.toHaveBeenCalled();
+    unsub();
+  });
+
+  it("setPrompt updates when only the label changes on the same id", () => {
+    useWorld.getState().setPrompt({ id: "gtid-board", label: "Show mods online" });
+    const listener = vi.fn();
+    const unsub = useWorld.subscribe(listener);
+    useWorld.getState().setPrompt({ id: "gtid-board", label: "Show price chart" });
+    expect(listener).toHaveBeenCalledTimes(1);
+    expect(useWorld.getState().prompt).toEqual({ id: "gtid-board", label: "Show price chart" });
     unsub();
   });
 });

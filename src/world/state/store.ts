@@ -55,7 +55,8 @@ export const useWorld = create<WorldState>()((set, get) => ({
   },
   prompt: null,
   setPrompt: (prompt) => {
-    if ((get().prompt?.id ?? null) !== (prompt?.id ?? null)) set({ prompt });
+    const cur = get().prompt;
+    if ((cur?.id ?? null) !== (prompt?.id ?? null) || cur?.label !== prompt?.label) set({ prompt });
   },
   reducedMotion,
   ready: false,
