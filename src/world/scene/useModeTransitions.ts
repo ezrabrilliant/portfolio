@@ -56,15 +56,23 @@ function enterPlay() {
 
 function exitPlay() {
   document.documentElement.classList.remove("world-playing");
+  const player = runtime.player;
+  // the tour runs no physics: Ezra stays where he was left, but one left mid-air (a drop, a jump, a bounce
+  // arc or cart ride, a fall) would hang there, so he goes back to his last footing
+  if (runtime.ride || !player.onGround) {
+    Object.assign(player.pos, player.lastSafe);
+    player.vel.x = player.vel.y = player.vel.z = 0;
+    player.onGround = true;
+  }
   runtime.ride = null;
-  runtime.player.locked = false;
+  player.locked = false;
   runtime.focusId = null;
   useWorld.getState().setPrompt(null);
   const path = runtime.tourPath;
   if (!path) return;
   // hand-off to TourCamera (B7 contract): resume on B7's re-timed track at the point framing Ezra (his chest,
   // where tour stops aim), and glide there
-  const p = runtime.player.pos;
+  const p = player.pos;
   const prog = nearestTrackProgress(trackFor(path), watchPoint(path.stops, { x: p.x, y: p.y + 1.5, z: p.z }));
   runtime.tourProgress = prog;
   runtime.tourBlend = 1;
