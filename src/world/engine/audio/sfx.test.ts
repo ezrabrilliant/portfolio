@@ -67,6 +67,8 @@ describe("sfx", () => {
       expect(String(msg)).toContain("[sfx] audio failed to load");
     } finally {
       warnSpy.mockRestore();
+      vi.doUnmock("zzfx");
+      vi.resetModules();
     }
   });
 });
