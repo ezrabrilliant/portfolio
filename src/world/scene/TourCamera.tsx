@@ -111,6 +111,8 @@ export function TourCamera() {
     if (d.edge) {
       st.fromPos.copy(camera.position);
       st.fromQ.copy(camera.quaternion);
+      // Play set the active island from where Ezra stood: re-sync it with the chapter the tour resumes on
+      st.chapter = -1;
     }
     camera.position.set(d.cam.x, d.cam.y, d.cam.z);
     camera.lookAt(d.look.x, d.look.y, d.look.z);

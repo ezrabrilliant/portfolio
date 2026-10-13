@@ -10,7 +10,7 @@ import { useWorld } from "@/world/state/store";
 import { axisFromKeys, cameraRelative, sharedKeyboard } from "@/world/input/keyboard";
 import { consumeTouch, touchInput } from "@/world/input/touch";
 import { advanceRide, rideHeading } from "./crossings/ride";
-import { holdDropInput } from "./modes";
+import { holdDropInput, islandUnder } from "./modes";
 
 const TAU = Math.PI * 2;
 function dampAngle(a: number, b: number, lambda: number, dt: number): number {
@@ -136,6 +136,11 @@ export function PlayerController() {
       killY: runtime.killY,
     });
     if (runtime.dropping && p.onGround) runtime.dropping = false;
+    if (p.onGround) {
+      // the island he stands on is the active one in Play too (the tour camera only sets it while touring)
+      const island = islandUnder(runtime.layout.islands, p.pos.x, p.pos.z);
+      if (island) useWorld.getState().setActiveIsland(island.id); // change-guarded in the store
+    }
 
     if (!p.locked && Math.hypot(input.moveX, input.moveZ) > 0.05) runtime.heading = dampAngle(runtime.heading, Math.atan2(input.moveX, input.moveZ), 12, dt);
     runtime.speed = Math.hypot(p.vel.x, p.vel.z);

@@ -6,7 +6,7 @@ import { buildLayout } from "@/world/engine/gen/layout";
 import type { IslandPlacement } from "@/world/engine/gen/layout";
 import type { IsSolid } from "@/world/engine/types";
 import { defaultTourStop, islandTop } from "./islands/types";
-import { dropStart, enterKind, landingColumn, watchPoint } from "./modes";
+import { dropStart, enterKind, islandUnder, landingColumn, watchPoint } from "./modes";
 import { tourVia } from "./tour/tourMath";
 import { buildTourTrack, nearestTrackProgress, stopAt } from "./tour/tourMotion";
 
@@ -103,6 +103,37 @@ describe("landingColumn", () => {
       const walled = landingColumn(island(house), p, behind, { x: p.origin.x + 0.5, y: p.origin.y + 3, z: p.origin.z + 0.5 });
       expect(walled).toEqual({ x: p.origin.x + 0.5, z: p.origin.z - 1.5 });
     });
+  });
+});
+
+describe("islandUnder (the island Ezra stands on in Play)", () => {
+  const layout = buildLayout(worldProjects);
+  const centre = (q: IslandPlacement) => ({ x: q.origin.x + 0.5, z: q.origin.z + 0.5 });
+
+  it("is the island whose centre column he stands near", () => {
+    for (const q of layout.islands) {
+      const c = centre(q);
+      expect(islandUnder(layout.islands, c.x, c.z)?.id).toBe(q.id);
+      expect(islandUnder(layout.islands, c.x + q.radius * 0.9, c.z)?.id).toBe(q.id);
+    }
+  });
+
+  it("is null between islands (on a bridge or in the air past every radius)", () => {
+    for (const c of layout.crossings) {
+      const a = layout.islands.find((q) => q.id === c.from)!;
+      const b = layout.islands.find((q) => q.id === c.to)!;
+      const mid = { x: (centre(a).x + centre(b).x) / 2, z: (centre(a).z + centre(b).z) / 2 };
+      const gap = Math.hypot(centre(a).x - centre(b).x, centre(a).z - centre(b).z) / 2;
+      if (gap > Math.max(a.radius, b.radius)) expect(islandUnder(layout.islands, mid.x, mid.z), `${c.from} → ${c.to}`).toBeNull();
+    }
+    expect(islandUnder(layout.islands, 1e4, 1e4)).toBeNull();
+  });
+
+  it("takes the nearer centre when two radii overlap", () => {
+    const a: IslandPlacement = { ...p, id: "a", origin: { x: 0, y: 0, z: 0 }, radius: 8 };
+    const b: IslandPlacement = { ...p, id: "b", origin: { x: 10, y: 0, z: 0 }, radius: 8 };
+    expect(islandUnder([a, b], 4, 0.5)?.id).toBe("a");
+    expect(islandUnder([a, b], 7, 0.5)?.id).toBe("b");
   });
 });
 

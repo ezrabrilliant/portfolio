@@ -95,3 +95,21 @@ export function holdDropInput(input: CharacterInput, dropping: boolean): Charact
   }
   return input;
 }
+
+/**
+ * The island Ezra stands on in Play: the one whose centre column is nearest (x, z), if (x, z) lies within its radius;
+ * null between islands. PlayerController feeds it to setActiveIsland, so arrivals (Ezra Bot's reply, Orbit's receipt,
+ * GTID's sparkles) fire by walking, not only from the tour. Called every grounded frame: no allocation.
+ */
+export function islandUnder(islands: readonly IslandPlacement[], x: number, z: number): IslandPlacement | null {
+  let best: IslandPlacement | null = null;
+  let bestD = Infinity;
+  for (const p of islands) {
+    const d = (x - p.origin.x - 0.5) ** 2 + (z - p.origin.z - 0.5) ** 2;
+    if (d <= p.radius * p.radius && d < bestD) {
+      best = p;
+      bestD = d;
+    }
+  }
+  return best;
+}
