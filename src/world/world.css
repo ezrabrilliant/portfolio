@@ -53,3 +53,38 @@ html.world-playing, html.world-playing body { overflow: hidden; }
   font-weight: 600 800;
   font-display: swap;
 }
+
+.hud { position: fixed; inset: 0; z-index: 10; pointer-events: none; }
+.hud-bar {
+  position: absolute; top: max(16px, env(safe-area-inset-top)); left: 16px;
+  display: flex; gap: 8px; pointer-events: auto;
+}
+.hud-btn {
+  font: 700 14px/1 "Schibsted Grotesk", system-ui, sans-serif;
+  background: rgba(244, 243, 239, 0.9); color: #13212b;
+  border: 1px solid rgba(19, 33, 43, 0.18); border-radius: 6px;
+  padding: 10px 14px; cursor: pointer;
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+  transition: background-color 0.2s ease, transform 0.1s ease;
+}
+.hud-btn:hover { background: #ffffff; }
+.hud-btn:active { transform: translateY(1px); }
+.hud-btn[aria-pressed="true"] { background: #13212b; color: #f4f3ef; }
+.hud-btn:focus-visible { outline: 2px solid #13212b; outline-offset: 2px; }
+.hud-hint {
+  position: absolute; top: calc(max(16px, env(safe-area-inset-top)) + 46px); left: 16px; margin: 0;
+  font: 500 12px/1.4 ui-monospace, "SFMono-Regular", Menlo, monospace; color: rgba(19, 33, 43, 0.72);
+}
+.hud-prompt {
+  position: absolute; left: 50%; bottom: max(28px, env(safe-area-inset-bottom)); transform: translateX(-50%);
+  font: 700 14px/1 "Schibsted Grotesk", system-ui, sans-serif; color: #f4f3ef;
+  background: rgba(19, 33, 43, 0.82); padding: 10px 14px; border-radius: 6px; white-space: nowrap;
+}
+.hud-prompt:empty { display: none; }
+.hud-prompt kbd {
+  display: inline-block; min-width: 18px; padding: 3px 5px; margin-right: 4px; border-radius: 4px;
+  background: #f4f3ef; color: #13212b; font: 700 12px/1 ui-monospace, monospace; text-align: center;
+}
+.world-fade { position: fixed; inset: 0; background: #0d1418; opacity: 0; pointer-events: none; }
+@media (pointer: coarse) { .hud-hint { display: none; } }
+@media (prefers-reduced-motion: reduce) { .hud-btn { transition: none; } }

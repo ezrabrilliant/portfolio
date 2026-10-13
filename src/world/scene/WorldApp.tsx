@@ -2,16 +2,19 @@ import { Suspense, useMemo, useRef } from "react";
 import { Canvas } from "@react-three/fiber";
 import { useWorld } from "@/world/state/store";
 import { dprCap, hasWebGL } from "@/world/state/quality";
+import { Hud } from "@/world/ui/Hud";
 import { NoWebGL } from "@/world/ui/NoWebGL";
 import { SeoMirror } from "@/world/ui/SeoMirror";
 import { MobileControls } from "@/world/ui/MobileControls";
 import { TourScrollTrack } from "@/world/ui/TourScrollTrack";
 import { World } from "./World";
+import { useModeTransitions } from "./useModeTransitions";
 import { useTabCycling } from "./useTabCycling";
 
 export default function WorldApp() {
   const webgl = useMemo(() => hasWebGL(), []);
   const quality = useWorld((s) => s.quality);
+  useModeTransitions();
   const wrap = useRef<HTMLDivElement>(null);
   useTabCycling(wrap);
   if (!webgl) return <NoWebGL />;
@@ -34,6 +37,7 @@ export default function WorldApp() {
         </Canvas>
       </div>
       <TourScrollTrack />
+      <Hud />
       <MobileControls />
       <SeoMirror />
     </>
