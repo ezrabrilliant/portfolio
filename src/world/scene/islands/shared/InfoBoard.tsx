@@ -2,11 +2,10 @@ import type { IslandPlacement } from "@/world/engine/gen/layout";
 import { WorldText } from "@/world/scene/WorldText";
 import { islandFrame } from "./local";
 import { PALETTE } from "./props";
-import { wrapWords } from "./text";
+import { infoBoardRows } from "./text";
 
 const WIDTH = 2.4; // keep in sync with INFO_HALF_SPAN in layouts.ts (posts at ±(WIDTH / 2 − 0.2))
 const POST_H = 1.0;
-const ROW = 0.3;
 
 /** Wooden board on two posts: a title and short lines of real numbers. Rendered in island-local space. */
 export function InfoBoard({
@@ -18,8 +17,8 @@ export function InfoBoard({
   lines: readonly string[];
   rotationY?: number;
 }) {
-  const rows = lines.flatMap((l) => wrapWords(l, Math.floor(WIDTH * 9)));
-  const boardH = 0.62 + ROW * rows.length;
+  const rows = infoBoardRows(title, lines); // a long title wraps and the board grows to keep it clear of the body
+  const boardH = rows.height;
   const top = POST_H + boardH;
   return (
     <group position={islandFrame(placement)}>
@@ -35,9 +34,11 @@ export function InfoBoard({
           <boxGeometry args={[WIDTH, boardH, 0.1]} />
           <meshStandardMaterial color={PALETTE.plank[0]} roughness={0.85} />
         </mesh>
-        <WorldText text={title} position={[0, top - 0.28, 0.06]} size={0.26} color="#3a2a1c" font="ui" anchorX="center" maxWidth={WIDTH - 0.2} />
-        {rows.map((row, i) => (
-          <WorldText key={`${i}-${row}`} text={row} position={[0, top - 0.62 - i * ROW, 0.06]} size={0.2} color="#4a3626" font="ui" anchorX="center" maxWidth={WIDTH - 0.2} />
+        {rows.title.map((row, i) => (
+          <WorldText key={`t${i}-${row}`} text={row} position={[0, top - rows.titleY[i], 0.06]} size={0.26} color="#3a2a1c" font="ui" anchorX="center" maxWidth={WIDTH - 0.2} />
+        ))}
+        {rows.body.map((row, i) => (
+          <WorldText key={`b${i}-${row}`} text={row} position={[0, top - rows.bodyY[i], 0.06]} size={0.2} color="#4a3626" font="ui" anchorX="center" maxWidth={WIDTH - 0.2} />
         ))}
       </group>
     </group>
