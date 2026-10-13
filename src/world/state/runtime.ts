@@ -49,6 +49,8 @@ export const runtime = {
   seat: null as { pos: Vec3; heading: number; viewerHeading: number } | null,
   seated: true,
   standUp: 0,
+  /** Ezra is falling into Play from the sky: input is ignored until he lands (PlayerController, modes.holdDropInput). */
+  dropping: false,
   ride: null as Ride | null,
   hoverId: null as string | null,
   focusId: null as string | null,

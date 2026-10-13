@@ -1,5 +1,6 @@
 import type { TourStop } from "@/world/engine/camera/tourPath";
 import type { IslandPlacement } from "@/world/engine/gen/layout";
+import type { CharacterInput } from "@/world/engine/physics/character";
 import type { IsSolid, Vec3 } from "@/world/engine/types";
 
 export type EnterKind = "standUp" | "drop";
@@ -79,4 +80,18 @@ export function watchPoint(stops: readonly TourStop[], pos: Vec3): Vec3 {
     }
   }
   return { x: s.camera.x + pos.x - s.target.x, y: s.camera.y + pos.y - s.target.y, z: s.camera.z + pos.z - s.target.z };
+}
+
+/**
+ * While Ezra drops into Play (runtime.dropping), movement and jump are ignored until he lands, like a bounce arc
+ * (spec §7): the key that started Play is usually still held, and with air control it would carry him ~4 blocks
+ * past the landing column onto a prop. Mutates and returns `input` (called every frame, so no allocation).
+ */
+export function holdDropInput(input: CharacterInput, dropping: boolean): CharacterInput {
+  if (dropping) {
+    input.moveX = 0;
+    input.moveZ = 0;
+    input.jump = false;
+  }
+  return input;
 }

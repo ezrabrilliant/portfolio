@@ -10,6 +10,7 @@ import { useWorld } from "@/world/state/store";
 import { axisFromKeys, cameraRelative, sharedKeyboard } from "@/world/input/keyboard";
 import { consumeTouch, touchInput } from "@/world/input/touch";
 import { advanceRide, rideHeading } from "./crossings/ride";
+import { holdDropInput } from "./modes";
 
 const TAU = Math.PI * 2;
 function dampAngle(a: number, b: number, lambda: number, dt: number): number {
@@ -127,13 +128,16 @@ export function PlayerController() {
     input.moveZ = move.z;
     input.jump = sharedKeyboard.consume("Space") || consumeTouch("jump");
     input.run = sharedKeyboard.keys.has("ShiftLeft") || sharedKeyboard.keys.has("ShiftRight");
+    // dropping into Play: no steering or jump until he lands (a held W would carry him onto a prop)
+    holdDropInput(input, runtime.dropping);
 
     const r = stepCharacter(p, input, dt, {
       isSolid: built.grid.isSolid,
       killY: runtime.killY,
     });
+    if (runtime.dropping && p.onGround) runtime.dropping = false;
 
-    if (!p.locked && Math.hypot(move.x, move.z) > 0.05) runtime.heading = dampAngle(runtime.heading, Math.atan2(move.x, move.z), 12, dt);
+    if (!p.locked && Math.hypot(input.moveX, input.moveZ) > 0.05) runtime.heading = dampAngle(runtime.heading, Math.atan2(input.moveX, input.moveZ), 12, dt);
     runtime.speed = Math.hypot(p.vel.x, p.vel.z);
     runtime.moving = runtime.speed > 0.3;
     runtime.animPhase += runtime.speed * dt * 1.7;

@@ -31,6 +31,7 @@ function enterPlay() {
     // unlocked step must not report a landing (squash, dust, sound)
     runtime.seated = false;
     runtime.standUp = STAND_UP_SECONDS;
+    runtime.dropping = false;
     Object.assign(p.pos, seat.pos);
     Object.assign(p.lastSafe, seat.pos);
     runtime.heading = seat.heading;
@@ -54,9 +55,12 @@ function enterPlay() {
       p.pos.y = p.lastSafe.y;
       p.onGround = true;
       p.sinceGround = 0;
+      runtime.dropping = false;
     } else {
       p.onGround = false;
       p.sinceGround = 1; // past coyote time: no jump in mid-air
+      // the key that started Play is usually still held: ignore input until he lands, or it steers him onto a prop
+      runtime.dropping = true;
     }
     p.locked = false;
   }
@@ -74,6 +78,7 @@ function exitPlay() {
     player.onGround = true;
   }
   runtime.ride = null;
+  runtime.dropping = false;
   player.locked = false;
   runtime.focusId = null;
   useWorld.getState().setPrompt(null);
