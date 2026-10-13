@@ -21,6 +21,8 @@ export default defineConfig({
     },
   },
   build: {
+    // vendor-three (~755 kB minified, 195 kB gzip) is lazy-loaded with the 3D world, not part of the page shell
+    chunkSizeWarningLimit: 800,
     rollupOptions: {
       output: {
         // function form: the object form only names entry modules, so react/jsx-runtime, react-dom/client,

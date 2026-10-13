@@ -3,7 +3,6 @@ import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import type { Crossing } from "@/world/engine/gen/layout";
 import { railPoint, railTangent, rideProgress } from "@/world/engine/traversal/rail";
-import { stopProgress } from "@/world/engine/camera/tourPath";
 import type { TourPath } from "@/world/engine/camera/tourPath";
 import { playSfx } from "@/world/engine/audio/sfx";
 import { worldProjects } from "@/config/portfolio";
@@ -12,6 +11,7 @@ import { useWorld } from "@/world/state/store";
 import { Interactable } from "../Interactable";
 import { WorldText } from "../WorldText";
 import { scrollToIsland } from "../tour/scrollToIsland";
+import { stopProgresses } from "../tour/tourMath";
 import { cartTourTable, sampleTable } from "./cartFollow";
 import { SIGN_OFFSET, SIGN_WIDTH, STATION_SIZE, minecartRail, railEnds, railLength } from "./geometry";
 import { PLANK, WOOD, ironMat, mergeParts, paintMat, unitBox, woodMat } from "./materials";
@@ -151,8 +151,10 @@ export function Minecart({ crossing }: { crossing: Crossing }) {
         tour.path = path;
         tour.table = cartTourTable(path, segIndex, rail);
       }
-      const a = stopProgress(path, segIndex);
-      const b = stopProgress(path, segIndex + 1);
+      // cached per path (engine stopProgress rebuilds the zone list on every call)
+      const stops = stopProgresses(path);
+      const a = stops[segIndex];
+      const b = stops[segIndex + 1];
       u = sampleTable(tour.table!, (runtime.tourProgress - a) / (b - a));
     } else {
       // parked at the station on Ezra's side of the gap

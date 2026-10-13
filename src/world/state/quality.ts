@@ -28,10 +28,14 @@ export function readDevice(): DeviceInfo {
   };
 }
 
+/** Probes for WebGL on a throwaway canvas, then releases that context (browsers cap live WebGL contexts). */
 export function hasWebGL(): boolean {
   try {
     const c = document.createElement("canvas");
-    return !!(c.getContext("webgl2") || c.getContext("webgl"));
+    const gl = c.getContext("webgl2") || c.getContext("webgl");
+    if (!gl) return false;
+    gl.getExtension("WEBGL_lose_context")?.loseContext();
+    return true;
   } catch {
     return false;
   }

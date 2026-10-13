@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
-import { dprCap, pickQuality } from "./quality";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { dprCap, hasWebGL, pickQuality } from "./quality";
 
 const desktop = { width: 1440, height: 900, cores: 8, coarsePointer: false, saveData: false };
 
@@ -25,5 +25,34 @@ describe("dprCap", () => {
   it("caps pixel ratio per tier", () => {
     expect(dprCap("high")).toBe(1.75);
     expect(dprCap("low")).toBe(1.25);
+  });
+});
+
+describe("hasWebGL", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  /** A document whose canvases answer getContext with `gl` for the listed kinds. */
+  const stubDocument = (kinds: string[], gl: unknown) =>
+    vi.stubGlobal("document", { createElement: () => ({ getContext: (k: string) => (kinds.includes(k) ? gl : null) }) });
+
+  it("is true with WebGL 2 or 1, and releases the probe context right away", () => {
+    for (const kinds of [["webgl2", "webgl"], ["webgl"]]) {
+      const loseContext = vi.fn();
+      stubDocument(kinds, { getExtension: (name: string) => (name === "WEBGL_lose_context" ? { loseContext } : null) });
+      expect(hasWebGL()).toBe(true);
+      expect(loseContext).toHaveBeenCalledTimes(1);
+    }
+  });
+
+  it("is still true when the lose-context extension is missing", () => {
+    stubDocument(["webgl"], { getExtension: () => null });
+    expect(hasWebGL()).toBe(true);
+  });
+
+  it("is false without a context, or when probing throws", () => {
+    stubDocument([], null);
+    expect(hasWebGL()).toBe(false);
+    vi.stubGlobal("document", { createElement: () => { throw new Error("no canvas"); } });
+    expect(hasWebGL()).toBe(false);
   });
 });
