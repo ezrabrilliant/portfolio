@@ -4,7 +4,11 @@ import { buildLayout } from "@/world/engine/gen/layout";
 import type { IslandPlacement } from "@/world/engine/gen/layout";
 import { buildRail, railPoint, railTangent } from "@/world/engine/traversal/rail";
 import { buildWorld } from "@/world/engine/worldBuild";
-import { bridgeCells, bridgePlanks, inset, minecartRail, padPair, railEnds, railLength, steppingStones } from "./geometry";
+import { characterCollides, createCharacter, stepCharacter } from "@/world/engine/physics/character";
+import type { Vec3 } from "@/world/engine/types";
+import { bridgeCells, bridgeDeck, bridgePlanks, inset, minecartRail, padPair, railEnds, railLength, steppingStones } from "./geometry";
+import type { DeckPlank } from "./geometry";
+import { stampCrossings } from "./stamp";
 
 const a = { x: 0, y: 1, z: 0 };
 const b = { x: 9, y: 3, z: 3 };
@@ -83,39 +87,128 @@ describe("minecartRail", () => {
   const world = buildWorld(layout);
   const byId = (id: string) => layout.islands.find((i) => i.id === id)!;
   const c = layout.crossings.find((x) => x.kind === "minecart")!;
-  const ends = railEnds(c, byId(c.from), byId(c.to));
-  const rail = minecartRail(ends, world.grid.isSolid);
+  const up = railEnds(c, byId(c.from), byId(c.to));
+  // the descending branch goes live if the higher island ever ends up on the "from" side
+  const down = { ...up, stationA: up.stationB, stationB: up.stationA };
 
-  it("runs flat from station to station, 0.3 above the walking surface", () => {
-    const a = railPoint(rail, 0);
-    const b = railPoint(rail, 1);
-    expect(a.y).toBeCloseTo(ends.stationA.y + 0.3, 6);
-    expect(b.y).toBeCloseTo(ends.stationB.y + 0.3, 6);
-    expect(Math.abs(railTangent(rail, 0.001).y)).toBeLessThan(0.1); // under 6°: the parked cart sits level
-    expect(Math.abs(railTangent(rail, 0.999).y)).toBeLessThan(0.1);
-  });
+  for (const [name, ends] of [["climbing", up], ["descending", down]] as const) {
+    const rail = minecartRail(ends, world.grid.isSolid);
 
-  it("never runs through an island: the track bed, cart and Ezra stay in open air", () => {
-    for (let i = 0; i <= 400; i++) {
-      const p = railPoint(rail, i / 400);
-      const t = railTangent(rail, i / 400);
-      const h = Math.hypot(t.x, t.z) || 1;
-      for (const side of [-0.6, 0, 0.6]) {
-        const x = Math.floor(p.x - (t.z / h) * side);
-        const z = Math.floor(p.z + (t.x / h) * side);
-        for (let y = Math.floor(p.y - 0.1); y <= Math.floor(p.y + 0.35 + 1.8); y++) expect(world.grid.isSolid(x, y, z)).toBe(false);
+    it(`runs flat from station to station, 0.3 above the walking surface (${name})`, () => {
+      const a = railPoint(rail, 0);
+      const b = railPoint(rail, 1);
+      expect(a.y).toBeCloseTo(ends.stationA.y + 0.3, 6);
+      expect(b.y).toBeCloseTo(ends.stationB.y + 0.3, 6);
+      expect(Math.abs(railTangent(rail, 0.001).y)).toBeLessThan(0.1); // under 6°: the parked cart sits level
+      expect(Math.abs(railTangent(rail, 0.999).y)).toBeLessThan(0.1);
+    });
+
+    it(`never runs through an island: the track bed, cart and Ezra stay in open air (${name})`, () => {
+      for (let i = 0; i <= 400; i++) {
+        const p = railPoint(rail, i / 400);
+        const t = railTangent(rail, i / 400);
+        const h = Math.hypot(t.x, t.z) || 1;
+        for (const side of [-0.6, 0, 0.6]) {
+          const x = Math.floor(p.x - (t.z / h) * side);
+          const z = Math.floor(p.z + (t.x / h) * side);
+          for (let y = Math.floor(p.y - 0.1); y <= Math.floor(p.y + 0.35 + 1.8); y++) expect(world.grid.isSolid(x, y, z)).toBe(false);
+        }
+      }
+    });
+
+    it(`is never steeper than a voxel rail ramp and sags in the open gap (${name})`, () => {
+      let prev = railPoint(rail, 0);
+      for (let i = 1; i <= 200; i++) {
+        const p = railPoint(rail, i / 200);
+        expect(Math.abs(Math.atan2(p.y - prev.y, Math.hypot(p.x - prev.x, p.z - prev.z)))).toBeLessThanOrEqual(Math.PI / 4);
+        prev = p;
+      }
+      const flat = minecartRail(ends, world.grid.isSolid, 0);
+      let sag = 0;
+      for (let i = 0; i <= 100; i++) sag = Math.min(sag, railPoint(rail, i / 100).y - railPoint(flat, i / 100).y);
+      expect(sag).toBeLessThan(-0.5);
+    });
+  }
+});
+
+describe("bridgeDeck on the stamped world", () => {
+  const layout = buildLayout(worldProjects);
+  const world = buildWorld(layout, [(g) => stampCrossings(g, layout)]);
+  const isSolid = world.grid.isSolid;
+  const bridges = layout.crossings.filter((x) => x.kind === "bridge");
+
+  /** Height a character centred at (x, z) stands at (searching ±2 around `near`), or NaN in the air. */
+  const floorAt = (x: number, z: number, near: number) => {
+    for (let y = near + 2; y >= near - 2; y--) if (!characterCollides(isSolid, x, y, z) && characterCollides(isSolid, x, y - 0.01, z)) return y;
+    return NaN;
+  };
+  /** Top of the plank drawn under along-fraction `s` (planks are evenly spaced, one every ~0.5 block). */
+  const visibleTop = (deck: DeckPlank[], s: number) => deck[Math.round(Math.min(1, Math.max(0, s)) * (deck.length - 1))].y + 0.09;
+  /** Lengths (blocks along the bridge) of the stretches where the two heights differ. */
+  const mismatchRuns = (samples: { d: number; bad: boolean }[]) => {
+    const runs: number[] = [];
+    let start = -1;
+    for (const { d, bad } of samples) {
+      if (bad && start < 0) start = d;
+      if (!bad && start >= 0) {
+        runs.push(d - start);
+        start = -1;
       }
     }
-  });
+    if (start >= 0) runs.push(samples[samples.length - 1].d - start);
+    return runs;
+  };
 
-  it("climbs no steeper than an ascending voxel rail and sags in the open gap", () => {
-    let prev = railPoint(rail, 0);
-    for (let i = 1; i <= 200; i++) {
-      const p = railPoint(rail, i / 200);
-      expect(Math.atan2(p.y - prev.y, Math.hypot(p.x - prev.x, p.z - prev.z))).toBeLessThanOrEqual(Math.PI / 4);
-      prev = p;
-    }
-    const flat = minecartRail(ends, world.grid.isSolid, 0);
-    expect(railPoint(rail, 0.5).y).toBeLessThan(railPoint(flat, 0.5).y - 0.5);
-  });
+  for (const c of bridges) {
+    const deck = bridgeDeck(c.a, c.b, world.grid);
+    const len = Math.hypot(c.b.x - c.a.x, c.b.z - c.a.z);
+    const ux = (c.b.x - c.a.x) / len;
+    const uz = (c.b.z - c.a.z) / len;
+    const tag = `${c.from} → ${c.to}`;
+
+    it(`lays every plank top where Ezra stands at that plank (${tag})`, () => {
+      for (const p of deck) {
+        const top = p.y + 0.09;
+        expect(characterCollides(isSolid, p.x, top, p.z)).toBe(false);
+        expect(characterCollides(isSolid, p.x, top - 0.01, p.z)).toBe(true);
+      }
+      expect(deck[0].grounded && deck[deck.length - 1].grounded).toBe(true);
+      expect(deck.some((p) => !p.grounded)).toBe(true);
+    });
+
+    it(`shows each step within half a plank of the collision step along the centreline (${tag})`, () => {
+      const samples: { d: number; bad: boolean }[] = [];
+      for (let d = 0; d <= len; d += 0.02) {
+        const x = c.a.x + ux * d;
+        const z = c.a.z + uz * d;
+        const top = visibleTop(deck, d / len);
+        samples.push({ d, bad: Math.abs(floorAt(x, z, Math.round(top)) - top) > 0.01 });
+      }
+      for (const run of mismatchRuns(samples)) expect(run).toBeLessThanOrEqual(0.3);
+    });
+
+    it(`keeps Ezra's feet on the visible planks while he walks across and back (${tag})`, () => {
+      const walk = (from: Vec3, to: Vec3) => {
+        const p = createCharacter({ ...from });
+        const dx = to.x - from.x;
+        const dz = to.z - from.z;
+        const l = Math.hypot(dx, dz);
+        const input = { moveX: dx / l, moveZ: dz / l, run: false, jump: false };
+        const samples: { d: number; bad: boolean }[] = [];
+        for (let i = 0; i < 60 * 8; i++) {
+          stepCharacter(p, input, 1 / 60, { isSolid, killY: -50 });
+          expect(p.pos.y).toBeGreaterThan(Math.min(from.y, to.y) - 0.5); // never falls off
+          const d = (p.pos.x - from.x) * (dx / l) + (p.pos.z - from.z) * (dz / l);
+          if (d >= l) break;
+          const s = ((p.pos.x - c.a.x) * ux + (p.pos.z - c.a.z) * uz) / len;
+          // in the air he is dropping down a step (the stair's own motion), not standing above the deck
+          samples.push({ d, bad: p.onGround && Math.abs(p.pos.y - visibleTop(deck, s)) > 0.01 });
+        }
+        return mismatchRuns(samples);
+      };
+      // runs ≤ half a plank (the deck samples his standing height every ~0.5 block) + about a frame of walking
+      const runs = [...walk(c.a, c.b), ...walk(c.b, c.a)];
+      for (const run of runs) expect(run).toBeLessThanOrEqual(0.4);
+    });
+  }
 });

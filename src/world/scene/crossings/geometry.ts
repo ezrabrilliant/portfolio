@@ -2,8 +2,17 @@ import type { Crossing, IslandPlacement } from "@/world/engine/gen/layout";
 import { railPoint } from "@/world/engine/traversal/rail";
 import type { Rail } from "@/world/engine/traversal/rail";
 import type { Vec3, Vec3i } from "@/world/engine/types";
+import { DEFAULT_PARAMS } from "@/world/engine/physics/character";
+import { blockDef, blockId } from "@/world/engine/voxel/blocks";
+import type { VoxelGrid } from "@/world/engine/voxel/grid";
 
 const lerp = (p: number, q: number, t: number) => p + (q - p) * t;
+
+/** Crossing furniture sizes in blocks, shared by the components and the island layout tests. */
+export const STATION_SIZE = 2.4; // square plank platform at each minecart station
+export const SIGN_OFFSET = 1.45; // station sign: distance beside the track
+export const SIGN_WIDTH = 1.7; // station sign board
+export const PAD_SIZE = 1.3; // square bounce-pad frame, turned to face its paired pad
 
 function frame(a: Vec3, b: Vec3) {
   const dx = b.x - a.x;
@@ -147,4 +156,39 @@ export function railLength(rail: Rail, samples = 64): number {
     prev = p;
   }
   return len;
+}
+
+export interface DeckPlank { x: number; y: number; z: number; yaw: number; s: number; grounded: boolean }
+
+const FOOT_HALF = DEFAULT_PARAMS.width / 2;
+const EPS = 1e-6;
+
+/**
+ * The bridge's visible planks, each laid at the height Ezra actually stands at when centred on it in the
+ * stamped grid (his 0.6-wide feet on the highest solid block under them, within a block of the planned
+ * surface), so the drawn steps sit where the collision steps are. `grounded`: that block is island ground,
+ * not a stamped bridge barrier (the plank lies on the grass).
+ */
+export function bridgeDeck(a: Vec3, b: Vec3, grid: Pick<VoxelGrid, "get">): DeckPlank[] {
+  const barrier = blockId("barrier");
+  return bridgePlanks(a, b).map((pl) => {
+    const surface = Math.round(pl.y + 0.09);
+    const x0 = Math.floor(pl.x - FOOT_HALF + EPS), x1 = Math.floor(pl.x + FOOT_HALF - EPS);
+    const z0 = Math.floor(pl.z - FOOT_HALF + EPS), z1 = Math.floor(pl.z + FOOT_HALF - EPS);
+    for (let row = surface; row >= surface - 2; row--) {
+      let hit = false;
+      let ground = false;
+      for (let x = x0; x <= x1; x++) {
+        for (let z = z0; z <= z1; z++) {
+          const id = grid.get(x, row, z);
+          if (id !== 0 && blockDef(id)?.solid) {
+            hit = true;
+            if (id !== barrier) ground = true;
+          }
+        }
+      }
+      if (hit) return { ...pl, y: row + 1 - 0.09, grounded: ground };
+    }
+    return { ...pl, grounded: false };
+  });
 }

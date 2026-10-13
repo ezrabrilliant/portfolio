@@ -1,49 +1,68 @@
-import { useLayoutEffect, useMemo, useRef } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
+import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import type { Crossing } from "@/world/engine/gen/layout";
 import { runtime } from "@/world/state/runtime";
 import { useWorld } from "@/world/state/store";
-import { bridgePlanks } from "./geometry";
+import { bridgeDeck, bridgePlanks } from "./geometry";
+import type { DeckPlank } from "./geometry";
+import { PLANK, WOOD, ropeMat, unitBox } from "./materials";
 
-const plankGeo = new THREE.BoxGeometry(2.1, 0.18, 0.42);
-const unitGeo = new THREE.BoxGeometry(1, 1, 1);
-// the deck's ends lie on the islands' grass, top flush with it: pull the planks forward in depth
-const plankMat = new THREE.MeshStandardMaterial({ color: "#b98f62", roughness: 0.9, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1 });
-const woodMat = new THREE.MeshStandardMaterial({ color: "#6b4f37", roughness: 0.9 });
-const ropeMat = new THREE.MeshStandardMaterial({ color: "#c9b48a", roughness: 1 });
+// planks, step risers and posts are one instanced draw, coloured per instance; the deck's ends lie on the
+// islands' grass with their tops flush with it, so pull the whole deck forward in depth
+const deckMat = new THREE.MeshStandardMaterial({ color: "#ffffff", roughness: 0.9, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1 });
+const PLANK_SIZE: [number, number, number] = [2.1, 0.18, 0.42];
+const POST_SIDE = 1.05;
+const smoothstep = (x: number) => (x <= 0 ? 0 : x >= 1 ? 1 : x * x * (3 - 2 * x));
 
 export function Bridge({ crossing }: { crossing: Crossing }) {
   const ref = useRef<THREE.InstancedMesh>(null);
-  const riserRef = useRef<THREE.InstancedMesh>(null);
   const reduced = useWorld((s) => s.reducedMotion);
   const cast = useWorld((s) => s.quality === "high");
-  const planks = useMemo(() => bridgePlanks(crossing.a, crossing.b), [crossing]);
-  const offsets = useMemo(() => new Float32Array(planks.length), [planks]);
-  // a board standing in the gap wherever the deck steps up a block, so the stairs read as one bridge
+  const len = Math.hypot(crossing.b.x - crossing.a.x, crossing.b.z - crossing.a.z);
+  const ux = (crossing.b.x - crossing.a.x) / len;
+  const uz = (crossing.b.z - crossing.a.z) / len;
+  // planks sit where Ezra stands in the stamped grid (World builds it before its children render)
+  const planks: DeckPlank[] = useMemo(() => {
+    const grid = runtime.built?.grid;
+    return grid ? bridgeDeck(crossing.a, crossing.b, grid) : bridgePlanks(crossing.a, crossing.b).map((p) => ({ ...p, grounded: false }));
+  }, [crossing]);
+  // a board standing in the gap wherever the deck steps a block, so the stairs read as one bridge
   const risers = useMemo(() => {
     const out: number[] = [];
     for (let i = 0; i + 1 < planks.length; i++) if (Math.abs(planks[i + 1].y - planks[i].y) > 0.5) out.push(i);
     return out;
   }, [planks]);
-  const tmp = useMemo(() => ({ m: new THREE.Matrix4(), q: new THREE.Quaternion(), p: new THREE.Vector3(), s: new THREE.Vector3(1, 1, 1), r: new THREE.Vector3(), up: new THREE.Vector3(0, 1, 0) }), []);
-  const len = Math.hypot(crossing.b.x - crossing.a.x, crossing.b.z - crossing.a.z);
-  const ux = (crossing.b.x - crossing.a.x) / len;
-  const uz = (crossing.b.z - crossing.a.z) / len;
+  // sway only over the gap: 0 on planks lying on island grass, easing to 1 within 1.5 blocks of them
+  const sway = useMemo(
+    () =>
+      Float32Array.from(planks, (p) => {
+        let d = Infinity;
+        for (const q of planks) if (q.grounded) d = Math.min(d, Math.abs(p.s - q.s) * len);
+        return smoothstep(d / 1.5);
+      }),
+    [planks, len],
+  );
+  const offsets = useMemo(() => new Float32Array(planks.length), [planks]);
+  const count = planks.length + risers.length + 4;
+  const tmp = useMemo(
+    () => ({ m: new THREE.Matrix4(), q: new THREE.Quaternion(), p: new THREE.Vector3(), s: new THREE.Vector3(), up: new THREE.Vector3(0, 1, 0), dirty: true }),
+    [],
+  );
 
-  const write = () => {
+  /** Writes the planks and risers (the only instances that move); posts are written once. */
+  const writeDeck = () => {
     const mesh = ref.current;
     if (!mesh) return;
     for (let i = 0; i < planks.length; i++) {
       const pl = planks[i];
       tmp.q.setFromAxisAngle(tmp.up, pl.yaw);
       tmp.p.set(pl.x, pl.y + offsets[i], pl.z);
+      tmp.s.set(PLANK_SIZE[0], PLANK_SIZE[1], PLANK_SIZE[2]);
       tmp.m.compose(tmp.p, tmp.q, tmp.s);
       mesh.setMatrixAt(i, tmp.m);
     }
-    mesh.instanceMatrix.needsUpdate = true;
-    const rm = riserRef.current;
-    if (!rm) return;
     for (let k = 0; k < risers.length; k++) {
       const i = risers[k];
       const lo = planks[i].y < planks[i + 1].y ? i : i + 1;
@@ -52,13 +71,35 @@ export function Bridge({ crossing }: { crossing: Crossing }) {
       const top = planks[hi].y + 0.09 + offsets[hi];
       tmp.q.setFromAxisAngle(tmp.up, planks[i].yaw);
       tmp.p.set((planks[i].x + planks[i + 1].x) / 2, (bottom + top) / 2, (planks[i].z + planks[i + 1].z) / 2);
-      tmp.r.set(2.1, top - bottom, 0.08);
-      tmp.m.compose(tmp.p, tmp.q, tmp.r);
-      rm.setMatrixAt(k, tmp.m);
+      tmp.s.set(PLANK_SIZE[0], top - bottom, 0.08);
+      tmp.m.compose(tmp.p, tmp.q, tmp.s);
+      mesh.setMatrixAt(planks.length + k, tmp.m);
     }
-    rm.instanceMatrix.needsUpdate = true;
+    mesh.instanceMatrix.needsUpdate = true;
   };
-  useLayoutEffect(write);
+
+  useLayoutEffect(() => {
+    const mesh = ref.current;
+    if (!mesh) return;
+    const color = new THREE.Color();
+    const yaw = Math.atan2(ux, uz);
+    for (let i = 0; i < planks.length + risers.length; i++) mesh.setColorAt(i, color.set(PLANK));
+    color.set(WOOD);
+    let k = planks.length + risers.length;
+    for (const e of [crossing.a, crossing.b]) {
+      for (const side of [POST_SIDE, -POST_SIDE]) {
+        tmp.q.setFromAxisAngle(tmp.up, yaw);
+        tmp.p.set(e.x - uz * side, e.y + 0.6, e.z + ux * side);
+        tmp.s.set(0.16, 1.2, 0.16);
+        tmp.m.compose(tmp.p, tmp.q, tmp.s);
+        mesh.setMatrixAt(k, tmp.m);
+        mesh.setColorAt(k++, color);
+      }
+    }
+    if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+    writeDeck();
+    mesh.computeBoundingSphere();
+  });
 
   useFrame((state, dt) => {
     // sway: a spring dip under Ezra while he walks on it, plus a faint idle breathing
@@ -69,45 +110,47 @@ export function Bridge({ crossing }: { crossing: Crossing }) {
     const across = Math.abs(rx * -uz + rz * ux);
     const onIt = useWorld.getState().mode === "play" && across < 1.3 && along > 0 && along < 1;
     const t = state.clock.elapsedTime;
+    let moved = false;
     for (let i = 0; i < planks.length; i++) {
       const pl = planks[i];
       const dip = onIt ? -0.12 * Math.max(0, 1 - Math.abs(pl.s - along) * 5) : 0;
       const idle = reduced ? 0 : 0.015 * Math.sin(t * 1.3 + i * 0.35) * Math.sin(Math.PI * pl.s);
-      offsets[i] = THREE.MathUtils.damp(offsets[i], dip + idle, 10, dt);
+      const next = THREE.MathUtils.damp(offsets[i], (dip + idle) * sway[i], 10, dt);
+      if (Math.abs(next - offsets[i]) > 1e-5) moved = true;
+      offsets[i] = next;
     }
-    write();
+    // a settled deck (reduced motion, nobody on it) uploads nothing
+    if (moved || tmp.dirty) {
+      tmp.dirty = moved;
+      writeDeck();
+    }
   });
 
-  const ends = [crossing.a, crossing.b];
-  const sag = (side: number) => {
-    const px = -uz * side;
-    const pz = ux * side;
-    const pts = Array.from({ length: 13 }, (_, i) => {
-      const s = i / 12;
-      return new THREE.Vector3(
-        crossing.a.x + (crossing.b.x - crossing.a.x) * s + px,
-        crossing.a.y + (crossing.b.y - crossing.a.y) * s + 1.05 - 0.35 * Math.sin(Math.PI * s),
-        crossing.a.z + (crossing.b.z - crossing.a.z) * s + pz,
-      );
-    });
-    return new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 24, 0.035, 5, false);
-  };
-  const ropes = useMemo(() => [sag(1.05), sag(-1.05)], [crossing]); // eslint-disable-line react-hooks/exhaustive-deps
+  const ropes = useMemo(() => {
+    const sag = (side: number) => {
+      const px = -uz * side;
+      const pz = ux * side;
+      const pts = Array.from({ length: 13 }, (_, i) => {
+        const s = i / 12;
+        return new THREE.Vector3(
+          crossing.a.x + (crossing.b.x - crossing.a.x) * s + px,
+          crossing.a.y + (crossing.b.y - crossing.a.y) * s + 1.05 - 0.35 * Math.sin(Math.PI * s),
+          crossing.a.z + (crossing.b.z - crossing.a.z) * s + pz,
+        );
+      });
+      return new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 24, 0.035, 5, false);
+    };
+    const parts = [sag(POST_SIDE), sag(-POST_SIDE)];
+    const merged = mergeGeometries(parts, false)!;
+    for (const g of parts) g.dispose();
+    return merged;
+  }, [crossing, ux, uz]);
+  useEffect(() => () => ropes.dispose(), [ropes]);
 
   return (
     <group>
-      <instancedMesh ref={ref} args={[plankGeo, plankMat, planks.length]} castShadow={cast} receiveShadow />
-      {risers.length > 0 && <instancedMesh ref={riserRef} args={[unitGeo, plankMat, risers.length]} castShadow={cast} receiveShadow />}
-      {ends.flatMap((e, k) =>
-        [1.05, -1.05].map((side) => (
-          <mesh key={`${k}-${side}`} position={[e.x - uz * side, e.y + 0.6, e.z + ux * side]} material={woodMat} castShadow={cast}>
-            <boxGeometry args={[0.16, 1.2, 0.16]} />
-          </mesh>
-        )),
-      )}
-      {ropes.map((g, i) => (
-        <mesh key={i} geometry={g} material={ropeMat} />
-      ))}
+      <instancedMesh ref={ref} args={[unitBox, deckMat, count]} castShadow={cast} receiveShadow />
+      <mesh geometry={ropes} material={ropeMat} />
     </group>
   );
 }

@@ -6,7 +6,8 @@ import type { TourStop } from "@/world/engine/camera/tourPath";
 import { railPoint } from "@/world/engine/traversal/rail";
 import type { Vec3 } from "@/world/engine/types";
 import { buildWorld } from "@/world/engine/worldBuild";
-import { defaultTourStop, islandTop } from "../islands/types";
+import { defaultTourStop } from "../islands/types";
+import { tourStopFor } from "../islands/framing";
 import { tourVia } from "../tour/tourMath";
 import { sampleTrack, trackFor } from "../tour/tourMotion";
 import { cartTourTable, sampleTable } from "./cartFollow";
@@ -15,27 +16,10 @@ import { minecartRail, railEnds } from "./geometry";
 const layout = buildLayout(worldProjects);
 const island = (id: string) => layout.islands.find((i) => i.id === id)!;
 
-// Today's placeholder stops and the framing Part C's islands will use (same fixture as tourMotion.test.ts).
-type T3 = readonly [number, number, number];
-const FRAMING: Record<string, { cam: T3; target: T3; dwell: number }> = {
-  hero: { cam: [-5.5, 5.2, 11.5], target: [-1.4, 1.3, -0.4], dwell: 1.2 },
-  gtid: { cam: [-8, 7, 15], target: [-2.6, 2.6, 0], dwell: 1 },
-  "petak-umpet": { cam: [-7, 4.6, 13], target: [-2.2, 1.8, -0.6], dwell: 1 },
-  "orbit-store": { cam: [-6.5, 5.6, 12], target: [-2, 2.4, 0], dwell: 1 },
-  "ezra-bot": { cam: [-7, 6.2, 13.5], target: [-2, 2.9, 0.2], dwell: 1 },
-};
+// Today's placeholder stops and the real island framing (islands/framing.ts).
 const fixtures: Record<string, TourStop[]> = {
   placeholder: layout.tourOrder.map((id) => defaultTourStop(island(id), { dwell: id === "hero" ? 1.3 : 1 })),
-  framing: layout.tourOrder.map((id) => {
-    const t = islandTop(island(id));
-    const f = FRAMING[id];
-    return {
-      id,
-      camera: { x: t.x + f.cam[0], y: t.y + f.cam[1], z: t.z + f.cam[2] },
-      target: { x: t.x + f.target[0], y: t.y + f.target[1], z: t.z + f.target[2] },
-      dwell: f.dwell,
-    };
-  }),
+  framing: layout.tourOrder.map((id) => tourStopFor(island(id))),
 };
 
 /** Normalised device coordinates of `p` for a camera at `cam` looking at `look` (fov 40°, 16:9). */

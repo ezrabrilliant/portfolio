@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { buildLayout } from "@/world/engine/gen/layout";
 import { worldProjects } from "@/config/portfolio";
-import { padPair, railEnds } from "@/world/scene/crossings/geometry";
+import { PAD_SIZE, SIGN_OFFSET, SIGN_WIDTH, STATION_SIZE, padPair, railEnds } from "@/world/scene/crossings/geometry";
 import { FOOTPRINTS } from "./layouts";
 
 const layout = buildLayout(worldProjects);
@@ -46,13 +46,16 @@ describe("island prop footprints", () => {
         const dz = e.stationB.z - e.stationA.z;
         const l = Math.hypot(dx, dz);
         for (const [st, id] of [[e.stationA, c.from], [e.stationB, c.to]] as const) {
-          furniture.push({ id, what: "minecart station", ...toLocal(id, st), half: 1.2 });
-          furniture.push({ id, what: "minecart sign", ...toLocal(id, { x: st.x - (dz / l) * 1.45, z: st.z + (dx / l) * 1.45 }), half: 0.85 });
+          furniture.push({ id, what: "minecart station", ...toLocal(id, st), half: STATION_SIZE / 2 });
+          furniture.push({ id, what: "minecart sign", ...toLocal(id, { x: st.x - (dz / l) * SIGN_OFFSET, z: st.z + (dx / l) * SIGN_OFFSET }), half: SIGN_WIDTH / 2 });
         }
       } else if (c.kind === "bouncePads") {
         const p = padPair(c, byId[c.from], byId[c.to]);
-        furniture.push({ id: c.from, what: "bounce pad", ...toLocal(c.from, p.a), half: 0.65 });
-        furniture.push({ id: c.to, what: "bounce pad", ...toLocal(c.to, p.b), half: 0.65 });
+        // each pad is turned to face its pair: its axis-aligned half-extent is PAD_SIZE/2 · (|cos yaw| + |sin yaw|)
+        const yaw = Math.atan2(p.b.x - p.a.x, p.b.z - p.a.z);
+        const half = (PAD_SIZE / 2) * (Math.abs(Math.cos(yaw)) + Math.abs(Math.sin(yaw)));
+        furniture.push({ id: c.from, what: "bounce pad", ...toLocal(c.from, p.a), half });
+        furniture.push({ id: c.to, what: "bounce pad", ...toLocal(c.to, p.b), half });
       }
     }
     expect(furniture.length).toBeGreaterThan(0);

@@ -1,4 +1,4 @@
-import { useLayoutEffect, useMemo, useRef } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import type { Crossing } from "@/world/engine/gen/layout";
@@ -13,12 +13,15 @@ import { Interactable } from "../Interactable";
 import { WorldText } from "../WorldText";
 import { scrollToIsland } from "../tour/scrollToIsland";
 import { cartTourTable, sampleTable } from "./cartFollow";
-import { minecartRail, railEnds, railLength } from "./geometry";
+import { SIGN_OFFSET, SIGN_WIDTH, STATION_SIZE, minecartRail, railEnds, railLength } from "./geometry";
+import { PLANK, WOOD, ironMat, mergeParts, paintMat, unitBox, woodMat } from "./materials";
 
-const ironMat = new THREE.MeshStandardMaterial({ color: "#4a4b4e", roughness: 0.5, metalness: 0.6 });
-const woodMat = new THREE.MeshStandardMaterial({ color: "#6b4f37", roughness: 0.9 });
-const plankMat = new THREE.MeshStandardMaterial({ color: "#b98f62", roughness: 0.9 });
-const unit = new THREE.BoxGeometry(1, 1, 1);
+const cartBody = new THREE.BoxGeometry(1.0, 0.56, 1.3);
+const cartWheels = mergeParts(
+  [-0.42, 0.42].flatMap((x) =>
+    [-0.4, 0.4].map((z) => ({ geo: new THREE.CylinderGeometry(0.13, 0.13, 0.08, 10), color: WOOD, position: [x, 0.1, z] as [number, number, number], rotation: [0, 0, Math.PI / 2] as [number, number, number] })),
+  ),
+);
 const titleOf = (id: string) => worldProjects.find((p) => p.id === id)?.title ?? id;
 const CART_SAMPLES = 128;
 
@@ -30,9 +33,8 @@ export function Minecart({ crossing }: { crossing: Crossing }) {
   const rail = useMemo(() => minecartRail(ends, runtime.built?.grid.isSolid ?? (() => false)), [ends]);
   const duration = useMemo(() => Math.min(6, Math.max(4, railLength(rail) / 6)), [rail]);
   const cast = useWorld((s) => s.quality === "high");
-  const sleepers = useRef<THREE.InstancedMesh>(null);
+  const wood = useRef<THREE.InstancedMesh>(null); // sleepers, then trestle legs
   const rails = useRef<THREE.InstancedMesh>(null);
-  const pillars = useRef<THREE.InstancedMesh>(null);
   const cart = useRef<THREE.Group>(null);
   const SAMPLES = useMemo(() => Math.max(24, Math.round(railLength(rail) * 1.4)), [rail]);
   const PILLARS = Math.floor((SAMPLES + 2) / 6); // one per sample i with i % 6 === 3
@@ -51,6 +53,17 @@ export function Minecart({ crossing }: { crossing: Crossing }) {
   const yaw = Math.atan2(ends.stationB.x - ends.stationA.x, ends.stationB.z - ends.stationA.z);
   const ux = Math.sin(yaw);
   const uz = Math.cos(yaw);
+  // platform, sign post and sign board in one draw (the same shape at both stations, in station-local space)
+  const station = useMemo(() => {
+    const sx = -uz * SIGN_OFFSET;
+    const sz = ux * SIGN_OFFSET;
+    return mergeParts([
+      { geo: new THREE.BoxGeometry(STATION_SIZE, 0.16, STATION_SIZE), color: PLANK, position: [0, 0.08, 0] },
+      { geo: new THREE.BoxGeometry(0.14, 1.32, 0.14), color: WOOD, position: [sx, 0.66, sz], rotation: [0, yaw, 0] },
+      { geo: new THREE.BoxGeometry(SIGN_WIDTH, 0.66, 0.08), color: PLANK, position: [sx, 1.62, sz], rotation: [0, yaw, 0] },
+    ]);
+  }, [ux, uz, yaw]);
+  useEffect(() => () => station.dispose(), [station]);
   // tour: where the cart rides as the camera crosses this leg (built on first use, once the tour path exists)
   const tour = useMemo(() => ({ path: null as TourPath | null, table: null as Float32Array | null }), []);
 
@@ -71,7 +84,7 @@ export function Minecart({ crossing }: { crossing: Crossing }) {
       p.set(c.x, c.y - 0.12, c.z);
       s.set(1.5, 0.12, 0.28);
       m.compose(p, q, s);
-      sleepers.current?.setMatrixAt(i, m);
+      wood.current?.setMatrixAt(i, m);
       const a = railPoint(rail, i / SAMPLES);
       const b = railPoint(rail, (i + 1) / SAMPLES);
       const segLen = Math.hypot(b.x - a.x, b.y - a.y, b.z - a.z);
@@ -95,10 +108,14 @@ export function Minecart({ crossing }: { crossing: Crossing }) {
         p.set(c.x, c.y - 0.2 - h / 2, c.z);
         s.set(0.3, h, 0.3);
         m.compose(p, new THREE.Quaternion(), s);
-        pillars.current?.setMatrixAt(Math.floor(i / 6), m);
+        wood.current?.setMatrixAt(SAMPLES + Math.floor(i / 6), m);
       }
     }
-    for (const r of [sleepers, rails, pillars]) if (r.current) r.current.instanceMatrix.needsUpdate = true;
+    for (const r of [wood, rails]) {
+      if (!r.current) continue;
+      r.current.instanceMatrix.needsUpdate = true;
+      r.current.computeBoundingSphere();
+    }
   }, [rail, SAMPLES]);
 
   const startRide = (reverse: boolean) => {
@@ -160,20 +177,11 @@ export function Minecart({ crossing }: { crossing: Crossing }) {
 
   return (
     <group>
-      <instancedMesh ref={sleepers} args={[unit, woodMat, SAMPLES]} castShadow={cast} />
-      <instancedMesh ref={rails} args={[unit, ironMat, SAMPLES * 2]} />
-      <instancedMesh ref={pillars} args={[unit, woodMat, PILLARS]} castShadow={cast} />
+      <instancedMesh ref={wood} args={[unitBox, woodMat, SAMPLES + PILLARS]} castShadow={cast} />
+      <instancedMesh ref={rails} args={[unitBox, ironMat, SAMPLES * 2]} />
       <group ref={cart} rotation-order="YXZ">
-        <mesh position={[0, 0.38, 0]} material={ironMat} castShadow={cast}>
-          <boxGeometry args={[1.0, 0.56, 1.3]} />
-        </mesh>
-        {[-0.42, 0.42].flatMap((x) =>
-          [-0.4, 0.4].map((z) => (
-            <mesh key={`${x}${z}`} position={[x, 0.1, z]} rotation={[0, 0, Math.PI / 2]} material={woodMat}>
-              <cylinderGeometry args={[0.13, 0.13, 0.08, 10]} />
-            </mesh>
-          )),
-        )}
+        <mesh position={[0, 0.38, 0]} geometry={cartBody} material={ironMat} castShadow={cast} />
+        <mesh geometry={cartWheels} material={paintMat} />
       </group>
       {([
         [ends.stationA, crossing.to, false, crossing.from],
@@ -185,7 +193,7 @@ export function Minecart({ crossing }: { crossing: Crossing }) {
           island={island}
           label={`Ride to ${titleOf(dest)}`}
           position={[st.x, st.y + 0.6, st.z]}
-          size={[2.4, 1.2, 2.4]}
+          size={[STATION_SIZE, 1.2, STATION_SIZE]}
           radius={2.6}
           onActivate={() => {
             if (useWorld.getState().mode === "play") {
@@ -193,17 +201,9 @@ export function Minecart({ crossing }: { crossing: Crossing }) {
             } else scrollToIsland(dest);
           }}
         >
-          <mesh position={[st.x, st.y + 0.08, st.z]} material={plankMat} receiveShadow>
-            <boxGeometry args={[2.4, 0.16, 2.4]} />
-          </mesh>
-          {/* sign beside the track, its board facing along it (text on both faces) */}
-          <group position={[st.x - uz * 1.45, st.y, st.z + ux * 1.45]} rotation={[0, yaw, 0]}>
-            <mesh position={[0, 0.66, 0]} material={woodMat} castShadow={cast}>
-              <boxGeometry args={[0.14, 1.32, 0.14]} />
-            </mesh>
-            <mesh position={[0, 1.62, 0]} material={plankMat} castShadow={cast}>
-              <boxGeometry args={[1.7, 0.66, 0.08]} />
-            </mesh>
+          <mesh position={[st.x, st.y, st.z]} geometry={station} material={paintMat} castShadow={cast} receiveShadow />
+          {/* the sign's text on both faces of its board (beside the track, facing along it) */}
+          <group position={[st.x - uz * SIGN_OFFSET, st.y, st.z + ux * SIGN_OFFSET]} rotation={[0, yaw, 0]}>
             {[0, Math.PI].map((r) => (
               <group key={r} rotation={[0, r, 0]}>
                 <WorldText text={`Minecart\n→ ${titleOf(dest)}`} position={[0, 1.62, 0.05]} size={0.2} color="#3a2a1c" />
