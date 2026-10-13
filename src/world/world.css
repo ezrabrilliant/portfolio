@@ -1,0 +1,23 @@
+html { scroll-behavior: auto; }
+html, body { margin: 0; background: #cbdce4; }
+body {
+  font-family: "Schibsted Grotesk", system-ui, -apple-system, "Segoe UI", sans-serif;
+  color: #13212b;
+  -webkit-font-smoothing: antialiased;
+}
+html.world-playing, html.world-playing body { overflow: hidden; }
+
+.world-canvas-wrap { position: fixed; inset: 0; z-index: 0; outline: none; }
+.world-canvas-wrap:focus-visible { box-shadow: inset 0 0 0 3px #13212b; }
+.tour-track { position: relative; z-index: -1; width: 1px; pointer-events: none; }
+
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+
+.nowebgl { max-width: 680px; margin: 0 auto; padding: 48px 16px 72px; }
+.nowebgl-note { font-size: 14px; color: rgba(19, 33, 43, 0.7); }
+.seo-mirror--visible h1 { font-size: 40px; letter-spacing: -0.02em; margin: 0 0 8px; }
+.seo-mirror--visible h2 { font-size: 22px; margin: 32px 0 6px; }
+.seo-mirror--visible a { display: inline-block; margin-right: 16px; color: #1f4f8a; }
