@@ -4,6 +4,7 @@ import { useWorld } from "@/world/state/store";
 import { dprCap, hasWebGL } from "@/world/state/quality";
 import { NoWebGL } from "@/world/ui/NoWebGL";
 import { SeoMirror } from "@/world/ui/SeoMirror";
+import { MobileControls } from "@/world/ui/MobileControls";
 import { World } from "./World";
 
 export default function WorldApp() {
@@ -28,6 +29,7 @@ export default function WorldApp() {
           </Suspense>
         </Canvas>
       </div>
+      <MobileControls />
       <SeoMirror />
     </>
   );

@@ -22,6 +22,31 @@ html.world-playing, html.world-playing body { overflow: hidden; }
 .seo-mirror--visible h2 { font-size: 22px; margin: 32px 0 6px; }
 .seo-mirror--visible a { display: inline-block; margin-right: 16px; color: #1f4f8a; }
 
+.mobile-controls { position: fixed; inset: 0; z-index: 9; pointer-events: none; }
+.mc-zone { position: absolute; bottom: 0; height: 62%; pointer-events: auto; touch-action: none; }
+.mc-zone--stick { left: 0; width: 50%; }
+.mc-zone--orbit { right: 0; width: 50%; }
+.mc-base, .mc-knob { position: fixed; border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none; }
+.mc-base { width: 112px; height: 112px; background: rgba(244, 243, 239, 0.28); border: 2px solid rgba(244, 243, 239, 0.6); }
+.mc-knob { width: 52px; height: 52px; background: rgba(244, 243, 239, 0.9); box-shadow: 0 2px 8px rgba(13, 20, 24, 0.25); }
+.mc-buttons {
+  position: absolute; right: 16px; bottom: max(24px, env(safe-area-inset-bottom));
+  display: flex; flex-direction: column; align-items: flex-end; gap: 12px; pointer-events: auto;
+}
+.mc-btn {
+  min-width: 72px; min-height: 56px; padding: 0 16px; border-radius: 28px; border: 0;
+  font: 700 15px/1 "Schibsted Grotesk", system-ui, sans-serif;
+  background: rgba(244, 243, 239, 0.92); color: #13212b; touch-action: manipulation;
+}
+.mc-btn:disabled { opacity: 0.45; }
+.mc-btn--jump { min-width: 84px; min-height: 84px; border-radius: 50%; background: #13212b; color: #f4f3ef; }
+.mc-start {
+  position: absolute; left: 24px; bottom: max(28px, env(safe-area-inset-bottom));
+  width: 76px; height: 76px; border-radius: 50%; border: 2px solid rgba(19, 33, 43, 0.5);
+  background: rgba(244, 243, 239, 0.75); pointer-events: auto; display: grid; place-items: center;
+}
+.mc-start-knob { width: 30px; height: 30px; border-radius: 50%; background: #13212b; }
+
 @font-face {
   font-family: "Schibsted Grotesk";
   src: url("/fonts/schibsted-grotesk-700.woff") format("woff");
