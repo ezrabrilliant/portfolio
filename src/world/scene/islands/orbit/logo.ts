@@ -3,6 +3,9 @@ import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeom
 import { ORBIT_LOGO, pointInPolygon, ringPoint, toTile } from "./logoMath";
 
 const S = ORBIT_LOGO.size / ORBIT_LOGO.src;
+const FACE_Z = 0.12; // tile face, clear of the frame's front at 0.11 (no depth flicker at distance)
+/** How far the cut runs past the O's outline: covers the O's side walls and the cut's own parallax from the tour angle. */
+const CUT_PAD = 0.1;
 
 /** The logo's radial background, stops sampled from logo.jpg (centre (997, 983) px, reaching #2C0B77 at the corners). */
 function gradientTexture(): THREE.CanvasTexture {
@@ -71,7 +74,11 @@ function cutLineGeometry(): THREE.BufferGeometry {
     const mid = tile(p.x + nx * (d0 + d1) * 0.5, p.y + ny * (d0 + d1) * 0.5);
     samples.push({ ...p, nx, ny, over: pointInPolygon(mid, outline) && !pointInPolygon(mid, hole) });
   }
-  const keep = samples.map((_, i) => samples.slice(Math.max(0, i - 3), i + 4).some((s) => s.over));
+  // Past the outline the cut lies over the tile (or the tile seen through the hole) and is invisible there, so it can
+  // run on far enough to cover the bars' side walls seen at an angle instead of ending in a square dash.
+  const mids = samples.map((s) => ({ x: s.x + s.nx * (d0 + d1) * 0.5, y: s.y + s.ny * (d0 + d1) * 0.5 }));
+  const overMids = mids.filter((_, i) => samples[i].over);
+  const keep = mids.map((m) => overMids.some((o) => Math.hypot(m.x - o.x, m.y - o.y) <= CUT_PAD));
   const pos: number[] = [];
   const uv: number[] = [];
   const index: number[] = [];
@@ -106,7 +113,7 @@ export function createOrbitLogoTile(): THREE.Group {
   // A lit sign face: the brand gradient exactly, not shaded or tone-mapped by the warm sun.
   const tex = gradientTexture();
   const face = new THREE.Mesh(new THREE.PlaneGeometry(ORBIT_LOGO.size, ORBIT_LOGO.size), new THREE.MeshBasicMaterial({ map: tex, toneMapped: false }));
-  face.position.z = 0.112;
+  face.position.z = FACE_Z;
   group.add(face);
 
   const outline = roundedQuad(ORBIT_LOGO.outer.map(([x, y]) => toTile(x, y)), ORBIT_LOGO.radii.map((r) => r * S));
@@ -116,12 +123,16 @@ export function createOrbitLogoTile(): THREE.Group {
   }));
   hole.closePath();
   outline.holes.push(hole);
-  const oGeo = new THREE.ExtrudeGeometry(outline, { depth: 0.16, bevelEnabled: true, bevelThickness: 0.02, bevelSize: 0.015, bevelSegments: 2, curveSegments: 12 });
-  oGeo.translate(0, 0, -0.08);
+  // bevelOffset = −bevelSize: the side walls lie exactly on the traced outline (the true silhouette), the bevel eats inward
+  const bevel = 0.02;
+  const oGeo = new THREE.ExtrudeGeometry(outline, {
+    depth: ORBIT_LOGO.depth - 2 * bevel, bevelEnabled: true, bevelThickness: bevel, bevelSize: 0.015, bevelOffset: -0.015, bevelSegments: 2, curveSegments: 12,
+  });
+  oGeo.translate(0, 0, -ORBIT_LOGO.depth / 2 + bevel);
 
   const white = new THREE.MeshStandardMaterial({ color: "#ffffff", emissive: "#ffffff", emissiveIntensity: 0.35, roughness: 0.45, toneMapped: false });
   const mark = new THREE.Group();
-  mark.position.z = 0.11 + ORBIT_LOGO.standoff;
+  mark.position.z = FACE_Z + ORBIT_LOGO.standoff;
   const o = new THREE.Mesh(oGeo, white);
   o.castShadow = true;
   mark.add(o);
@@ -132,7 +143,8 @@ export function createOrbitLogoTile(): THREE.Group {
     points.push(new THREE.Vector3(p.x, p.y, p.z));
   }
   const curve = new THREE.CatmullRomCurve3(points, true);
-  const ring = new THREE.Mesh(new THREE.TubeGeometry(curve, 200, ORBIT_LOGO.tube, 8, true), white);
+  // a flat white stroke like the logo's ring (the O keeps its shaded sides)
+  const ring = new THREE.Mesh(new THREE.TubeGeometry(curve, 200, ORBIT_LOGO.tube, 8, true), new THREE.MeshBasicMaterial({ color: "#ffffff", toneMapped: false }));
   // Drawn after the O without depth writes, so it covers the O but never the ring drawn after it.
   const cut = new THREE.Mesh(cutLineGeometry(), new THREE.MeshBasicMaterial({ map: tex, toneMapped: false, depthWrite: false }));
   cut.renderOrder = 1;

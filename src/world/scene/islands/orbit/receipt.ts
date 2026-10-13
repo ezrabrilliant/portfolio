@@ -66,7 +66,7 @@ export function drawReceipt(ctx: CanvasRenderingContext2D, lines: readonly Recei
         break;
       case "item":
         ctx.fillStyle = "#16181d";
-        ctx.font = `500 20px ${CANVAS_FONTS.mono}`;
+        ctx.font = `500 18px ${CANVAS_FONTS.mono}`; // the longest item keeps a margin on a 360 px roll
         ctx.fillText(l.text, w / 2, y);
         y += 36;
         break;

@@ -80,6 +80,8 @@ function drawQris(g: CanvasRenderingContext2D, w: number, h: number) {
   g.textAlign = "left";
 }
 
+const RECEIPT_PX = 360;
+const RECEIPT_PY = Math.round((RECEIPT_PX * ORBIT.receipt.maxLen) / ORBIT.receipt.w); // square texels on the paper
 const PARCEL_GEO = new THREE.BoxGeometry(0.5, 0.42, 0.5);
 const TAPE_GEO = new THREE.BoxGeometry(0.52, 0.44, 0.1);
 
@@ -91,7 +93,7 @@ function OrbitStoreIsland({ placement }: { placement: IslandPlacement }) {
 
   const qris = useCanvasTexture(512, 600, drawQris, []);
   const [order, setOrder] = useState<ReceiptOrder>(() => nextOrder(null, new Date()));
-  const receipt = useCanvasTexture(360, 1008, (ctx, w, h) => drawReceipt(ctx, receiptLines(order), w, h), [order]);
+  const receipt = useCanvasTexture(RECEIPT_PX, RECEIPT_PY, (ctx, w, h) => drawReceipt(ctx, receiptLines(order), w, h), [order]);
   const paper = useRef<THREE.Mesh>(null);
   const feed = useRef({ len: 0.35 }); // partly fed while idle
   const parcel = useRef<THREE.Group>(null);

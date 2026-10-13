@@ -16,6 +16,7 @@ export const ORBIT_LOGO = {
   tube: 0.013, // ring stroke 19.6 px = 0.0216 wide; a touch thicker so it still reads from the tour camera
   rim: 0.022, // background-blue cut line along the ring's outer edge where its front arc crosses the O (19 px)
   standoff: 0.3, // mark distance in front of the tile face
+  depth: 0.2, // O thickness: front face at +depth/2, back face at −depth/2 (bevel included)
 } as const;
 
 const S = ORBIT_LOGO.size / ORBIT_LOGO.src;
