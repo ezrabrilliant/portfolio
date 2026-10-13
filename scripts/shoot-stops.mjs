@@ -1,17 +1,21 @@
 // Screenshots of tour stops on desktop (1280x720) and phone (520x940), in real time with system Chrome + SwiftShader.
 // Usage: npm run build && npm run shots -- [stop ...]  → .shots/stop-<N>-desktop.png, .shots/stop-<N>-phone.png
 // Serves dist/ with `vite preview` on 4173 and captures with scripts/lib/capture.mjs (never Chrome's --screenshot flag:
-// it renders a blank frame once WorldText is in the scene). Env: CHROME (executable), SHOT_SETTLE_MS (default 2500).
+// it renders a blank frame once WorldText is in the scene). Env: CHROME (executable), SHOT_SETTLE_MS (default 2500),
+// SHOT_PORT (preview port, default 4173), SHOT_OUTDIR (dir to serve, default dist). For parallel
+// agents building into their own dir/port:
+//   npx vite build --outDir .superpowers/sdd/dist-C8 --emptyOutDir && SHOT_OUTDIR=.superpowers/sdd/dist-C8 SHOT_PORT=4181 npm run shot -- "?stop=3" shots/c8.png 1280x720
 import { preview } from "vite";
 import { openCapture } from "./lib/capture.mjs";
 
-const PORT = 4173;
+const PORT = Number(process.env.SHOT_PORT ?? 4173);
+const OUTDIR = process.env.SHOT_OUTDIR ?? "dist";
 const args = process.argv.slice(2);
 const stops = args.length ? args.map(Number) : [0, 1, 2, 3, 4];
 if (stops.some((n) => !Number.isInteger(n) || n < 0)) throw new Error(`bad stop list "${args.join(" ")}", expected integers ≥ 0`);
 const sizes = [["desktop", 1280, 720], ["phone", 520, 940]]; // headless Chrome won't render narrower than ~500 px
 
-const server = await preview({ preview: { port: PORT, strictPort: true } });
+const server = await preview({ build: { outDir: OUTDIR }, preview: { port: PORT, strictPort: true } });
 let cam;
 try {
   cam = await openCapture();
