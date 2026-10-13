@@ -29,15 +29,26 @@ export const GTID = {
 
 export const PETAK = {
   house: { x0: -3, z0: -2, w: 4, d: 3 },
-  trees: [
-    { x: 3, z: -1, h: 3, seed: 9 },
-    { x: -5, z: -3, h: 2, seed: 13 },
-  ],
+  trees: [{ x: 3, z: -1, h: 3, seed: 9 }],
+  banana: { x: -5, z: -3, h: 2.6 },
   lanterns: [
     { x: -3.0, z: 1.5 },
     { x: -0.4, z: 1.5 },
   ],
-  sign: { x: 2.6, z: 3, ry: -0.2 },
+  gentong: { x: -0.6, z: 2.8 },
+  jemuran: { x0: -4.2, x1: -2.6, z: 5.3 },
+  // dirt path from the stair to the front; decoration only (no footprint)
+  path: [
+    { x: -2, z: 2.35 },
+    { x: -1.95, z: 3.1 },
+    { x: -1.85, z: 3.85 },
+    { x: -1.65, z: 4.6 },
+    { x: -1.45, z: 5.35 },
+    { x: -1.25, z: 6.1 },
+    { x: -1.1, z: 6.85 },
+  ],
+  // the title: low and wide at the front so it leads but never covers the kid or the house (posts at ±(w / 2 − 0.3))
+  sign: { x: 0.9, z: 6.0, ry: -0.3, w: 3.0, h: 1.4 },
   kid: { home: { x: 3.2, z: -1.65 }, peek: -0.45, hide: { x: -1.5, z: -4.3 } },
   info: { x: -4.6, z: 3.2, ry: 0.2 },
   link: { x: 4.6, z: 4, ry: -0.2 },
@@ -98,11 +109,18 @@ export const FOOTPRINTS: Record<string, Cell[]> = {
     ...postCells(GTID.link.x, GTID.link.z),
   ],
   "petak-umpet": [
-    ...boxCells(PETAK.house.x0, PETAK.house.x0 + PETAK.house.w - 1, 0, 4, PETAK.house.z0, PETAK.house.z0 + PETAK.house.d - 1),
+    ...boxCells(PETAK.house.x0, PETAK.house.x0 + PETAK.house.w - 1, 0, 5, PETAK.house.z0, PETAK.house.z0 + PETAK.house.d - 1),
+    // the stair to the door: two rows in the cell before it, one in the next
     [PETAK.house.x0 + 1, 0, PETAK.house.z0 + PETAK.house.d],
+    [PETAK.house.x0 + 1, 1, PETAK.house.z0 + PETAK.house.d],
+    [PETAK.house.x0 + 1, 0, PETAK.house.z0 + PETAK.house.d + 1],
     ...PETAK.trees.flatMap(trunk),
+    ...trunk(PETAK.banana),
     ...PETAK.lanterns.flatMap((l) => postCells(l.x, l.z)),
-    ...postCells(PETAK.sign.x, PETAK.sign.z),
+    ...postCells(PETAK.gentong.x, PETAK.gentong.z, 1),
+    ...postCells(PETAK.jemuran.x0, PETAK.jemuran.z),
+    ...postCells(PETAK.jemuran.x1, PETAK.jemuran.z),
+    ...boardPosts(PETAK.sign, PETAK.sign.w / 2 - 0.3, PETAK.sign.ry),
     ...boardPosts(PETAK.info, INFO_HALF_SPAN, PETAK.info.ry),
     ...postCells(PETAK.link.x, PETAK.link.z),
   ],
