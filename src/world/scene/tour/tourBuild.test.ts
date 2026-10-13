@@ -57,4 +57,16 @@ describe("tour build", () => {
     expect(isPortrait(1280, 720)).toBe(false);
     expect(isPortrait(800, 800)).toBe(false);
   });
+
+  it("holds the current class across a band around square, so a window dragged across it doesn't re-snap", () => {
+    // from landscape: stays landscape until clearly portrait
+    expect(isPortrait(790, 800, false)).toBe(false);
+    expect(isPortrait(740, 800, false)).toBe(true);
+    // from portrait: stays portrait until clearly landscape
+    expect(isPortrait(810, 800, true)).toBe(true);
+    expect(isPortrait(860, 800, true)).toBe(false);
+    // far from square the previous class doesn't matter
+    expect(isPortrait(390, 844, false)).toBe(true);
+    expect(isPortrait(1280, 720, true)).toBe(false);
+  });
 });

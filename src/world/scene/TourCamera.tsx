@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import type { TourPath } from "@/world/engine/camera/tourPath";
@@ -13,7 +13,10 @@ import type { DriverInput, TourTrack } from "./tour/tourMotion";
 export function TourCamera() {
   const camera = useThree((s) => s.camera);
   // portrait screens get their own framing (islands centred and pulled back); rotating flips the aspect class
-  const portrait = useThree((s) => isPortrait(s.size.width, s.size.height));
+  // (with a band around square, so a window dragged across it doesn't rebuild back and forth)
+  const aspectClass = useRef<boolean | undefined>(undefined);
+  const portrait = useThree((s) => isPortrait(s.size.width, s.size.height, aspectClass.current));
+  aspectClass.current = portrait;
   const tours = useMemo(() => new Map<boolean, { path: TourPath; track: TourTrack }>(), []);
   const { path, track } = useMemo(() => {
     let tour = tours.get(portrait);

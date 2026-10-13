@@ -5,9 +5,19 @@ import type { Vec3 } from "@/world/engine/types";
 import { portraitStop } from "../islands/framing";
 import { tourVia } from "./tourMath";
 
-/** The aspect class the tour is framed for: portrait screens (narrower than tall) get the portrait stops. */
-export function isPortrait(width: number, height: number): boolean {
-  return width < height;
+/** Half-width of the band around a square aspect in which the current class holds. */
+const ASPECT_BAND = 0.05;
+
+/**
+ * The aspect class the tour is framed for: portrait screens (narrower than tall) get the portrait stops. Given the
+ * current class (`was`), it only flips once the aspect is clearly past square (outside 1 ± ASPECT_BAND), so a
+ * window dragged across square doesn't rebuild the tour back and forth.
+ */
+export function isPortrait(width: number, height: number, was?: boolean): boolean {
+  const aspect = width / height;
+  if (was === true) return aspect < 1 + ASPECT_BAND;
+  if (was === false) return aspect < 1 - ASPECT_BAND;
+  return aspect < 1;
 }
 
 /**

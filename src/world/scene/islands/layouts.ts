@@ -118,6 +118,8 @@ export const FOOTPRINTS: Record<string, Cell[]> = {
   ],
   "petak-umpet": [
     ...boxCells(PETAK.house.x0, PETAK.house.x0 + PETAK.house.w - 1, 0, 5, PETAK.house.z0, PETAK.house.z0 + PETAK.house.d - 1),
+    // the roof's lowest layer (eave 4.25–4.51 up) overhangs the walls by a block all round: drops must not fall through it
+    ...boxCells(PETAK.house.x0 - 1, PETAK.house.x0 + PETAK.house.w, 4, 4, PETAK.house.z0 - 1, PETAK.house.z0 + PETAK.house.d),
     // the stair to the door: two rows in the cell before it, one in the next
     [PETAK.house.x0 + 1, 0, PETAK.house.z0 + PETAK.house.d],
     [PETAK.house.x0 + 1, 1, PETAK.house.z0 + PETAK.house.d],
