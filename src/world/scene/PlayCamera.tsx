@@ -5,6 +5,8 @@ import { createFollowCam, updateFollowCam } from "@/world/engine/camera/followCa
 import { runtime } from "@/world/state/runtime";
 import { useWorld } from "@/world/state/store";
 import { orbitInput } from "@/world/input/orbit";
+import { followGate } from "./camera/followGate";
+import type { FollowGate } from "./camera/followGate";
 import { pullIn } from "./camera/pullIn";
 
 export function PlayCamera() {
@@ -14,6 +16,7 @@ export function PlayCamera() {
   const goal = useMemo(() => new THREE.Vector3(), []);
   const look = useMemo(() => new THREE.Vector3(), []);
   const track = useMemo(() => ({ prev: new THREE.Vector3(), active: false }), []);
+  const gate = useMemo<FollowGate>(() => ({ heading: 0, follow: false }), []);
 
   useEffect(() => {
     const el = gl.domElement;
@@ -80,12 +83,11 @@ export function PlayCamera() {
     track.prev.set(p.x, p.y, p.z);
     track.active = true;
     // movement is camera-relative, so trailing strafe/backpedal headings would feed back into the
-    // input and spin the camera; trail only near-forward motion (within ~26°) and rides
-    const away = Math.cos(runtime.heading + Math.PI - cam.yaw); // 1 away from the camera, 0 strafe, -1 toward
-    const follow = runtime.ride !== null || (runtime.moving && away > 0.9);
+    // input and spin the camera; trail near-forward motion with a weight that fades out by ~26°
+    const g = followGate(runtime.heading, cam.yaw, runtime.moving, runtime.ride !== null, gate);
     // updateFollowCam already looks 1.4 above the target, so pass the feet: the look-at then sits
     // inside Ezra's own (always free) AABB, which is what pullIn needs as its starting point
-    const { position, lookAt } = updateFollowCam(cam, p, runtime.heading, follow, dt, orbitInput.take());
+    const { position, lookAt } = updateFollowCam(cam, p, g.heading, g.follow, dt, orbitInput.take());
     goal.set(position.x, position.y, position.z);
     if (teleported || (entering && useWorld.getState().reducedMotion)) camera.position.copy(goal);
     else camera.position.lerp(goal, 1 - Math.exp(-6 * dt));
