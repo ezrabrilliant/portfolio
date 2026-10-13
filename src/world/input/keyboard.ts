@@ -1,0 +1,88 @@
+export const MOVE_CODES = {
+  forward: ["KeyW", "ArrowUp"],
+  back: ["KeyS", "ArrowDown"],
+  left: ["KeyA", "ArrowLeft"],
+  right: ["KeyD", "ArrowRight"],
+} as const;
+
+const ALL_MOVE = new Set<string>([...MOVE_CODES.forward, ...MOVE_CODES.back, ...MOVE_CODES.left, ...MOVE_CODES.right]);
+
+export function isMoveCode(code: string): boolean {
+  return ALL_MOVE.has(code);
+}
+
+const any = (keys: ReadonlySet<string>, codes: readonly string[]) => codes.some((c) => keys.has(c));
+
+export function axisFromKeys(keys: ReadonlySet<string>): { forward: number; right: number } {
+  const forward = (any(keys, MOVE_CODES.forward) ? 1 : 0) - (any(keys, MOVE_CODES.back) ? 1 : 0);
+  const right = (any(keys, MOVE_CODES.right) ? 1 : 0) - (any(keys, MOVE_CODES.left) ? 1 : 0);
+  const len = Math.hypot(forward, right);
+  return len > 1 ? { forward: forward / len, right: right / len } : { forward, right };
+}
+
+/** Converts camera-space intent into a world-space XZ direction (length ≤ 1). Right = forward × up. */
+export function cameraRelative(forward: number, right: number, camF: { x: number; z: number }): { x: number; z: number } {
+  const l = Math.hypot(camF.x, camF.z);
+  if (l < 1e-6) return { x: 0, z: 0 };
+  const fx = camF.x / l;
+  const fz = camF.z / l;
+  const rx = -fz;
+  const rz = fx;
+  let x = fx * forward + rx * right;
+  let z = fz * forward + rz * right;
+  const len = Math.hypot(x, z);
+  if (len > 1) {
+    x /= len;
+    z /= len;
+  }
+  return { x, z };
+}
+
+export interface Keyboard {
+  readonly keys: ReadonlySet<string>;
+  consume(code: string): boolean;
+  dispose(): void;
+}
+
+function isTypingTarget(t: EventTarget | null): boolean {
+  const el = t as { tagName?: string; isContentEditable?: boolean } | null;
+  if (!el || typeof el.tagName !== "string") return false;
+  return el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.tagName === "SELECT" || el.isContentEditable === true;
+}
+
+export function createKeyboard(target: EventTarget): Keyboard {
+  const keys = new Set<string>();
+  const pressed = new Set<string>();
+  const down = (e: Event) => {
+    const k = e as Event & { code?: string; repeat?: boolean };
+    if (!k.code || isTypingTarget(e.target)) return;
+    keys.add(k.code);
+    if (!k.repeat) pressed.add(k.code);
+  };
+  const up = (e: Event) => {
+    const k = e as Event & { code?: string };
+    if (k.code) keys.delete(k.code);
+  };
+  const blur = () => {
+    keys.clear();
+    pressed.clear();
+  };
+  target.addEventListener("keydown", down);
+  target.addEventListener("keyup", up);
+  target.addEventListener("blur", blur);
+  return {
+    keys,
+    consume(code: string) {
+      const had = pressed.has(code);
+      pressed.delete(code);
+      return had;
+    },
+    dispose() {
+      target.removeEventListener("keydown", down);
+      target.removeEventListener("keyup", up);
+      target.removeEventListener("blur", blur);
+    },
+  };
+}
+
+export const sharedKeyboard: Keyboard = createKeyboard(typeof window !== "undefined" ? window : new EventTarget());
