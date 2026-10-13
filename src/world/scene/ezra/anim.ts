@@ -31,6 +31,12 @@ export interface Pose {
 
 export const STAND_UP_SECONDS = 1.1;
 
+/**
+ * Leg rig shared by the model (Ezra.tsx) and the rim-clearance tests, in blocks: hip pivot above the feet (and its
+ * side offset), knee pivot below the hip, and the shin's outline below the knee (sole bottom, heel, toe).
+ */
+export const LEG = { hipY: 0.62, hipX: 0.12, knee: 0.28, shin: 0.34, back: -0.115, toe: 0.195 } as const;
+
 export function pickAnim(i: AnimInput): AnimState {
   if (i.seated) return "sit";
   if (i.riding) return "ride";
@@ -47,6 +53,8 @@ const NEUTRAL: Pose = {
   bodyY: 0, bodyZ: 0, squash: 1, headPitch: 0, headYaw: 0, lean: 0,
 };
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
+/** Peak extra hip height while standing up from the rim (phase 1). */
+const STAND_LIFT = 0.12;
 
 function mix(a: Pose, b: Pose, u: number): Pose {
   return {
@@ -121,9 +129,13 @@ export function poseFor(
     case "standUp": {
       const s = Math.min(1, Math.max(0, 1 - k.standUp / STAND_UP_SECONDS));
       if (s < 0.55) {
-        // phase 1 starts from the live sit pose at the same clock, so the hand-off from "sit" has no pop
+        // phase 1 starts from the live sit pose at the same clock, so the hand-off from "sit" has no pop. The hips
+        // rise ahead of the leg fold (ease-out) on a small arc, so the feet come up over the rim, not through it
         const u = s / 0.55;
-        return mix(sitPose(t, k.reduced, look), NEUTRAL, u * u * (3 - 2 * u));
+        const sit = sitPose(t, k.reduced, look);
+        const pose = mix(sit, NEUTRAL, u * u * (3 - 2 * u));
+        pose.bodyY = sit.bodyY * (1 - u) * (1 - u) + STAND_LIFT * Math.sin(Math.PI * u);
+        return pose;
       }
       const u = (s - 0.55) / 0.45;
       const stretch = Math.sin(Math.PI * u);

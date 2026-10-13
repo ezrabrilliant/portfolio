@@ -31,11 +31,15 @@ function build(): BuiltWorld {
   );
   const built = buildWorld(runtime.layout, [...stamps, (grid: VoxelGrid) => stampCrossings(grid, runtime.layout)]);
   runtime.built = built;
-  // Ezra sits on the hero island's rim on the camera side, facing the viewer
+  // Ezra sits on the hero island's rim on the side of the hero's tour camera, clear of stamped props (so this runs
+  // after the island and crossing stamps); seated, he turns his head toward that camera (seat.viewerHeading)
   const hero = runtime.islandById("hero");
   const shape = built.shapes.hero;
   if (shape) {
-    runtime.seat = findSeat(shape, hero.origin, { x: -VIEW_F.x, z: -VIEW_F.z });
+    const top = islandTop(hero);
+    const cam = STAR_ISLANDS.hero?.tourStop(hero).camera;
+    const toViewer = cam ? { x: cam.x - top.x, z: cam.z - top.z } : { x: -VIEW_F.x, z: -VIEW_F.z };
+    runtime.seat = findSeat(shape, hero.origin, toViewer, built.grid.isSolid);
     Object.assign(runtime.player.pos, runtime.seat.pos);
     Object.assign(runtime.player.lastSafe, islandTop(hero));
     runtime.heading = runtime.seat.heading;

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { STAND_UP_SECONDS, pickAnim, poseFor } from "./anim";
+import { LEG, STAND_UP_SECONDS, pickAnim, poseFor } from "./anim";
+import { SEAT_INSET } from "./seat";
 import type { AnimInput, Pose } from "./anim";
 
 const base: AnimInput = { onGround: true, speed: 0, vy: 0, landTimer: 0, seated: false, standUp: 0, riding: false };
@@ -103,3 +104,48 @@ describe("poseFor", () => {
     expect(Math.abs(end.kneeL)).toBeLessThan(0.05);
   });
 });
+
+// Forward kinematics of Ezra's leg rig (Ezra.tsx) in seat space: the seat point at the origin, facing +Z, so the
+// rim block's top is y = 0 for z < SEAT_INSET and its outer face is the plane z = SEAT_INSET.
+const rotX = (y: number, z: number, a: number): [number, number] => [y * Math.cos(a) - z * Math.sin(a), y * Math.sin(a) + z * Math.cos(a)];
+function legPoint(p: Pose, leg: number, knee: number, qy: number, qz: number): { y: number; z: number } {
+  let [y, z] = rotX(qy, qz, knee); // shin → thigh
+  [y, z] = rotX(y - LEG.knee, z, leg); // knee pivot, thigh → body
+  [y, z] = rotX((y + LEG.hipY) * p.squash, z, p.lean); // hip pivot, body squash and lean
+  return { y: y + p.bodyY, z: z + p.bodyZ };
+}
+/** The shin's outline below the knee: its back edge from the knee down to the heel, and the toe. */
+const OUTLINE: Array<[number, number]> = [
+  [0, LEG.back], [-0.1, LEG.back], [-0.2, LEG.back], [-LEG.shin, LEG.back], [-LEG.shin, LEG.toe],
+];
+/** Deepest intrusion of the shins/feet into the rim block (0 = clear): below the top AND behind the face. */
+function intrusion(p: Pose): number {
+  let worst = 0;
+  for (const [leg, knee] of [[p.legL, p.kneeL], [p.legR, p.kneeR]]) {
+    for (const [qy, qz] of OUTLINE) {
+      const q = legPoint(p, leg, knee, qy, qz);
+      worst = Math.max(worst, Math.min(-q.y, SEAT_INSET - q.z));
+    }
+  }
+  return worst;
+}
+
+describe("leg clearance at the rim", () => {
+  const EPS = 0.02; // the grass block's edges are rounded (r 0.08): grazing the very corner is not a clip
+  it("standing, the soles rest on the top", () => {
+    const p = poseFor("idle", 0, 0, { standUp: 0, reduced: true });
+    expect(legPoint(p, p.legL, p.kneeL, -LEG.shin, LEG.back).y).toBeCloseTo(0, 6);
+  });
+  it("seated, the hanging shins and feet stay outside the block at every point of the dangle", () => {
+    for (let t = 0; t < 10; t += 0.05) expect(intrusion(poseFor("sit", t, 0, { standUp: 0, reduced: false }))).toBeLessThan(EPS);
+  });
+  it("standing up, the feet come back over the top without passing through the rim block", () => {
+    for (const t of [0, 0.9, 2.3, 3.7]) {
+      for (let left = STAND_UP_SECONDS; left > 0; left -= 0.01) {
+        const p = poseFor("standUp", t, 0, { standUp: left, reduced: false });
+        expect(intrusion(p), `t ${t}, ${left.toFixed(2)} s left`).toBeLessThan(EPS);
+      }
+    }
+  });
+});
+

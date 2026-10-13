@@ -5,8 +5,7 @@ import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeom
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { runtime } from "@/world/state/runtime";
 import { useWorld } from "@/world/state/store";
-import { pickAnim, poseFor } from "./ezra/anim";
-import { VIEW_F } from "./islands/types";
+import { LEG, pickAnim, poseFor } from "./ezra/anim";
 
 // colours from the approved sketch and the avatar photo: black tee, short black hair, jeans, light shoes
 const C = {
@@ -44,7 +43,7 @@ function part(boxes: readonly Box[]): THREE.BufferGeometry {
 const GEO = {
   // pivot at the hip; runs half a leg past the knee so a bent knee stays square
   thigh: part([[0.22, 0.41, 0.22, 0, -0.185, 0, C.jeans]]),
-  // pivot at the knee (0.28 below the hip)
+  // pivot at the knee (LEG.knee below the hip); sole bottom at −LEG.shin, heel at LEG.back, toe at LEG.toe
   shin: part([
     [0.22, 0.26, 0.22, 0, -0.11, 0, C.jeans],
     [0.24, 0.09, 0.3, 0, -0.265, 0.04, C.shoe],
@@ -83,8 +82,6 @@ const GEO = {
   ]),
 };
 const MAT = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.9 });
-/** Heading from the hero seat toward the tour camera; seated, Ezra turns his head part of the way to it. */
-const VIEWER_HEADING = Math.atan2(-VIEW_F.x, -VIEW_F.z);
 /** Head height above the feet; the model hides while a camera is inside this radius of it (play-camera wall clamp). */
 const HEAD_Y = 1.6;
 const HIDE_NEAR = 0.6;
@@ -118,7 +115,8 @@ export function Ezra() {
       riding: runtime.ride?.kind === "rail",
     });
     const seat = runtime.seat;
-    const toViewer = seat ? VIEWER_HEADING - seat.heading : 0;
+    // seated, he turns his head half way toward the hero's tour camera (World aims the seat at it)
+    const toViewer = seat ? seat.viewerHeading - seat.heading : 0;
     const look = 0.5 * Math.atan2(Math.sin(toViewer), Math.cos(toViewer));
     const pose = poseFor(anim, state.clock.elapsedTime, runtime.animPhase, { standUp: runtime.standUp, reduced, look });
     if (seated && runtime.seat) {
@@ -152,16 +150,16 @@ export function Ezra() {
     <group ref={root}>
       <group ref={body}>
         <mesh geometry={GEO.body} material={MAT} castShadow={cast} receiveShadow={cast} />
-        {/* legs pivot at the hips (y 0.62), knees 0.28 lower */}
-        <group ref={legL} position={[0.12, 0.62, 0]}>
+        {/* legs pivot at the hips, knees LEG.knee lower (the rim-clearance tests use the same rig) */}
+        <group ref={legL} position={[LEG.hipX, LEG.hipY, 0]}>
           <mesh geometry={GEO.thigh} material={MAT} castShadow={cast} receiveShadow={cast} />
-          <group ref={kneeL} position={[0, -0.28, 0]}>
+          <group ref={kneeL} position={[0, -LEG.knee, 0]}>
             <mesh geometry={GEO.shin} material={MAT} castShadow={cast} receiveShadow={cast} />
           </group>
         </group>
-        <group ref={legR} position={[-0.12, 0.62, 0]}>
+        <group ref={legR} position={[-LEG.hipX, LEG.hipY, 0]}>
           <mesh geometry={GEO.thigh} material={MAT} castShadow={cast} receiveShadow={cast} />
-          <group ref={kneeR} position={[0, -0.28, 0]}>
+          <group ref={kneeR} position={[0, -LEG.knee, 0]}>
             <mesh geometry={GEO.shin} material={MAT} castShadow={cast} receiveShadow={cast} />
           </group>
         </group>

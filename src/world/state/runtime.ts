@@ -46,7 +46,7 @@ export const runtime = {
   tourPath: null as TourPath | null,
   tourProgress: 0,
   tourBlend: 0,
-  seat: null as { pos: Vec3; heading: number } | null,
+  seat: null as { pos: Vec3; heading: number; viewerHeading: number } | null,
   seated: true,
   standUp: 0,
   ride: null as Ride | null,

@@ -133,7 +133,7 @@ export function PlayerController() {
       killY: runtime.killY,
     });
 
-    if (!p.locked && Math.hypot(move.x, move.z) > 0.05) runtime.heading =dampAngle(runtime.heading, Math.atan2(move.x, move.z), 12, dt);
+    if (!p.locked && Math.hypot(move.x, move.z) > 0.05) runtime.heading = dampAngle(runtime.heading, Math.atan2(move.x, move.z), 12, dt);
     runtime.speed = Math.hypot(p.vel.x, p.vel.z);
     runtime.moving = runtime.speed > 0.3;
     runtime.animPhase += runtime.speed * dt * 1.7;

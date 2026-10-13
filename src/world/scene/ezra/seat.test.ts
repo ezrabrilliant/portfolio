@@ -43,4 +43,44 @@ describe("findSeat", () => {
     // and it stays near the camera-side rim point (−3, 5) on the diagonal
     expect(Math.hypot(cx - -3, cz - 5)).toBeLessThanOrEqual(2);
   });
+  it("returns the heading toward the viewer it was aimed at", () => {
+    const toCamera = { x: -0.33, z: 0.95 };
+    const s = findSeat(disc(6), { x: 0, y: 0, z: 0 }, toCamera);
+    expect(s.viewerHeading).toBeCloseTo(Math.atan2(-0.33, 0.95), 6);
+    expect(s.heading).toBeCloseTo(0, 6); // still snapped to the +Z face
+  });
+
+  describe("with stamped blocks (world-space isSolid)", () => {
+    // square top |x|,|z| ≤ 4 at y 0, origin (0, 0, 0): without stamps the seat cell is (−3, 4), seat (−2.5, 1, 5 − inset)
+    const square: IslandShape = { cells: [], surface: (x, z) => (Math.abs(x) <= 4 && Math.abs(z) <= 4 ? 0 : null) };
+    const origin = { x: 0, y: 0, z: 0 };
+    const dir = { x: -VIEW_F.x, z: -VIEW_F.z };
+    const stamped = (...blocks: Array<[number, number, number]>) => {
+      const set = new Set(blocks.map((b) => b.join(",")));
+      return (x: number, y: number, z: number) => (y <= 0 && Math.abs(x) <= 4 && Math.abs(z) <= 4) || set.has(`${x},${y},${z}`);
+    };
+    const cellOf = (s: { pos: { x: number; z: number } }) => [Math.floor(s.pos.x), Math.floor(s.pos.z)];
+
+    it("keeps the best ledge when nothing is stamped near it", () => {
+      expect(cellOf(findSeat(square, origin, dir, stamped([0, 1, 0], [0, 2, 0])))).toEqual([-3, 4]);
+    });
+    it("moves off a ledge with a prop on the seat cell", () => {
+      const s = findSeat(square, origin, dir, stamped([-3, 1, 4]));
+      expect(cellOf(s)).not.toEqual([-3, 4]);
+      expect(s.heading).toBeCloseTo(0, 6);
+    });
+    it("moves off a ledge with a prop on a side cell (head height) or anything beyond the edge", () => {
+      expect(cellOf(findSeat(square, origin, dir, stamped([-2, 2, 4])))).not.toEqual([-3, 4]);
+      expect(cellOf(findSeat(square, origin, dir, stamped([-3, 0, 5])))).not.toEqual([-3, 4]); // e.g. a bridge deck
+    });
+    it("the seat it picks has room: its cell and both sides free for two blocks, the column beyond free", () => {
+      const isSolid = stamped([-3, 1, 4], [-2, 2, 4], [-4, 1, 4], [-1, 0, 5]);
+      const s = findSeat(square, origin, dir, isSolid);
+      const [cx, cz] = cellOf(s);
+      for (const dx of [-1, 0, 1]) for (const y of [1, 2]) expect(isSolid(cx + dx, y, cz)).toBe(false);
+      for (const y of [0, 1, 2]) expect(isSolid(cx, y, cz + 1)).toBe(false);
+      expect(Math.abs(cx - -3)).toBeLessThanOrEqual(4); // still the camera side of the +Z rim
+    });
+  });
 });
+
