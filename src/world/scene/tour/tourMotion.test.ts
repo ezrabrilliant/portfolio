@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { worldProjects } from "@/config/portfolio";
 import { buildLayout } from "@/world/engine/gen/layout";
-import { buildTourPath, samplePath, stopProgress } from "@/world/engine/camera/tourPath";
+import { buildTourPath, stopProgress } from "@/world/engine/camera/tourPath";
 import type { TourPath, TourStop } from "@/world/engine/camera/tourPath";
 import type { Vec3 } from "@/world/engine/types";
 import { defaultTourStop, islandTop } from "../islands/types";
 import { tourVia, trackHeightPx } from "./tourMath";
-import { buildTourTrack, followProgress, nearestTrackProgress, sampleTrack, stopAt } from "./tourMotion";
+import { BLEND_TIME, buildTourTrack, createTourDriver, followProgress, nearestTrackProgress, sampleTrack, stepTourDriver, stopAt } from "./tourMotion";
 import type { TourTrack } from "./tourMotion";
 
 const layout = buildLayout(worldProjects);
@@ -48,11 +48,6 @@ const firstOrder: Follow = (f, target) => {
   f.x += (target - f.x) * (1 - Math.exp(-4 * DT));
 };
 const trackPose = (track: TourTrack): Pose => (p, cam, look) => sampleTrack(track, p, cam, look);
-const enginePose = (path: TourPath): Pose => (p, cam, look) => {
-  const s = samplePath(path, p);
-  Object.assign(cam, s.camera);
-  Object.assign(look, s.target);
-};
 
 /** Fly the camera at 60 fps while the scroll target moves; per-frame camera speed and velocity changes. */
 function fly(pose: Pose, follow: Follow, target: (t: number) => number, seconds: number) {
@@ -106,13 +101,10 @@ describe("tour track", () => {
     // Threshold: no single frame may change the camera speed by more than 10% of the stretch's
     // peak (cruise) speed, so going from the slow stop pace to cruise takes at least ~10 frames
     // (≈ 170 ms): an acceleration, never a jump. Measured: 6-7% (steady), 6-10.5% (notches).
-    // The engine mapping with the original first-order damp does 40-95% of it in a single frame.
     it(`${name} framing: steady scrolling past each stop changes speed smoothly and never halts`, () => {
       for (let i = 0; i < stops.length; i++) {
         const { target, seconds } = acrossStop(path, i, VIEWPORT_PER_S);
         const now = fly(trackPose(track), spring, target, seconds);
-        const before = fly(enginePose(path), firstOrder, target, seconds);
-        expect(before.speedJump, `engine kink at stop ${i}`).toBeGreaterThan(0.35);
         expect(now.speedJump, `speed jump at stop ${i}`).toBeLessThan(0.1);
         // slow at the islands but always drifting (≥ half a block per second while scrolling)
         expect(Math.min(...now.speed.slice(FPS / 2, -FPS / 2)), `halt near stop ${i}`).toBeGreaterThan(0.5);
@@ -123,8 +115,6 @@ describe("tour track", () => {
       for (let i = 0; i < stops.length; i++) {
         const { target, seconds } = notchesAcrossStop(path, i);
         const now = fly(trackPose(track), spring, target, seconds);
-        const before = fly(enginePose(path), firstOrder, target, seconds);
-        expect(before.speedJump, `engine notch jolt at stop ${i}`).toBeGreaterThan(0.25);
         expect(now.speedJump, `notch jolt at stop ${i}`).toBeLessThan(0.12);
         expect(Math.min(...now.speed.slice(FPS / 2, -FPS / 2)), `halt between notches near stop ${i}`).toBeGreaterThan(0.5);
       }
@@ -146,5 +136,89 @@ describe("tour track", () => {
     const path = buildTourPath(islandStops, tourVia(layout));
     const track = buildTourTrack(path);
     islandStops.forEach((s, i) => expect(nearestTrackProgress(track, s.camera)).toBeCloseTo(stopProgress(path, i), 3));
+  });
+});
+
+describe("smoothness metric", () => {
+  it("discriminates: a kinked progress mapping fails it, the re-timed track passes", () => {
+    // a camera that steps from 10 to 100 units per unit progress at p = 0.5, as a piecewise-linear
+    // scroll mapping does at a dwell edge, behind a first-order damp: the step (90% of the peak
+    // speed) lands within two frames, so at least 45% of the peak shows up in a single frame
+    const kinked: Pose = (p, cam, look) => {
+      const s = p < 0.5 ? 10 * p : 5 + 100 * (p - 0.5);
+      Object.assign(cam, { x: s, y: 10, z: 20 });
+      Object.assign(look, { x: s, y: 0, z: 0 });
+    };
+    const stop = (id: string, x: number) => ({ id, camera: { x, y: 10, z: 20 }, target: { x, y: 0, z: 0 }, dwell: 1 });
+    const path = buildTourPath([stop("a", 0), stop("b", 40), stop("c", 80)], [[{ x: 20, y: 10, z: 20 }], [{ x: 60, y: 10, z: 20 }]]);
+    const rate = 1 / 6;
+    const target = (t: number) => Math.min(1, rate * t);
+    expect(fly(kinked, firstOrder, target, 1 / rate).speedJump).toBeGreaterThan(0.4);
+    expect(fly(trackPose(buildTourTrack(path)), spring, target, 1 / rate).speedJump).toBeLessThan(0.1);
+  });
+});
+
+describe("tour driver: Play → tour hand-off", () => {
+  const path = buildTourPath(islandStops, tourVia(layout));
+  const track = buildTourTrack(path);
+  const resume = stopProgress(path, 2); // Ezra walked from the hero to Petak Umpet
+  const t = islandTop(island("petak-umpet"));
+  const playPose = { x: t.x - 6, y: t.y + 4, z: t.z + 8 };
+
+  /** Tour near the hero, play for 2 s, exit; the page scroll reaches the hand-off `landsAfter` frames later. */
+  function exitPlay(landsAfter: number, reduced = false) {
+    const d = createTourDriver();
+    const input = { playing: false, scroll: 0.05, handoff: 0, reduced, dt: DT };
+    for (let k = 0; k < 60; k++) stepTourDriver(d, track, input);
+    input.playing = true;
+    for (let k = 0; k < 120; k++) expect(stepTourDriver(d, track, input)).toBe(false);
+    input.playing = false;
+    input.handoff = resume; // set by the exit code in the same tick as setMode("tour")
+    const frames: { edge: boolean; x: number; weight: number; dist: number; rescroll: number }[] = [];
+    let scroll = 0.05;
+    for (let k = 0; k < 90; k++) {
+      if (k >= landsAfter) scroll = resume;
+      input.scroll = scroll;
+      stepTourDriver(d, track, input);
+      if (d.rescroll >= 0) scroll = d.rescroll; // TourCamera scrolls the page itself
+      const p = { x: d.cam.x + (playPose.x - d.cam.x) * d.weight, y: d.cam.y + (playPose.y - d.cam.y) * d.weight, z: d.cam.z + (playPose.z - d.cam.z) * d.weight };
+      frames.push({ edge: d.edge, x: d.follow.x, weight: d.weight, dist: Math.hypot(p.x - d.cam.x, p.y - d.cam.y, p.z - d.cam.z), rescroll: d.rescroll });
+    }
+    return frames;
+  }
+
+  for (const landsAfter of [0, 3, Infinity]) {
+    it(`resumes at the hand-off point and glides straight there (page scroll lands after ${landsAfter} frames)`, () => {
+      const frames = exitPlay(landsAfter);
+      expect(frames.map((f) => f.edge).filter(Boolean)).toHaveLength(1);
+      expect(frames[0].edge).toBe(true);
+      for (const f of frames) {
+        // the track pose never flies from the stale pre-Play progress (0.05, by the hero)
+        expect(Math.abs(f.x - resume)).toBeLessThan(1e-9);
+        expect(stopAt(track, f.x)).toBe(2);
+      }
+      // starts on the Play pose and closes in on the track pose every frame, never swinging back
+      expect(frames[0].weight).toBeGreaterThan(0.999);
+      for (let k = 1; k < frames.length; k++) expect(frames[k].dist).toBeLessThanOrEqual(frames[k - 1].dist + 1e-9);
+      expect(frames[Math.ceil(BLEND_TIME * FPS) + 1].weight).toBe(0);
+      expect(frames.filter((f) => f.rescroll >= 0)).toHaveLength(landsAfter === Infinity ? 1 : 0);
+    });
+  }
+
+  it("eases out of the Play pose and onto the track (no speed step at either end)", () => {
+    const w = exitPlay(0).map((f) => f.weight);
+    const end = Math.ceil(BLEND_TIME * FPS);
+    expect(1 - w[0]).toBeLessThan(0.001);
+    expect(w[0] - w[1]).toBeLessThan(0.002);
+    expect(w[end - 2] - w[end - 1]).toBeLessThan(0.002);
+    // steepest around the middle: 1.875 / 48 frames ≈ 0.04 per frame
+    expect(Math.max(...w.slice(1, end).map((x, k) => w[k] - x))).toBeLessThan(0.045);
+  });
+
+  it("cuts instead of gliding under reduced motion", () => {
+    const frames = exitPlay(0, true);
+    expect(frames[0].edge).toBe(true);
+    expect(frames[0].weight).toBe(0);
+    expect(frames[0].x).toBe(resume);
   });
 });

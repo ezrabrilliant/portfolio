@@ -2,7 +2,17 @@ import { describe, expect, it } from "vitest";
 import { worldProjects } from "@/config/portfolio";
 import { buildLayout } from "@/world/engine/gen/layout";
 import { buildTourPath, stopProgress } from "@/world/engine/camera/tourPath";
-import { chapterAt, progressToScroll, scrollToProgress, tourVia, trackHeightPx } from "./tourMath";
+import {
+  chapterAt,
+  nearestStop,
+  progressToScroll,
+  refreshScrollMeasure,
+  scrollMeasure,
+  scrollToProgress,
+  stopProgresses,
+  tourVia,
+  trackHeightPx,
+} from "./tourMath";
 
 describe("scroll ↔ progress", () => {
   it("maps the scrollable range to 0..1 and back", () => {
@@ -13,6 +23,16 @@ describe("scroll ↔ progress", () => {
     expect(scrollToProgress(9999, track, 1000)).toBe(1);
     expect(progressToScroll(0.5, track, 1000)).toBe(3000);
     expect(scrollToProgress(progressToScroll(0.37, track, 1000), track, 1000)).toBeCloseTo(0.37, 9);
+  });
+});
+
+describe("stable scroll measure", () => {
+  it("is the default for both conversions and falls back to the innerHeight geometry without a track", () => {
+    const m = scrollMeasure();
+    expect(m.trackPx).toBe(trackHeightPx(5, m.viewportH));
+    expect(refreshScrollMeasure()).toBe(false); // no DOM track to read
+    expect(progressToScroll(0.5)).toBe(progressToScroll(0.5, m.trackPx, m.viewportH));
+    expect(scrollToProgress(progressToScroll(0.37))).toBeCloseTo(0.37, 9);
   });
 });
 
@@ -45,5 +65,14 @@ describe("chapterAt", () => {
     expect(chapterAt(path, 0)).toBe(0);
     expect(chapterAt(path, stopProgress(path, 1))).toBe(1);
     expect(chapterAt(path, 1)).toBe(2);
+  });
+  it("delegates to stop values computed once per path", () => {
+    const stop = (id: string, x: number) => ({ id, camera: { x, y: 10, z: 20 }, target: { x, y: 0, z: 0 }, dwell: 1 });
+    const path = buildTourPath([stop("a", 0), stop("b", 30), stop("c", 60)]);
+    const values = stopProgresses(path);
+    expect(stopProgresses(path)).toBe(values);
+    expect(values).toEqual([0, stopProgress(path, 1), 1]);
+    expect(nearestStop(values, values[1] + 0.01)).toBe(1);
+    expect(chapterAt(path, values[1] + 0.01)).toBe(1);
   });
 });

@@ -1,6 +1,6 @@
-import { stopProgress } from "@/world/engine/camera/tourPath";
 import type { TourPath } from "@/world/engine/camera/tourPath";
 import type { Vec3 } from "@/world/engine/types";
+import { nearestStop, stopProgresses } from "./tourMath";
 
 /**
  * Smooth flight for the scroll tour.
@@ -122,7 +122,7 @@ function smoothPolyline(pts: Float64Array, radius: number): Float64Array {
 export function buildTourTrack(path: TourPath): TourTrack {
   const { stops: tourStops, controls: ctrl, stopIndex: k, totalWeight } = path;
   const n = tourStops.length;
-  const stops = tourStops.map((_, i) => stopProgress(path, i));
+  const stops = stopProgresses(path);
 
   // pace at each stop: like the engine, the camera covers DWELL_SPAN of the neighbouring control
   // segment while the scroll crosses each half of the stop's dwell weight
@@ -238,9 +238,7 @@ export function sampleTrack(track: TourTrack, p: number, cam: Vec3, look: Vec3):
 
 /** Index of the stop nearest to scroll progress `p` (no allocation). */
 export function stopAt(track: TourTrack, p: number): number {
-  let best = 0;
-  for (let i = 1; i < track.stops.length; i++) if (Math.abs(track.stops[i] - p) < Math.abs(track.stops[best] - p)) best = i;
-  return best;
+  return nearestStop(track.stops, p);
 }
 
 /** Scroll progress whose track camera is nearest `point` (use it to resume the tour after Play). */
@@ -293,4 +291,112 @@ export function followProgress(f: Follower, target: number, dt: number, smoothTi
   f.x = target + (change + temp) * e;
   if (f.x < 0) { f.x = 0; f.v = 0; }
   else if (f.x > 1) { f.x = 1; f.v = 0; }
+}
+
+/** Seconds the camera takes to glide from the Play pose back onto the track. */
+export const BLEND_TIME = 0.8;
+/** Progress tolerance for "the page scroll has reached the hand-off point". */
+const HANDOFF_EPS = 1e-3;
+/** Frames to wait for the hand-off scroll before scrolling the page ourselves. */
+const HANDOFF_FRAMES = 30;
+
+/**
+ * Per-frame tour camera state (pure: no DOM, no three). TourCamera feeds it the scroll progress
+ * and applies the result.
+ *
+ * Play → tour hand-off (shared contract with useModeTransitions): when Play ends, the exit code
+ * sets `runtime.tourProgress` to the resume point, starts the blend and scrolls the page there.
+ * The driver detects the play → tour edge itself; on that edge, before the follower moves, it
+ * re-seeds the follower at the hand-off progress with zero velocity and starts the blend. Until
+ * the page scroll reaches the hand-off point (it may land before or after this frame) the
+ * hand-off progress is the target, so the track pose never flies from the stale pre-Play progress.
+ */
+export interface TourDriver {
+  follow: Follower;
+  /** progress the camera is heading for: the scroll, or the hand-off point until the scroll lands */
+  target: number;
+  handoff: number;
+  handoffFrames: number;
+  wasPlaying: boolean;
+  /** linear blend clock, 1 → 0 over BLEND_TIME */
+  blend: number;
+  /** eased Play-pose weight this frame: 1 = the captured Play pose, 0 = the track pose */
+  weight: number;
+  /** true on the first tour frame after Play: capture the camera's pose now */
+  edge: boolean;
+  /** progress to scroll the page to this frame (hand-off scroll never arrived), or -1 */
+  rescroll: number;
+  cam: Vec3;
+  look: Vec3;
+}
+
+export interface DriverInput {
+  playing: boolean;
+  /** progress of the current page scroll */
+  scroll: number;
+  /** runtime.tourProgress, read on the play → tour edge */
+  handoff: number;
+  reduced: boolean;
+  dt: number;
+}
+
+export function createTourDriver(): TourDriver {
+  return {
+    follow: { x: -1, v: 0 },
+    target: 0,
+    handoff: -1,
+    handoffFrames: 0,
+    wasPlaying: false,
+    blend: 0,
+    weight: 0,
+    edge: false,
+    rescroll: -1,
+    cam: { x: 0, y: 0, z: 0 },
+    look: { x: 0, y: 0, z: 0 },
+  };
+}
+
+/** Advance one frame. Returns false while playing (the tour camera does nothing then). */
+export function stepTourDriver(d: TourDriver, track: TourTrack, inp: DriverInput): boolean {
+  d.edge = false;
+  d.rescroll = -1;
+  if (inp.playing) {
+    d.wasPlaying = true;
+    return false;
+  }
+  const f = d.follow;
+  if (d.wasPlaying) {
+    d.wasPlaying = false;
+    d.edge = true;
+    f.x = Math.min(1, Math.max(0, inp.handoff));
+    f.v = 0;
+    d.handoff = f.x;
+    d.handoffFrames = 0;
+    d.blend = inp.reduced ? 0 : 1;
+  }
+
+  let target = inp.scroll;
+  if (d.handoff >= 0) {
+    if (Math.abs(inp.scroll - d.handoff) <= HANDOFF_EPS) d.handoff = -1;
+    else {
+      target = d.handoff;
+      if (++d.handoffFrames > HANDOFF_FRAMES) {
+        d.rescroll = d.handoff;
+        d.handoff = -1;
+      }
+    }
+  }
+  d.target = target;
+
+  if (f.x < 0) f.x = target;
+  if (inp.reduced) {
+    // camera cuts: always sit exactly on the nearest stop
+    f.x = track.stops[stopAt(track, target)];
+    f.v = 0;
+  } else followProgress(f, target, inp.dt);
+  sampleTrack(track, f.x, d.cam, d.look);
+
+  if (d.blend > 0) d.blend = inp.reduced ? 0 : Math.max(0, d.blend - inp.dt / BLEND_TIME);
+  d.weight = 1 - smoother(1 - d.blend);
+  return true;
 }
