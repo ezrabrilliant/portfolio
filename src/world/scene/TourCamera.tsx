@@ -16,7 +16,10 @@ export function TourCamera() {
   // (with a band around square, so a window dragged across it doesn't rebuild back and forth)
   const aspectClass = useRef<boolean | undefined>(undefined);
   const portrait = useThree((s) => isPortrait(s.size.width, s.size.height, aspectClass.current));
-  aspectClass.current = portrait;
+  // remember the committed class (not in the render body): the selector reads it on the next resize
+  useLayoutEffect(() => {
+    aspectClass.current = portrait;
+  }, [portrait]);
   const tours = useMemo(() => new Map<boolean, { path: TourPath; track: TourTrack }>(), []);
   const { path, track } = useMemo(() => {
     let tour = tours.get(portrait);
