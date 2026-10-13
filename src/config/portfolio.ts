@@ -542,6 +542,6 @@ export const worldProjects: WorldProject[] = [
     tags: ["Discord.js", "Gemini", "GPT-4o"],
     district: "discord",
     tier: "star",
-    links: { demo: "https://discord.com/oauth2/authorize?client_id=1127105994766426122" },
+    links: { discord: "https://discord.com/oauth2/authorize?client_id=1127105994766426122" },
   },
 ];
