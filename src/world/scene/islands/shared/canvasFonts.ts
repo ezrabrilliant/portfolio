@@ -21,6 +21,9 @@ export function loadCanvasFonts(): Promise<void> {
     ),
   )
     .then(() => undefined)
-    .catch(() => undefined); // fall back to the system stack rather than never drawing
+    .catch((err: unknown) => {
+      // fall back to the system stack rather than never drawing
+      console.warn("[canvasFonts] failed to load self-hosted fonts; using fallbacks", err);
+    });
   return ready;
 }

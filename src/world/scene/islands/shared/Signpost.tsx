@@ -9,6 +9,12 @@ import { useHoverLift } from "./useHoverLift";
 const POST_H = 2.1;
 const BOARD_Y = POST_H - 0.25;
 const OFF = "#9b938a";
+// Hit area in the sign's local frame: board x -0.85..1.15 plus the arrow tip at 1.27 + 0.36/√2 ≈ 1.53,
+// padded to x -1.0..1.6 and z -0.2..0.4 (centre (0.3, 0.1), half extents 1.3 × 0.3).
+const HIT_CX = 0.3;
+const HIT_CZ = 0.1;
+const HIT_HX = 1.3;
+const HIT_HZ = 0.3;
 
 /** Arrow signpost that opens a project's real site in a new tab. Greyed out and inactive while `url` is empty. */
 export function Signpost({
@@ -29,6 +35,13 @@ export function Signpost({
     playSfx("link");
     window.open(url, "_blank", "noopener,noreferrer");
   };
+  // the registry's hitbox is axis-aligned: rotate the local centre by rotationY and cover the rotated footprint
+  const cos = Math.cos(rotationY);
+  const sin = Math.sin(rotationY);
+  const hitX = at.x + HIT_CX * cos + HIT_CZ * sin;
+  const hitZ = at.z - HIT_CX * sin + HIT_CZ * cos;
+  const hitW = 2 * (Math.abs(cos) * HIT_HX + Math.abs(sin) * HIT_HZ);
+  const hitD = 2 * (Math.abs(sin) * HIT_HX + Math.abs(cos) * HIT_HZ);
   return (
     <>
       <group position={islandFrame(placement)}>
@@ -54,8 +67,8 @@ export function Signpost({
         id={id}
         island={placement.id}
         label={label}
-        position={worldTuple(placement, at.x + 0.15, BOARD_Y, at.z + 0.1)}
-        size={[2.3, 0.8, 0.6]}
+        position={worldTuple(placement, hitX, BOARD_Y, hitZ)}
+        size={[hitW, 0.8, hitD]}
         radius={2.4}
         onActivate={open}
         enabled={() => enabled}

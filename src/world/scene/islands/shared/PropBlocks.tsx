@@ -41,7 +41,6 @@ export function PropBlocks({ blocks, seed = 1 }: { blocks: readonly PropBlock[];
       args={[GEOMETRY, MATERIAL, blocks.length]}
       castShadow
       receiveShadow
-      dispose={null}
     />
   );
 }
