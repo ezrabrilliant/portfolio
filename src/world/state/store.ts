@@ -30,6 +30,9 @@ const initialQuality: Quality = inBrowser ? pickQuality(readDevice()) : "high";
 export const useWorld = create<WorldState>()((set, get) => ({
   mode: "tour",
   setMode: (mode) => {
+    // Play waits for the built world (ReadySignal): entering earlier would place Ezra before World's build
+    // re-seats him. Covers every trigger: HUD button, move keys, phone Start, the ?play deep link
+    if (mode === "play" && !get().ready) return;
     if (get().mode !== mode) set({ mode });
   },
   activeIsland: "hero",

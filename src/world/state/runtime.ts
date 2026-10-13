@@ -6,6 +6,7 @@ import { createRegistry } from "@/world/engine/interaction/registry";
 import type { InteractionRegistry } from "@/world/engine/interaction/registry";
 import { createParticlePool } from "@/world/engine/particles/particles";
 import type { ParticlePool } from "@/world/engine/particles/particles";
+import { withFewerParticles } from "./fewerParticles";
 import { createCharacter } from "@/world/engine/physics/character";
 import type { CharacterState } from "@/world/engine/physics/character";
 import type { TourPath } from "@/world/engine/camera/tourPath";
@@ -31,7 +32,8 @@ export const runtime = {
   layout,
   built: null as BuiltWorld | null,
   registry: createRegistry() as InteractionRegistry,
-  particles: createParticlePool(reducedMotion ? 240 : 800) as ParticlePool,
+  // reduced motion: a smaller pool and every burst a third the size
+  particles: (reducedMotion ? withFewerParticles(createParticlePool(240)) : createParticlePool(800)) as ParticlePool,
   player: createCharacter({ x: hero.origin.x + 0.5, y: hero.origin.y + 1, z: hero.origin.z + 0.5 }) as CharacterState,
   heading: 0,
   cameraPos: { x: 0, y: 0, z: 0 } as Vec3,

@@ -7,11 +7,18 @@ export function Hud() {
   const muted = useWorld((s) => s.muted);
   const toggleMuted = useWorld((s) => s.toggleMuted);
   const prompt = useWorld((s) => s.prompt);
+  const ready = useWorld((s) => s.ready);
   return (
     <div className="hud">
       {/* plain buttons whose visible text is the name (no aria-pressed: the text already flips with the state) */}
       <div className="hud-bar" role="group" aria-label="World controls">
-        <button type="button" className={mode === "play" ? "hud-btn hud-btn--on" : "hud-btn"} onClick={() => setMode(mode === "play" ? "tour" : "play")}>
+        {/* Play waits for the built world (the store ignores it until then) */}
+        <button
+          type="button"
+          className={mode === "play" ? "hud-btn hud-btn--on" : "hud-btn"}
+          disabled={!ready}
+          onClick={() => setMode(mode === "play" ? "tour" : "play")}
+        >
           {mode === "play" ? "Tour" : "Play"}
         </button>
         <button

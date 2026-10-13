@@ -7,6 +7,7 @@ import { useWorld } from "@/world/state/store";
 import { STAR_ISLANDS } from "./islands";
 import { VIEW_F, islandTop } from "./islands/types";
 import { Ezra } from "./Ezra";
+import { ReadySignal } from "./ReadySignal";
 import { findSeat } from "./ezra/seat";
 import { IslandTerrain } from "./IslandTerrain";
 import { InitialView } from "./InitialView";
@@ -89,6 +90,7 @@ export function World() {
       {/* keep Ezra after PlayerController and the cameras: his frame callback reads this frame's player
           position (no one-frame lag) and the final camera position (hides the model when it's inside his head) */}
       <Ezra />
+      <ReadySignal />
     </>
   );
 }

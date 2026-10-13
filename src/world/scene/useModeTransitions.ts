@@ -124,7 +124,7 @@ export function useModeTransitions(enabled: boolean) {
       const tick = () => {
         const c = runtime.cameraPos;
         const toured = c.x !== 0 || c.y !== 0 || c.z !== 0;
-        if (runtime.built && toured && ++frames > 2) useWorld.getState().setMode("play");
+        if (useWorld.getState().ready && runtime.built && toured && ++frames > 2) useWorld.getState().setMode("play");
         else raf = requestAnimationFrame(tick);
       };
       raf = requestAnimationFrame(tick);

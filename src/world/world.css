@@ -93,3 +93,24 @@ html.world-playing, html.world-playing body { overflow: hidden; }
 .world-fade { position: fixed; inset: 0; background: #0d1418; opacity: 0; pointer-events: none; }
 @media (pointer: coarse) { .hud-hint { display: none; } }
 @media (prefers-reduced-motion: reduce) { .hud-btn { transition: none; } }
+.hud-btn:disabled, .hud-btn:disabled:hover { opacity: 0.5; cursor: default; background: rgba(244, 243, 239, 0.9); }
+
+.loader {
+  position: fixed; inset: 0; z-index: 20; display: grid; place-content: center; justify-items: center; gap: 18px;
+  background: #cbdce4; transition: opacity 0.6s ease;
+}
+.loader--done { opacity: 0; pointer-events: none; }
+.loader-island { position: relative; width: 90px; height: 72px; }
+.loader-block {
+  position: absolute; width: 17px; height: 17px; border-radius: 3px;
+  animation: loader-drop 0.9s cubic-bezier(0.3, 0.7, 0.25, 1.15) both infinite alternate;
+}
+@keyframes loader-drop {
+  0% { transform: translateY(-60px); opacity: 0; }
+  45%, 100% { transform: translateY(0); opacity: 1; }
+}
+.loader-text { margin: 0; font: 500 13px/1 ui-monospace, "SFMono-Regular", Menlo, monospace; color: rgba(19, 33, 43, 0.7); }
+@media (prefers-reduced-motion: reduce) {
+  .loader-block { animation: none; }
+  .loader { transition: none; }
+}

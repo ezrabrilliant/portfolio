@@ -40,6 +40,16 @@ describe("useWorld", () => {
     unsub();
   });
 
+  it("Play waits for the built world: setMode('play') is a no-op until ready", () => {
+    useWorld.getState().setMode("play");
+    expect(useWorld.getState().mode).toBe("tour");
+    useWorld.getState().setReady(true);
+    useWorld.getState().setMode("play");
+    expect(useWorld.getState().mode).toBe("play");
+    useWorld.getState().setMode("tour");
+    expect(useWorld.getState().mode).toBe("tour");
+  });
+
   it("setPrompt compares by id", () => {
     useWorld.getState().setPrompt({ id: "a", label: "Print a receipt" });
     const listener = vi.fn();

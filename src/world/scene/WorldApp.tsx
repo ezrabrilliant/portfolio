@@ -6,6 +6,7 @@ import { Hud } from "@/world/ui/Hud";
 import { NoWebGL } from "@/world/ui/NoWebGL";
 import { SeoMirror } from "@/world/ui/SeoMirror";
 import { MobileControls } from "@/world/ui/MobileControls";
+import { Loader } from "@/world/ui/Loader";
 import { TourScrollTrack } from "@/world/ui/TourScrollTrack";
 import { World } from "./World";
 import { useModeTransitions } from "./useModeTransitions";
@@ -39,6 +40,7 @@ export default function WorldApp() {
       <TourScrollTrack />
       <Hud />
       <MobileControls />
+      <Loader />
       <SeoMirror />
     </>
   );
