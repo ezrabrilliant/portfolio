@@ -4,13 +4,14 @@ import { todayAt } from "../shared/time";
 /** Members' messages are host chrome (grey skeleton bars); only the bot's replies are readable. */
 export type ChatMessage = { kind: "user"; bars: readonly number[] } | { kind: "bot"; text: string };
 
+/** Each answer is short enough to read from the tour camera and points at where the community keeps it. */
 export const CHAT_SCRIPT: readonly ChatMessage[] = [
   { kind: "user", bars: [0.62, 0.38] },
-  { kind: "bot", text: "Found it in #guides, pinned on Friday." },
+  { kind: "bot", text: "Pinned in #guides, Friday." },
   { kind: "user", bars: [0.7, 0.45] },
-  { kind: "bot", text: "Event starts Saturday 19:00. Rules are in #announcements." },
+  { kind: "bot", text: "Posted in #announcements" },
   { kind: "user", bars: [0.5] },
-  { kind: "bot", text: "Mods online right now are listed on gtid.pro." },
+  { kind: "bot", text: "Mods online: see gtid.pro" },
 ];
 
 /** Indices of the `size` messages ending at `latest`, oldest first, wrapping around the script. */
@@ -20,8 +21,58 @@ export function visibleWindow(latest: number, size = 3, length = CHAT_SCRIPT.len
   return out;
 }
 
+const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+
+/** "Today at HH:MM" for `stepsAgo` messages before `now`; never earlier than today's midnight (it is always today). */
 export function messageTime(now: Date, stepsAgo: number, stepMinutes = 2): string {
-  return todayAt(new Date(now.getTime() - stepsAgo * stepMinutes * 60_000));
+  return todayAt(new Date(Math.max(now.getTime() - stepsAgo * stepMinutes * 60_000, startOfDay(now))));
+}
+
+/** The visible chat: the newest message's script position and each visible message's time, oldest first. */
+export interface ChatLog {
+  latest: number;
+  times: readonly string[];
+}
+
+/** The chat as the page opens: `size` messages two minutes apart, the newest at `now`. */
+export function startLog(now: Date, latest = 1, size = 3): ChatLog {
+  return { latest, times: Array.from({ length: size }, (_, k) => messageTime(now, size - 1 - k)) };
+}
+
+/** Pushes the next script message, stamped `now`; older messages keep the times they were stamped with. */
+export function pushMessage(log: ChatLog, now: Date): ChatLog {
+  return { latest: log.latest + 1, times: [...log.times.slice(1), todayAt(now)] };
+}
+
+export type RichToken = { kind: "text" | "mention" | "link"; text: string };
+
+/** Splits a reply into plain text, #channel mentions (drawn as Discord's blurple pills) and site names (links). */
+export function richTokens(text: string): RichToken[] {
+  const out: RichToken[] = [];
+  const re = /(#[a-z0-9-]+)|([a-z0-9-]+(?:\.[a-z]{2,})+)/gi;
+  let at = 0;
+  for (let m = re.exec(text); m; m = re.exec(text)) {
+    if (m.index > at) out.push({ kind: "text", text: text.slice(at, m.index) });
+    out.push({ kind: m[1] ? "mention" : "link", text: m[0] });
+    at = m.index + m[0].length;
+  }
+  if (at < text.length) out.push({ kind: "text", text: text.slice(at) });
+  return out;
+}
+
+/** Greedy word wrap: lines no wider than `maxW` by `measure` (a single over-long word keeps its own line). */
+export function wrapToWidth(text: string, maxW: number, measure: (s: string) => number): string[] {
+  const lines: string[] = [];
+  let line = "";
+  for (const word of text.split(" ")) {
+    const next = line ? `${line} ${word}` : word;
+    if (line && measure(next) > maxW) {
+      lines.push(line);
+      line = word;
+    } else line = next;
+  }
+  if (line) lines.push(line);
+  return lines;
 }
 
 function roundRect(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
@@ -40,22 +91,32 @@ function bar(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: nu
   g.fill();
 }
 
-/** Greedy word wrap by measured width (current font). */
-function wrapToWidth(g: CanvasRenderingContext2D, text: string, maxW: number): string[] {
-  const lines: string[] = [];
-  let line = "";
-  for (const word of text.split(" ")) {
-    const next = line ? `${line} ${word}` : word;
-    if (line && g.measureText(next).width > maxW) {
-      lines.push(line);
-      line = word;
-    } else line = next;
+const PAD = 28;
+const PILL_X = 6;
+/** Reply text: one big line (readable from the tour camera), or two smaller lines if it would not fit. */
+const BIG = { size: 60, baselines: [146] };
+const SMALL = { size: 44, baselines: [112, 162] };
+
+/** One line of a reply, left to right, with mention pills and link colour. */
+function drawRichLine(g: CanvasRenderingContext2D, line: string, x: number, baseline: number, size: number) {
+  for (const t of richTokens(line)) {
+    const tw = g.measureText(t.text).width;
+    if (t.kind === "mention") {
+      roundRect(g, x - PILL_X, baseline - size * 0.82, tw + PILL_X * 2, size * 1.06, size * 0.18);
+      g.fillStyle = "rgba(88, 101, 242, 0.2)";
+      g.fill();
+    }
+    // a shade darker than Discord's #5865f2 / #006ce7: the bubble's emissive glow lifts them back to it
+    g.fillStyle = t.kind === "mention" ? "#4752c4" : t.kind === "link" ? "#0058c4" : "#2f3940";
+    g.fillText(t.text, x, baseline);
+    x += tw;
   }
-  if (line) lines.push(line);
-  return lines;
 }
 
-/** One chat bubble (828 × 207 canvas for a 3.6 × 0.9 panel). */
+/**
+ * One chat bubble (230 canvas px per world unit, e.g. 874 × 207 for a 3.8 × 0.9 panel): a small header line
+ * (avatar, name, BOT tag, time) over the reply in big type. A member's message is the same shape in grey bars.
+ */
 export function drawBubble(g: CanvasRenderingContext2D, msg: ChatMessage, time: string, w: number, h: number): void {
   g.fillStyle = "#ffffff";
   g.fillRect(0, 0, w, h);
@@ -63,41 +124,44 @@ export function drawBubble(g: CanvasRenderingContext2D, msg: ChatMessage, time: 
   g.textBaseline = "alphabetic";
   if (msg.kind === "user") {
     g.beginPath();
-    g.arc(56, 76, 34, 0, Math.PI * 2);
+    g.arc(PAD + 16, 36, 20, 0, Math.PI * 2);
     g.fillStyle = "#d3d7db";
     g.fill();
-    bar(g, 112, 52, 150, 22, "#c3c8cd");
-    msg.bars.forEach((f, i) => bar(g, 112, 98 + i * 40, (w - 150) * f, 22, "#dde0e3"));
+    bar(g, 80, 27, 120, 18, "#c3c8cd");
+    msg.bars.forEach((f, i) => bar(g, PAD, 100 + i * 46, (w - PAD * 2) * f, 34, "#dde0e3"));
     return;
   }
-  // a reply too long for one line wraps to two; the block moves up so both lines stay inside the bubble
-  g.font = `500 32px ${CANVAS_FONTS.ui}`;
-  const lines = wrapToWidth(g, msg.text, w - 112 - 28);
-  g.save();
-  if (lines.length > 1) g.translate(0, -14);
-  roundRect(g, 22, 40, 70, 70, 16);
+  roundRect(g, PAD - 4, 16, 40, 40, 10);
   g.fillStyle = "#3e5d3a";
   g.fill();
   g.fillStyle = "#dcf3e4";
-  g.fillRect(38, 66, 12, 14);
-  g.fillRect(64, 66, 12, 14);
+  g.fillRect(PAD + 6, 30, 7, 10);
+  g.fillRect(PAD + 19, 30, 7, 10);
   g.fillStyle = "#13212b";
-  g.font = `700 34px ${CANVAS_FONTS.ui}`;
-  g.fillText("Ezra Bot", 112, 78);
-  const nameW = g.measureText("Ezra Bot").width;
-  roundRect(g, 112 + nameW + 12, 52, 54, 28, 6);
+  g.font = `700 26px ${CANVAS_FONTS.ui}`;
+  g.fillText("Ezra Bot", 80, 45);
+  const tagX = 80 + g.measureText("Ezra Bot").width + 10;
+  roundRect(g, tagX, 27, 42, 22, 5);
   g.fillStyle = "#5865f2";
   g.fill();
   g.fillStyle = "#ffffff";
-  g.font = `500 17px ${CANVAS_FONTS.mono}`;
-  g.fillText("BOT", 112 + nameW + 22, 72);
+  g.font = `500 14px ${CANVAS_FONTS.mono}`;
+  g.fillText("BOT", tagX + 8, 43);
   g.fillStyle = "#6f767d";
-  g.font = `500 20px ${CANVAS_FONTS.mono}`;
-  g.fillText(time, 112 + nameW + 80, 74);
-  g.fillStyle = "#2f3940";
-  g.font = `500 32px ${CANVAS_FONTS.ui}`;
-  lines.forEach((line, i) => g.fillText(line, 112, 136 + i * 40));
-  g.restore();
+  g.font = `500 18px ${CANVAS_FONTS.mono}`;
+  g.fillText(time, tagX + 54, 44);
+
+  const maxW = w - PAD * 2 - PILL_X * 2;
+  const measure = (s: string) => g.measureText(s).width;
+  g.font = `500 ${BIG.size}px ${CANVAS_FONTS.ui}`;
+  let lines = wrapToWidth(msg.text, maxW, measure);
+  let style = BIG;
+  if (lines.length > 1) {
+    style = SMALL;
+    g.font = `500 ${SMALL.size}px ${CANVAS_FONTS.ui}`;
+    lines = wrapToWidth(msg.text, maxW, measure).slice(0, SMALL.baselines.length);
+  }
+  lines.forEach((line, i) => drawRichLine(g, line, PAD + PILL_X, style.baselines[i], style.size));
 }
 
 /** The island's title board: the bot's name, its BOT tag and an online dot (640 × 246 canvas). */

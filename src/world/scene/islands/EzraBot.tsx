@@ -18,28 +18,42 @@ import { islandFrame, stampCells, worldTuple } from "./shared/local";
 import { projectById } from "./shared/project";
 import { useCanvasTexture } from "./shared/useCanvasTexture";
 import { useHoverLift } from "./shared/useHoverLift";
-import { CHAT_SCRIPT, drawBotScreen, drawBubble, messageTime, visibleWindow, type ChatMessage } from "./ezrabot/chat";
+import { CHAT_SCRIPT, drawBotScreen, drawBubble, pushMessage, startLog, visibleWindow, type ChatMessage } from "./ezrabot/chat";
 
 /** [width, height, depth, x, y, z, colour]: one box of a baked part, relative to the part's pivot. */
 type Box = readonly [number, number, number, number, number, number, string];
 
-/** Bakes static boxes into one vertex-coloured geometry, so each part costs one draw call. */
-function bake(boxes: readonly Box[]): THREE.BufferGeometry {
-  const c = new THREE.Color();
-  const pieces = boxes.map(([w, h, d, x, y, z, colour]) => {
-    const g = new THREE.BoxGeometry(w, h, d);
-    g.translate(x, y, z);
-    c.set(colour);
-    const n = g.attributes.position.count;
-    const rgb = new Float32Array(n * 3);
-    for (let i = 0; i < n; i++) rgb.set([c.r, c.g, c.b], i * 3);
-    g.setAttribute("color", new THREE.BufferAttribute(rgb, 3));
-    return g;
-  });
+const tint = new THREE.Color();
+
+/** Gives every vertex of `g` one colour (for vertex-coloured merged parts). */
+function paint(g: THREE.BufferGeometry, colour: string): THREE.BufferGeometry {
+  tint.set(colour);
+  const n = g.attributes.position.count;
+  const rgb = new Float32Array(n * 3);
+  for (let i = 0; i < n; i++) rgb.set([tint.r, tint.g, tint.b], i * 3);
+  g.setAttribute("color", new THREE.BufferAttribute(rgb, 3));
+  return g;
+}
+
+/** Merges pieces into one geometry (one draw call) and disposes the pieces. */
+function merge(pieces: THREE.BufferGeometry[]): THREE.BufferGeometry {
   const merged = mergeGeometries(pieces);
   for (const g of pieces) g.dispose();
   if (!merged) throw new Error("EzraBot: could not merge part geometry");
   return merged;
+}
+
+/** Bakes static boxes into one vertex-coloured geometry, so each part costs one draw call. */
+function bake(boxes: readonly Box[]): THREE.BufferGeometry {
+  return merge(boxes.map(([w, h, d, x, y, z, colour]) => paint(new THREE.BoxGeometry(w, h, d).translate(x, y, z), colour)));
+}
+
+/** A non-indexed box (RoundedBoxGeometry is non-indexed, and merged pieces must match). */
+function flatBox(w: number, h: number, d: number): THREE.BufferGeometry {
+  const box = new THREE.BoxGeometry(w, h, d);
+  const flat = box.toNonIndexed();
+  box.dispose();
+  return flat;
 }
 
 const BODY = "#cfd3cf";
@@ -78,21 +92,23 @@ const ROBOT_MAT = {
   ball: new THREE.MeshStandardMaterial({ color: "#e2a24a", emissive: "#d08a30", emissiveIntensity: 0.5, roughness: 0.7 }),
 };
 
-/** Rounded bubble panel plus its tail (pointing down-left at the robot), relative to the bubble's left edge. */
+/**
+ * Rounded bubble panel and its tail (pointing down-left at the robot), relative to the bubble's left edge, on a
+ * slightly larger slate plate: the thin dark rim makes the white chat read as UI against the pale sky.
+ */
 const BUBBLE_GEO = (() => {
   const { w, h } = EZRA.bubbles;
-  const panel = new RoundedBoxGeometry(w, h, 0.16, 2, 0.07).translate(w / 2, 0, 0);
-  // RoundedBoxGeometry is non-indexed, so the tail box must be too before they merge
-  const box = new THREE.BoxGeometry(0.22, 0.22, 0.12);
-  const tail = box.toNonIndexed().rotateZ(Math.PI / 4).translate(0.12, -0.42, 0);
-  const merged = mergeGeometries([panel, tail]);
-  box.dispose();
-  panel.dispose();
-  tail.dispose();
-  if (!merged) throw new Error("EzraBot: could not merge bubble geometry");
-  return merged;
+  const rim = "#5d6872";
+  return merge([
+    paint(new RoundedBoxGeometry(w, h, 0.16, 2, 0.07).translate(w / 2, 0, 0), "#ffffff"),
+    paint(new RoundedBoxGeometry(w + 0.1, h + 0.1, 0.1, 2, 0.09).translate(w / 2, 0, -0.04), rim),
+    paint(flatBox(0.22, 0.22, 0.12).rotateZ(Math.PI / 4).translate(0.12, -0.42, 0), "#ffffff"),
+    paint(flatBox(0.29, 0.29, 0.08).rotateZ(Math.PI / 4).translate(0.12, -0.42, -0.04), rim),
+  ]);
 })();
-const BUBBLE_MAT = new THREE.MeshStandardMaterial({ color: "#ffffff", roughness: 0.8, emissive: "#ffffff", emissiveIntensity: 0.42 });
+const BUBBLE_MAT = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.8 });
+/** Bubble canvas resolution: 230 px per world unit. */
+const BUBBLE_PX = [Math.round(EZRA.bubbles.w * 230), Math.round(EZRA.bubbles.h * 230)] as const;
 
 /** The screen board's two wooden posts and dark frame, relative to the board's foot. */
 const SCREEN_GEO = (() => {
@@ -134,7 +150,7 @@ function Robot({ id }: { id: string }) {
 }
 
 function Bubble({ slot, msg, time, popKey }: { slot: number; msg: ChatMessage; time: string; popKey: number }) {
-  const texture = useCanvasTexture(828, 207, (ctx, w, h) => drawBubble(ctx, msg, time, w, h), [msg, time]);
+  const texture = useCanvasTexture(BUBBLE_PX[0], BUBBLE_PX[1], (ctx, w, h) => drawBubble(ctx, msg, time, w, h), [msg, time]);
   const pivot = useRef<THREE.Group>(null);
   const pop = useRef(1);
   useEffect(() => {
@@ -154,7 +170,7 @@ function Bubble({ slot, msg, time, popKey }: { slot: number; msg: ChatMessage; t
       <mesh geometry={BUBBLE_GEO} material={BUBBLE_MAT} castShadow />
       <mesh position={[w / 2, 0, 0.082]}>
         <planeGeometry args={[w - 0.05, h - 0.05]} />
-        <meshStandardMaterial map={texture} emissive="#ffffff" emissiveMap={texture} emissiveIntensity={0.42} roughness={0.85} />
+        <meshStandardMaterial map={texture} emissive="#ffffff" emissiveMap={texture} emissiveIntensity={0.55} roughness={0.85} />
       </mesh>
     </group>
   );
@@ -176,15 +192,13 @@ function BotScreen() {
 
 function EzraBotIsland({ placement }: { placement: IslandPlacement }) {
   const project = projectById("ezra-bot");
-  const [latest, setLatest] = useState(1);
-  const [now, setNow] = useState(() => new Date());
-  const window3 = useMemo(() => visibleWindow(latest), [latest]);
+  const [log, setLog] = useState(() => startLog(new Date()));
+  const window3 = useMemo(() => visibleWindow(log.latest, log.times.length), [log]);
   const reply = useRef<number | null>(null);
 
   const push = useCallback(() => {
     playSfx("chat");
-    setLatest((l) => l + 1);
-    setNow(new Date());
+    setLog((l) => pushMessage(l, new Date()));
   }, []);
 
   // One turn: a member's question pops in, then the bot answers it, so the newest bubble at rest is always the bot's.
@@ -200,6 +214,7 @@ function EzraBotIsland({ placement }: { placement: IslandPlacement }) {
   useEffect(
     () => () => {
       if (reply.current !== null) window.clearTimeout(reply.current);
+      reply.current = null;
     },
     [],
   );
@@ -218,7 +233,7 @@ function EzraBotIsland({ placement }: { placement: IslandPlacement }) {
       <group position={islandFrame(placement)}>
         <Robot id="ezra-robot" />
         {window3.map((msgIndex, slot) => (
-          <Bubble key={slot} slot={slot} msg={CHAT_SCRIPT[msgIndex]} time={messageTime(now, 2 - slot)} popKey={latest} />
+          <Bubble key={slot} slot={slot} msg={CHAT_SCRIPT[msgIndex]} time={log.times[slot]} popKey={log.latest} />
         ))}
         <BotScreen />
       </group>

@@ -14,7 +14,7 @@ export const FRAMING: Record<string, { cam: V; target: V; dwell: number }> = {
   gtid: { cam: [-4.8, 8.7, 16.1], target: [-1.8, 2.4, -1], dwell: 1 }, // raised 1.4: the Diamond Lock floats ~8 above the grass
   "petak-umpet": { cam: [-4.9, 6.4, 16.8], target: [-1.8, 0.5, -1], dwell: 1 },
   "orbit-store": { cam: [-6.7, 6.4, 13.3], target: [-1.5, 1.5, -1], dwell: 1 },
-  "ezra-bot": { cam: [-4.8, 6.8, 16.1], target: [-1.8, 0.5, -1], dwell: 1 },
+  "ezra-bot": { cam: [-2.9, 6.7, 13.3], target: [-0.5, 1.6, -0.6], dwell: 1 }, // same heading, 15 out: the chat replies are the subject
 };
 
 export function tourStopFor(p: IslandPlacement): TourStop {

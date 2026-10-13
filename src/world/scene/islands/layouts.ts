@@ -69,12 +69,14 @@ export const ORBIT = {
 
 export const EZRA = {
   robot: { x: -1.2, z: 0.2 },
-  bubbles: { x: 0.5, z: 0.4, ys: [5.4, 3.9, 2.4], w: 3.6, h: 0.9 },
+  // forward and tighter (pitch 1.2) so the tour camera reads the replies; w 3.8 fits one 60 px canvas line
+  bubbles: { x: 0.5, z: 0.6, ys: [4.8, 3.6, 2.4], w: 3.8, h: 0.9 },
   // low and in front, so from the tour camera it sits under the chat bubbles instead of over the newest one
-  screen: { x: 2.1, z: 3.0, w: 2.6, h: 1.0, y: 1.0, ry: -0.2 },
-  info: { x: -4.4, z: 3, ry: 0.35 },
+  screen: { x: 1.8, z: 3.0, w: 2.6, h: 1.0, y: 1.0, ry: -0.2 },
+  // front-left, below the bounce pad at (-5, -2) in the tour view so the pad stays visible
+  info: { x: -3.5, z: 4.0, ry: 0.3 },
   // right of the screen board, clear of its corner
-  link: { x: 4.4, z: 3.9, ry: -0.35 },
+  link: { x: 3.9, z: 4.3, ry: -0.35 },
 } as const;
 
 const rot = (dx: number, ry: number) => ({ x: dx * Math.cos(ry), z: -dx * Math.sin(ry) });
