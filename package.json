@@ -10,6 +10,7 @@
     "test": "vitest run",
     "preview": "vite preview",
     "shot": "node scripts/shot.mjs",
+    "gtid:snapshot": "node scripts/gtid-snapshot.mjs",
     "start": "PORT=3000 node server.js",
     "start:dev": "node server.js",
     "serve": "npm run build && PORT=3000 node server.js"

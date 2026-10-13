@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
+import { registerGtidRoutes } from "./server/gtidProxy.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -80,6 +81,9 @@ app.get("/api/github", async (req, res) => {
     res.status(500).json({ error: "Failed to fetch GitHub data" });
   }
 });
+
+// GTID live prices + mods for the portfolio's GTID island (cached proxy of gtid.pro)
+registerGtidRoutes(app);
 
 // Serve static files from Vite build
 app.use(express.static(join(__dirname, "dist")));
