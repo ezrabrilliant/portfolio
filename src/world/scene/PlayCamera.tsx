@@ -27,12 +27,16 @@ export function PlayCamera() {
       lastY = e.clientY;
     };
     const move = (e: PointerEvent) => {
-      if (!dragging) return;
+      // a lost pointerup (released outside the window) must not keep orbiting on hover
+      if (!dragging || e.buttons === 0) {
+        dragging = false;
+        return;
+      }
       orbitInput.add(e.clientX - lastX, e.clientY - lastY);
       lastX = e.clientX;
       lastY = e.clientY;
     };
-    const up = () => {
+    const stop = () => {
       dragging = false;
     };
     const wheel = (e: WheelEvent) => {
@@ -42,12 +46,16 @@ export function PlayCamera() {
     };
     el.addEventListener("pointerdown", down);
     window.addEventListener("pointermove", move);
-    window.addEventListener("pointerup", up);
+    window.addEventListener("pointerup", stop);
+    window.addEventListener("pointercancel", stop);
+    window.addEventListener("blur", stop);
     el.addEventListener("wheel", wheel, { passive: false });
     return () => {
       el.removeEventListener("pointerdown", down);
       window.removeEventListener("pointermove", move);
-      window.removeEventListener("pointerup", up);
+      window.removeEventListener("pointerup", stop);
+      window.removeEventListener("pointercancel", stop);
+      window.removeEventListener("blur", stop);
       el.removeEventListener("wheel", wheel);
     };
   }, [gl]);
@@ -59,18 +67,33 @@ export function PlayCamera() {
     }
     const dt = Math.min(rawDt, 1 / 30);
     const p = runtime.player.pos;
+    const entering = !track.active;
+    if (entering) {
+      // drop orbit deltas left over from tour (or a drag that outlived Play), and start the follow
+      // yaw where the tour camera already is, so entry is a dolly-in instead of a swing round
+      orbitInput.take();
+      cam.yaw = Math.atan2(camera.position.x - p.x, camera.position.z - p.z);
+    }
     // a respawn teleports Ezra while the screen is faded out: cut the camera there instead of
     // sweeping it up from the void (entering Play still blends in from the tour camera)
-    const teleported = track.active && Math.hypot(p.x - track.prev.x, p.y - track.prev.y, p.z - track.prev.z) > 4;
+    const teleported = !entering && Math.hypot(p.x - track.prev.x, p.y - track.prev.y, p.z - track.prev.z) > 4;
     track.prev.set(p.x, p.y, p.z);
     track.active = true;
+    // movement is camera-relative, so trailing strafe/backpedal headings would feed back into the
+    // input and spin the camera; trail only near-forward motion (within ~26°) and rides
+    const away = Math.cos(runtime.heading + Math.PI - cam.yaw); // 1 away from the camera, 0 strafe, -1 toward
+    const follow = runtime.ride !== null || (runtime.moving && away > 0.9);
     // updateFollowCam already looks 1.4 above the target, so pass the feet: the look-at then sits
     // inside Ezra's own (always free) AABB, which is what pullIn needs as its starting point
-    const { position, lookAt } = updateFollowCam(cam, p, runtime.heading, runtime.moving, dt, orbitInput.take());
-    const safe = runtime.built ? pullIn(lookAt, position, runtime.built.grid.isSolid) : position;
-    goal.set(safe.x, safe.y, safe.z);
-    if (teleported) camera.position.copy(goal);
+    const { position, lookAt } = updateFollowCam(cam, p, runtime.heading, follow, dt, orbitInput.take());
+    goal.set(position.x, position.y, position.z);
+    if (teleported || (entering && useWorld.getState().reducedMotion)) camera.position.copy(goal);
     else camera.position.lerp(goal, 1 - Math.exp(-6 * dt));
+    // keep the camera's own ray to Ezra clear: snap in front of a block at once, ease back out via the lerp
+    if (runtime.built) {
+      const safe = pullIn(lookAt, camera.position, runtime.built.grid.isSolid);
+      camera.position.set(safe.x, safe.y, safe.z);
+    }
     look.set(lookAt.x, lookAt.y, lookAt.z);
     camera.lookAt(look);
     runtime.cameraPos.x = camera.position.x;

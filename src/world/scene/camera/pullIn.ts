@@ -1,26 +1,35 @@
 import type { IsSolid, Vec3 } from "@/world/engine/types";
 
-/** Marches from `from` toward `to`; returns the last free point before a solid block. */
-export function pullIn(from: Vec3, to: Vec3, isSolid: IsSolid, step = 0.25): Vec3 {
+function solidAt(isSolid: IsSolid, from: Vec3, dx: number, dy: number, dz: number, t: number): boolean {
+  return isSolid(Math.floor(from.x + dx * t), Math.floor(from.y + dy * t), Math.floor(from.z + dz * t));
+}
+
+/**
+ * Marches from `from` toward `to`; on hitting a solid block, refines the exact face crossing and returns
+ * the point `backOff` before it (never behind `from`). The stop point does not depend on the ray length,
+ * so a camera re-clamped every frame does not jitter, and the back-off keeps the near plane off the face.
+ */
+export function pullIn(from: Vec3, to: Vec3, isSolid: IsSolid, step = 0.25, backOff = 0.25): Vec3 {
   const dx = to.x - from.x;
   const dy = to.y - from.y;
   const dz = to.z - from.z;
   const len = Math.hypot(dx, dy, dz);
   if (len < 1e-6) return { ...to };
   const n = Math.ceil(len / step);
-  // runs every frame: track the last free point as scalars (no per-step objects)
-  let lx = from.x;
-  let ly = from.y;
-  let lz = from.z;
+  let free = 0;
   for (let i = 1; i <= n; i++) {
     const t = i / n;
-    const px = from.x + dx * t;
-    const py = from.y + dy * t;
-    const pz = from.z + dz * t;
-    if (isSolid(Math.floor(px), Math.floor(py), Math.floor(pz))) return { x: lx, y: ly, z: lz };
-    lx = px;
-    ly = py;
-    lz = pz;
+    if (solidAt(isSolid, from, dx, dy, dz, t)) {
+      let hit = t;
+      for (let k = 0; k < 10; k++) {
+        const mid = (free + hit) / 2;
+        if (solidAt(isSolid, from, dx, dy, dz, mid)) hit = mid;
+        else free = mid;
+      }
+      const u = Math.max(0, free - backOff / len);
+      return { x: from.x + dx * u, y: from.y + dy * u, z: from.z + dz * u };
+    }
+    free = t;
   }
   return { ...to };
 }

@@ -18,6 +18,12 @@ function dampAngle(a: number, b: number, lambda: number, dt: number): number {
   return a + d * (1 - Math.exp(-lambda * dt));
 }
 
+/** Drops jump presses made while Ezra can't act on them (tour scroll, ride, respawn), so they don't fire later. */
+function drainJump() {
+  sharedKeyboard.consume("Space");
+  consumeTouch("jump");
+}
+
 function setFade(opacity: number) {
   const el = document.getElementById("world-fade");
   if (el) el.style.opacity = String(opacity);
@@ -49,6 +55,7 @@ export function PlayerController() {
     if (useWorld.getState().mode !== "play") {
       runtime.moving = false;
       runtime.speed = 0;
+      drainJump();
       // leaving Play mid-respawn must not leave the screen dimmed (entering Play re-places the player)
       if (tmp.fading) {
         tmp.fading = false;
@@ -72,10 +79,14 @@ export function PlayerController() {
         if (tmp.fade === 0) tmp.fading = false;
       }
       setFade(tmp.fade);
-      if (tmp.fading === "out") return;
+      if (tmp.fading === "out") {
+        drainJump();
+        return;
+      }
     }
 
     if (runtime.ride) {
+      drainJump();
       const ride = runtime.ride;
       const done = advanceRide(ride, p, dt);
       if (ride.kind === "rail") runtime.heading = done ? ride.exitHeading : rideHeading(ride);
