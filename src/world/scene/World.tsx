@@ -11,6 +11,8 @@ import { InitialView } from "./InitialView";
 import { InteractionController } from "./InteractionController";
 import { Lights } from "./Lights";
 import { ParticlesRenderer } from "./ParticlesRenderer";
+import { PlayCamera } from "./PlayCamera";
+import { PlayerController } from "./PlayerController";
 import { RoomEnv } from "./RoomEnv";
 import { Sky } from "./Sky";
 
@@ -51,6 +53,8 @@ export function World() {
       })}
       <ParticlesRenderer />
       <InteractionController />
+      <PlayerController />
+      <PlayCamera />
     </>
   );
 }
