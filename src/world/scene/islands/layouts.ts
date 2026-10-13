@@ -10,11 +10,17 @@ import { boxCells, postCells, type Cell } from "./shared/local";
 
 export const INFO_HALF_SPAN = 1.0; // InfoBoard posts at ±(2.4 / 2 − 0.2)
 
+// From the tour camera the title needs the flag on its left and the (2.83-tall, wrapped-title) board on its right, with
+// no overlap: at cell 0.13 the island is ~4 px too narrow for both, at 0.12 each side keeps ~16 px. Ezra sits on the
+// front rim at (-2, 5) (ezra/seat.ts), so nothing stands there.
 export const HERO = {
   tree: { x: 3, z: 1, h: 3, seed: 5 },
-  flag: { x: -4, z: 1.5 },
-  info: { x: 0.2, z: 4.4, ry: 0.1 },
-  title: { x: -1, z: -1.5, cell: 0.13, lines: ["EZRA", "BRILLIANT"] },
+  // left of the title, not in front of its B; the cloth flies left (ry = π), away from the letters
+  flag: { x: -4.4, z: -0.3, ry: Math.PI },
+  // front right; posts land in columns (0, 4) and (2, 4) with ≥ 0.1 to spare from a rounding edge
+  info: { x: 1.4, z: 4.3, ry: 0 },
+  // integer z: the barrier row (titleCells) holds the letter plane
+  title: { x: -1.05, z: -1, cell: 0.12, lines: ["EZRA", "BRILLIANT"] },
 } as const;
 
 export const GTID = {
