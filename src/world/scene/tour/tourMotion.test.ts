@@ -6,6 +6,7 @@ import type { TourPath, TourStop } from "@/world/engine/camera/tourPath";
 import type { Vec3 } from "@/world/engine/types";
 import { tourStopFor } from "../islands/framing";
 import { defaultTourStop, islandTop } from "../islands/types";
+import { buildTour } from "./tourBuild";
 import { tourVia, trackHeightPx } from "./tourMath";
 import { BLEND_TIME, buildTourTrack, createTourDriver, followProgress, nearestTrackProgress, sampleTrack, stepTourDriver, stopAt } from "./tourMotion";
 import type { TourTrack } from "./tourMotion";
@@ -66,8 +67,12 @@ function notchesAcrossStop(path: TourPath, i: number) {
 }
 
 describe("tour track", () => {
-  for (const [name, stops] of [["placeholder", placeholderStops], ["island", islandStops]] as const) {
-    const path = buildTourPath(stops, tourVia(layout));
+  for (const [name, path] of [
+    ["placeholder", buildTourPath(placeholderStops, tourVia(layout))],
+    ["island", buildTourPath(islandStops, tourVia(layout))],
+    ["portrait island", buildTour(layout, tourStopFor, true)],
+  ] as const) {
+    const stops = path.stops;
     const track = buildTourTrack(path);
 
     it(`${name} framing: every stop is a fixed point of the re-timing`, () => {
@@ -104,16 +109,20 @@ describe("tour track", () => {
     });
   }
 
-  it("island framing: the flight direction turns smoothly too", () => {
-    // the island framing puts each stop camera behind the crossing vias, so the path never doubles back; the
-    // velocity vector (speed and heading) changes by < 10% of the peak speed per frame.
-    const path = buildTourPath(islandStops, tourVia(layout));
-    const track = buildTourTrack(path);
-    for (let i = 0; i < islandStops.length; i++) {
-      const { target, seconds } = acrossStop(path, i, VIEWPORT_PER_S);
-      expect(fly(trackPose(track), spring, target, seconds).velJump, `turn jolt at stop ${i}`).toBeLessThan(0.1);
-    }
-  });
+  for (const [name, path] of [
+    ["island", buildTourPath(islandStops, tourVia(layout))],
+    ["portrait island", buildTour(layout, tourStopFor, true)],
+  ] as const) {
+    it(`${name} framing: the flight direction turns smoothly too`, () => {
+      // the island framing puts each stop camera behind the crossing vias, so the path never doubles back; the
+      // velocity vector (speed and heading) changes by < 10% of the peak speed per frame.
+      const track = buildTourTrack(path);
+      for (let i = 0; i < path.stops.length; i++) {
+        const { target, seconds } = acrossStop(path, i, VIEWPORT_PER_S);
+        expect(fly(trackPose(track), spring, target, seconds).velJump, `turn jolt at stop ${i}`).toBeLessThan(0.1);
+      }
+    });
+  }
 
   it("nearestTrackProgress finds the stop for its own camera", () => {
     const path = buildTourPath(islandStops, tourVia(layout));

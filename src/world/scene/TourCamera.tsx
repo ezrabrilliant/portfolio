@@ -1,24 +1,34 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useLayoutEffect, useMemo } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
-import { buildTourPath } from "@/world/engine/camera/tourPath";
+import type { TourPath } from "@/world/engine/camera/tourPath";
 import { runtime } from "@/world/state/runtime";
 import { useWorld } from "@/world/state/store";
 import { STAR_ISLANDS } from "./islands";
-import { progressToScroll, refreshScrollMeasure, scrollMeasure, scrollToProgress, stopProgresses, tourVia } from "./tour/tourMath";
+import { buildTour, isPortrait } from "./tour/tourBuild";
+import { progressToScroll, refreshScrollMeasure, scrollMeasure, scrollToProgress, stopProgresses } from "./tour/tourMath";
 import { createTourDriver, stepTourDriver, stopAt, trackFor } from "./tour/tourMotion";
-import type { DriverInput } from "./tour/tourMotion";
+import type { DriverInput, TourTrack } from "./tour/tourMotion";
 
 export function TourCamera() {
   const camera = useThree((s) => s.camera);
+  // portrait screens get their own framing (islands centred and pulled back); rotating flips the aspect class
+  const portrait = useThree((s) => isPortrait(s.size.width, s.size.height));
+  const tours = useMemo(() => new Map<boolean, { path: TourPath; track: TourTrack }>(), []);
   const { path, track } = useMemo(() => {
-    const stops = runtime.layout.tourOrder.map((id) => STAR_ISLANDS[id].tourStop(runtime.islandById(id)));
-    const p = buildTourPath(stops, tourVia(runtime.layout));
-    runtime.tourPath = p;
-    return { path: p, track: trackFor(p) };
-  }, []);
+    let tour = tours.get(portrait);
+    if (!tour) {
+      const p = buildTour(runtime.layout, (pl) => STAR_ISLANDS[pl.id].tourStop(pl), portrait);
+      tour = { path: p, track: trackFor(p) };
+      tours.set(portrait, tour);
+    }
+    runtime.tourPath = tour.path;
+    return tour;
+  }, [tours, portrait]);
   const st = useMemo(
     () => ({
+      /** the path the effects last saw: null before the first, then the one to re-seed from on a flip */
+      path: null as TourPath | null,
       driver: createTourDriver(),
       input: { playing: false, scroll: 0, handoff: 0, reduced: false, dt: 0 } as DriverInput,
       chapter: -1,
@@ -42,21 +52,37 @@ export function TourCamera() {
     const onResize = () => st.onViewport();
     window.addEventListener("resize", onResize);
     window.addEventListener("orientationchange", onResize);
-
-    // ?stop=N deep link (used by screenshots): jump straight to stop N
-    const raw = new URLSearchParams(window.location.search).get("stop");
-    const n = raw === null ? NaN : Number(raw);
-    if (Number.isInteger(n) && n >= 0 && n < path.stops.length) {
-      const prog = stopProgresses(path)[n];
-      window.scrollTo(0, progressToScroll(prog));
-      st.driver.follow.x = prog;
-      st.driver.follow.v = 0;
-      st.driver.target = prog;
-    }
     return () => {
       window.removeEventListener("resize", onResize);
       window.removeEventListener("orientationchange", onResize);
     };
+  }, [st]);
+
+  // a layout effect: the ?stop seed must land before the first frame (a passive effect can run after it on a slow
+  // device, and the ?play deep link then enters Play on the island that first frame picked)
+  useLayoutEffect(() => {
+    const prev = st.path;
+    st.path = path;
+    if (prev === path) return;
+    const d = st.driver;
+    const seed = (prog: number) => {
+      window.scrollTo(0, progressToScroll(prog));
+      d.follow.x = prog;
+      d.follow.v = 0;
+      d.target = prog;
+    };
+    if (!prev) {
+      // ?stop=N deep link (used by screenshots): jump straight to stop N
+      const raw = new URLSearchParams(window.location.search).get("stop");
+      const n = raw === null ? NaN : Number(raw);
+      if (Number.isInteger(n) && n >= 0 && n < path.stops.length) seed(stopProgresses(path)[n]);
+      return;
+    }
+    // the aspect class flipped (rotation, resize): stay on the island in view, now with the other framing.
+    // Stops keep their scroll progress across framings; in Play, leaving it resumes on the new path anyway
+    refreshScrollMeasure();
+    if (useWorld.getState().mode !== "tour" || d.follow.x < 0 || st.chapter < 0) return;
+    seed(stopProgresses(path)[st.chapter]);
   }, [path, st]);
 
   useFrame((_, rawDt) => {
