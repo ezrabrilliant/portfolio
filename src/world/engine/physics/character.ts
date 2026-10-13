@@ -1,0 +1,157 @@
+import type { IsSolid, Vec3 } from "@/world/engine/types";
+
+export interface CharacterParams {
+  width: number; height: number; walkSpeed: number; runSpeed: number; accel: number;
+  gravity: number; jumpSpeed: number; stepHeight: number; coyoteTime: number; jumpBuffer: number;
+}
+
+export const DEFAULT_PARAMS: CharacterParams = {
+  width: 0.6, height: 1.8, walkSpeed: 4.5, runSpeed: 7.5, accel: 30, gravity: 30, jumpSpeed: 9.5,
+  stepHeight: 1, coyoteTime: 0.1, jumpBuffer: 0.12,
+};
+
+export interface CharacterState {
+  pos: Vec3; vel: Vec3; onGround: boolean; sinceGround: number; jumpTimer: number;
+  lastSafe: Vec3; locked: boolean;
+}
+export interface CharacterInput { moveX: number; moveZ: number; run: boolean; jump: boolean }
+export interface StepResult { landed: boolean; jumped: boolean; fellOut: boolean; stepped: boolean }
+
+const SUBSTEP = 1 / 120;
+const MAX_DT = 0.1;
+const EPS = 1e-6;
+const SKIN = 1e-4;
+const MAX_FALL = 40;
+const AIR_CONTROL = 0.6;
+
+export function createCharacter(pos: Vec3): CharacterState {
+  return {
+    pos: { ...pos }, vel: { x: 0, y: 0, z: 0 }, onGround: false, sinceGround: 0, jumpTimer: 0,
+    lastSafe: { ...pos }, locked: false,
+  };
+}
+
+/** Does the character's AABB (feet centre at x, y, z) overlap any solid block? */
+export function characterCollides(isSolid: IsSolid, x: number, y: number, z: number, p: CharacterParams = DEFAULT_PARAMS): boolean {
+  const hw = p.width / 2;
+  const x0 = Math.floor(x - hw + EPS), x1 = Math.floor(x + hw - EPS);
+  const y0 = Math.floor(y + EPS), y1 = Math.floor(y + p.height - EPS);
+  const z0 = Math.floor(z - hw + EPS), z1 = Math.floor(z + hw - EPS);
+  for (let bx = x0; bx <= x1; bx++) {
+    for (let by = y0; by <= y1; by++) {
+      for (let bz = z0; bz <= z1; bz++) {
+        if (isSolid(bx, by, bz)) return true;
+      }
+    }
+  }
+  return false;
+}
+
+function approach(v: number, target: number, maxDelta: number): number {
+  return v < target ? Math.min(v + maxDelta, target) : Math.max(v - maxDelta, target);
+}
+
+/** Moves along x or z; tries a ≤ stepHeight step-up when grounded, else snaps to the blocking face. Returns true if it stepped. */
+function moveAxis(s: CharacterState, axis: "x" | "z", delta: number, isSolid: IsSolid, p: CharacterParams, canStep: boolean): boolean {
+  if (delta === 0) return false;
+  const pos = s.pos;
+  const nx = axis === "x" ? pos.x + delta : pos.x;
+  const nz = axis === "z" ? pos.z + delta : pos.z;
+  if (!characterCollides(isSolid, nx, pos.y, nz, p)) {
+    pos.x = nx; pos.z = nz;
+    return false;
+  }
+  if (canStep) {
+    const stepY = Math.floor(pos.y + SKIN) + 1;
+    if (stepY - pos.y <= p.stepHeight + SKIN
+      && !characterCollides(isSolid, pos.x, stepY, pos.z, p)
+      && !characterCollides(isSolid, nx, stepY, nz, p)) {
+      pos.x = nx; pos.z = nz; pos.y = stepY;
+      return true;
+    }
+  }
+  const hw = p.width / 2;
+  const cur = pos[axis];
+  const target = cur + delta;
+  const contact = delta > 0 ? Math.floor(target + hw - EPS) - hw - SKIN : Math.floor(target - hw + EPS) + 1 + hw + SKIN;
+  const cx = axis === "x" ? contact : pos.x;
+  const cz = axis === "z" ? contact : pos.z;
+  const forward = delta > 0 ? contact > cur : contact < cur;
+  if (forward && !characterCollides(isSolid, cx, pos.y, cz, p)) { pos.x = cx; pos.z = cz; }
+  s.vel[axis] = 0;
+  return false;
+}
+
+export function stepCharacter(
+  s: CharacterState, input: CharacterInput, dt: number,
+  world: { isSolid: IsSolid; killY: number }, p: CharacterParams = DEFAULT_PARAMS,
+): StepResult {
+  const res: StepResult = { landed: false, jumped: false, fellOut: false, stepped: false };
+  if (s.locked) return res;
+  if (input.jump) s.jumpTimer = p.jumpBuffer;
+
+  let mx = input.moveX, mz = input.moveZ;
+  const len = Math.hypot(mx, mz);
+  if (len > 1) { mx /= len; mz /= len; }
+  const speed = input.run ? p.runSpeed : p.walkSpeed;
+
+  const total = Math.min(Math.max(dt, 0), MAX_DT);
+  const steps = Math.max(1, Math.ceil(total / SUBSTEP - 1e-9));
+  const h = total / steps;
+
+  for (let i = 0; i < steps; i++) {
+    const control = s.onGround ? 1 : AIR_CONTROL;
+    s.vel.x = approach(s.vel.x, mx * speed, p.accel * control * h);
+    s.vel.z = approach(s.vel.z, mz * speed, p.accel * control * h);
+
+    if (s.jumpTimer > 0 && (s.onGround || s.sinceGround <= p.coyoteTime)) {
+      s.vel.y = p.jumpSpeed;
+      s.onGround = false;
+      s.sinceGround = p.coyoteTime + 1;
+      s.jumpTimer = 0;
+      res.jumped = true;
+    }
+    s.jumpTimer = Math.max(0, s.jumpTimer - h);
+    s.vel.y = Math.max(s.vel.y - p.gravity * h, -MAX_FALL);
+
+    const canStep = s.onGround;
+    if (moveAxis(s, "x", s.vel.x * h, world.isSolid, p, canStep)) res.stepped = true;
+    if (moveAxis(s, "z", s.vel.z * h, world.isSolid, p, canStep)) res.stepped = true;
+
+    const wasGround = s.onGround;
+    const ny = s.pos.y + s.vel.y * h;
+    if (!characterCollides(world.isSolid, s.pos.x, ny, s.pos.z, p)) {
+      s.pos.y = ny;
+      s.onGround = false;
+    } else if (s.vel.y < 0) {
+      const landY = Math.floor(ny + EPS) + 1;
+      if (landY <= s.pos.y + SKIN && !characterCollides(world.isSolid, s.pos.x, landY, s.pos.z, p)) s.pos.y = landY;
+      s.vel.y = 0;
+      s.onGround = true;
+      if (!wasGround) res.landed = true;
+    } else {
+      const head = Math.floor(ny + p.height - EPS);
+      const cy = head - p.height - SKIN;
+      if (cy >= s.pos.y - SKIN && !characterCollides(world.isSolid, s.pos.x, cy, s.pos.z, p)) s.pos.y = cy;
+      s.vel.y = 0;
+    }
+
+    if (s.onGround) {
+      s.sinceGround = 0;
+      s.lastSafe.x = s.pos.x; s.lastSafe.y = s.pos.y; s.lastSafe.z = s.pos.z;
+    } else {
+      s.sinceGround += h;
+    }
+  }
+
+  if (s.pos.y < world.killY) res.fellOut = true;
+  return res;
+}
+
+export function respawn(s: CharacterState): void {
+  s.pos.x = s.lastSafe.x; s.pos.y = s.lastSafe.y; s.pos.z = s.lastSafe.z;
+  s.vel.x = 0; s.vel.y = 0; s.vel.z = 0;
+  s.onGround = false;
+  s.sinceGround = 0;
+  s.jumpTimer = 0;
+}
