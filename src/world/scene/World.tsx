@@ -15,6 +15,7 @@ import { PlayCamera } from "./PlayCamera";
 import { PlayerController } from "./PlayerController";
 import { RoomEnv } from "./RoomEnv";
 import { Sky } from "./Sky";
+import { TourCamera } from "./TourCamera";
 
 function build(): BuiltWorld {
   const stamps: Array<(grid: VoxelGrid) => void> = runtime.layout.islands.map(
@@ -55,6 +56,7 @@ export function World() {
       <InteractionController />
       <PlayerController />
       <PlayCamera />
+      <TourCamera />
     </>
   );
 }

@@ -5,6 +5,7 @@ import { dprCap, hasWebGL } from "@/world/state/quality";
 import { NoWebGL } from "@/world/ui/NoWebGL";
 import { SeoMirror } from "@/world/ui/SeoMirror";
 import { MobileControls } from "@/world/ui/MobileControls";
+import { TourScrollTrack } from "@/world/ui/TourScrollTrack";
 import { World } from "./World";
 import { useTabCycling } from "./useTabCycling";
 
@@ -32,6 +33,7 @@ export default function WorldApp() {
           </Suspense>
         </Canvas>
       </div>
+      <TourScrollTrack />
       <MobileControls />
       <SeoMirror />
     </>
