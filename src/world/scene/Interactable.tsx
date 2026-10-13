@@ -38,6 +38,8 @@ export function Interactable({
   activate.current = onActivate;
   const isEnabled = useRef(enabled);
   isEnabled.current = enabled;
+  const labelRef = useRef(label);
+  labelRef.current = label;
   const [px, py, pz] = position;
   const [sx, sy, sz] = size;
   const edges = useMemo(() => new THREE.EdgesGeometry(new THREE.BoxGeometry(sx, sy, sz)), [sx, sy, sz]);
@@ -62,10 +64,15 @@ export function Interactable({
 
   useFrame((_, dt) => {
     const isEnabledNow = isEnabled.current ? isEnabled.current() : true;
-    const focused = runtime.focusId === id;
+    let focused = runtime.focusId === id;
     if (isFocusStale(focused, isEnabledNow)) {
       runtime.focusId = null;
       useWorld.getState().setPrompt(null);
+      focused = false;
+    }
+    if (focused) {
+      const s = useWorld.getState();
+      if (s.prompt?.label !== labelRef.current) s.setPrompt({ id, label: labelRef.current });
     }
     const on = isEnabledNow && (runtime.hoverId === id || runtime.focusId === id);
     if (lift.current) lift.current.position.y = THREE.MathUtils.damp(lift.current.position.y, on ? 0.1 : 0, 12, dt);
