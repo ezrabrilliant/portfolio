@@ -26,13 +26,19 @@ function setup() {
   const fetchImpl = vi.fn(async (url) => {
     const key = url.includes("game-status") ? "mods" : url.includes("endpoint=history") ? "history" : "price";
     const r = routes[key];
+    if (r instanceof Promise) return r; // a pending upstream (e.g. one that is timing out)
     if (r instanceof Error) throw r;
     return { ok: true, status: 200, json: async () => r };
   });
   const clock = { t: 0 };
-  const proxy = createGtidProxy({ fetchImpl, now: () => clock.t });
-  return { routes, fetchImpl, clock, proxy };
+  const warn = vi.fn();
+  const proxy = createGtidProxy({ fetchImpl, now: () => clock.t, warn });
+  return { routes, fetchImpl, clock, proxy, warn };
 }
+
+/** Lets background refreshes (already-settled mock fetches) finish. */
+const settle = () => new Promise((r) => setTimeout(r, 0));
+const reply = (body) => ({ ok: true, status: 200, json: async () => body });
 
 describe("gtid proxy", () => {
   it("returns only the price fields the board uses and caches them for 30 s", async () => {
@@ -72,15 +78,87 @@ describe("gtid proxy", () => {
     });
   });
 
-  it("serves the last good payload marked stale when the upstream fails", async () => {
-    const { routes, clock, proxy } = setup();
+  it("after the TTL answers at once from the cache and refreshes in the background (never waits on a slow upstream)", async () => {
+    const { routes, fetchImpl, clock, proxy } = setup();
+    await proxy.get("price");
+    clock.t = 30_000;
+    let answer;
+    routes.price = new Promise((r) => (answer = r)); // upstream hangs, as during an 8 s timeout
+    const r = await proxy.get("price");
+    expect(r).toMatchObject({ stale: false, fetchedAt: 0 });
+    expect(r.data.buy).toBe(850);
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
+    await proxy.get("price"); // one refresh in flight per key
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
+    answer(reply({ ...PRICE, buy: 900 }));
+    await settle();
+    clock.t = 30_500;
+    const fresh = await proxy.get("price");
+    expect(fresh).toMatchObject({ stale: false, fetchedAt: 30_000 });
+    expect(fresh.data.buy).toBe(900);
+  });
+
+  it("serves the last good payload marked stale while the upstream fails, retrying only after a short back-off", async () => {
+    const { routes, fetchImpl, clock, proxy } = setup();
     await proxy.get("price");
     clock.t = 31_000;
     routes.price = new Error("down");
+    await proxy.get("price"); // answers from the cache, the background refresh fails
+    await settle();
     const r = await proxy.get("price");
     expect(r.stale).toBe(true);
     expect(r.fetchedAt).toBe(0);
     expect(r.data.buy).toBe(850);
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
+    clock.t = 40_000; // inside the back-off: no new upstream request
+    await proxy.get("price");
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
+    clock.t = 47_000; // back-off over: retried in the background
+    expect((await proxy.get("price")).stale).toBe(true);
+    expect(fetchImpl).toHaveBeenCalledTimes(3);
+    await settle();
+    routes.price = { ...PRICE, buy: 910 }; // recovered
+    clock.t = 63_000;
+    await proxy.get("price");
+    await settle();
+    const back = await proxy.get("price");
+    expect(back).toMatchObject({ stale: false, fetchedAt: 63_000 });
+    expect(back.data.buy).toBe(910);
+  });
+
+  it("warns once per failure streak", async () => {
+    const { routes, clock, proxy, warn } = setup();
+    await proxy.get("price");
+    routes.price = new Error("down");
+    for (const t of [31_000, 47_000, 63_000]) {
+      clock.t = t;
+      await proxy.get("price");
+      await settle();
+    }
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(warn.mock.calls[0][0]).toMatch(/price/);
+    routes.price = PRICE; // recovers, then fails again: a new streak
+    clock.t = 79_000;
+    await proxy.get("price");
+    await settle();
+    routes.price = new Error("down again");
+    clock.t = 110_000;
+    await proxy.get("price");
+    await settle();
+    expect(warn).toHaveBeenCalledTimes(2);
+  });
+
+  it("with nothing cached, answers 503 at once during the back-off instead of asking the upstream again", async () => {
+    const { routes, fetchImpl, clock, proxy } = setup();
+    routes.price = new Error("down");
+    await expect(proxy.get("price")).rejects.toMatchObject({ status: 503 });
+    clock.t = 5_000;
+    await expect(proxy.get("price")).rejects.toMatchObject({ status: 503 });
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+    routes.price = PRICE;
+    clock.t = 16_000;
+    expect((await proxy.get("price")).data.buy).toBe(850);
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
   });
 
   it("rejects with status 503 when nothing is cached and the upstream fails", async () => {

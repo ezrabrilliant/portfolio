@@ -85,7 +85,16 @@ app.get("/api/github", async (req, res) => {
 // GTID live prices + mods for the portfolio's GTID island (cached proxy of gtid.pro)
 registerGtidRoutes(app);
 
-// Serve static files from Vite build
+// Unknown API routes answer a JSON 404, not the SPA's index.html
+app.use("/api", (_req, res) => {
+  res.status(404).json({ error: "Not found" });
+});
+
+// Vite's hashed build files never change under the same name: cache them for a year. A missing one is a 404
+// (a stale tab asking for an old chunk), not index.html served as JavaScript.
+app.use("/assets", express.static(join(__dirname, "dist", "assets"), { maxAge: "1y", immutable: true, fallthrough: false }));
+
+// Everything else in the build (index.html, public/ files) keeps the default revalidated caching
 app.use(express.static(join(__dirname, "dist")));
 
 // SPA fallback - serve index.html for all non-API routes
