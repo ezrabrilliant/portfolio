@@ -6,6 +6,7 @@ import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js
 import { runtime } from "@/world/state/runtime";
 import { useWorld } from "@/world/state/store";
 import { pickAnim, poseFor } from "./ezra/anim";
+import { VIEW_F } from "./islands/types";
 
 // colours from the approved sketch and the avatar photo: black tee, short black hair, jeans, light shoes
 const C = {
@@ -41,15 +42,17 @@ function part(boxes: readonly Box[]): THREE.BufferGeometry {
 
 // model faces +Z, its left is +X; limbs are symmetric about their own pivot
 const GEO = {
-  // pivot at the hip
-  leg: part([
-    [0.22, 0.52, 0.22, 0, -0.26, 0, C.jeans],
-    [0.24, 0.09, 0.3, 0, -0.545, 0.04, C.shoe],
-    [0.25, 0.035, 0.31, 0, -0.6025, 0.04, C.sole],
+  // pivot at the hip; runs half a leg past the knee so a bent knee stays square
+  thigh: part([[0.22, 0.41, 0.22, 0, -0.185, 0, C.jeans]]),
+  // pivot at the knee (0.28 below the hip)
+  shin: part([
+    [0.22, 0.26, 0.22, 0, -0.11, 0, C.jeans],
+    [0.24, 0.09, 0.3, 0, -0.265, 0.04, C.shoe],
+    [0.25, 0.035, 0.31, 0, -0.3225, 0.04, C.sole],
   ]),
-  // body group origin (feet)
+  // body group origin (feet); the hips reach below the hip pivot so a seated Ezra has no gap under him
   body: part([
-    [0.5, 0.16, 0.3, 0, 0.68, 0, C.jeans],
+    [0.5, 0.2, 0.3, 0, 0.66, 0, C.jeans],
     [0.56, 0.58, 0.32, 0, 1.04, 0, C.shirt],
     [0.2, 0.08, 0.2, 0, 1.35, 0, C.skin],
   ]),
@@ -70,18 +73,22 @@ const GEO = {
     [0.11, 0.03, 0.02, -0.11, 0.275, 0.235, C.hair],
     // short hair as one mass: pieces share outer planes and overlap past their rounded edges so no seams
     // show; the hairline dips at his right temple and the volume sweeps up at the front
-    [0.54, 0.16, 0.52, 0, 0.52, -0.005, C.hair, 0.012],
+    [0.54, 0.11, 0.52, 0, 0.495, -0.005, C.hair, 0.012],
     [0.54, 0.35, 0.08, 0, 0.345, -0.225, C.hair, 0.012],
     [0.05, 0.22, 0.52, 0.245, 0.41, -0.005, C.hair, 0.012],
     [0.05, 0.22, 0.52, -0.245, 0.41, -0.005, C.hair, 0.012],
     [0.54, 0.13, 0.07, 0, 0.435, 0.22, C.hair, 0.012],
     [0.16, 0.08, 0.07, -0.17, 0.385, 0.22, C.hair, 0.012],
-    [0.44, 0.11, 0.3, -0.03, 0.595, 0.105, C.hair, 0.012],
+    [0.44, 0.11, 0.3, -0.03, 0.545, 0.105, C.hair, 0.012],
   ]),
 };
 const MAT = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.9 });
-/** Seated, the body shifts this far past the seat's rim face so the hanging legs clear the block. */
-const SEAT_OUT = 0.12;
+/** Heading from the hero seat toward the tour camera; seated, Ezra turns his head part of the way to it. */
+const VIEWER_HEADING = Math.atan2(-VIEW_F.x, -VIEW_F.z);
+/** Head height above the feet; the model hides while a camera is inside this radius of it (play-camera wall clamp). */
+const HEAD_Y = 1.6;
+const HIDE_NEAR = 0.6;
+const SHOW_FAR = 0.7;
 
 export function Ezra() {
   const cast = useWorld((s) => s.quality === "high");
@@ -90,12 +97,15 @@ export function Ezra() {
   const body = useRef<THREE.Group>(null);
   const legL = useRef<THREE.Group>(null);
   const legR = useRef<THREE.Group>(null);
+  const kneeL = useRef<THREE.Group>(null);
+  const kneeR = useRef<THREE.Group>(null);
   const armL = useRef<THREE.Group>(null);
   const armR = useRef<THREE.Group>(null);
   const head = useRef<THREE.Group>(null);
 
   useFrame((state) => {
-    if (!root.current || !body.current || !legL.current || !legR.current || !armL.current || !armR.current || !head.current) return;
+    if (!root.current || !body.current || !legL.current || !legR.current || !kneeL.current || !kneeR.current) return;
+    if (!armL.current || !armR.current || !head.current) return;
     const p = runtime.player;
     const seated = runtime.seated && runtime.seat !== null;
     const anim = pickAnim({
@@ -107,7 +117,10 @@ export function Ezra() {
       standUp: runtime.standUp,
       riding: runtime.ride?.kind === "rail",
     });
-    const pose = poseFor(anim, state.clock.elapsedTime, runtime.animPhase, { standUp: runtime.standUp, reduced });
+    const seat = runtime.seat;
+    const toViewer = seat ? VIEWER_HEADING - seat.heading : 0;
+    const look = 0.5 * Math.atan2(Math.sin(toViewer), Math.cos(toViewer));
+    const pose = poseFor(anim, state.clock.elapsedTime, runtime.animPhase, { standUp: runtime.standUp, reduced, look });
     if (seated && runtime.seat) {
       root.current.position.set(runtime.seat.pos.x, runtime.seat.pos.y, runtime.seat.pos.z);
       root.current.rotation.y = runtime.seat.heading;
@@ -116,35 +129,50 @@ export function Ezra() {
       root.current.rotation.y = runtime.heading;
     }
     body.current.position.y = pose.bodyY;
-    body.current.position.z = anim === "sit" || anim === "standUp" ? SEAT_OUT * Math.min(1, -pose.bodyY / 0.55) : 0;
+    body.current.position.z = pose.bodyZ;
     body.current.scale.y = pose.squash;
     body.current.rotation.x = pose.lean;
     legL.current.rotation.x = pose.legL;
     legR.current.rotation.x = pose.legR;
+    kneeL.current.rotation.x = pose.kneeL;
+    kneeR.current.rotation.x = pose.kneeR;
     armL.current.rotation.set(pose.armL, 0, pose.armSpread);
     armR.current.rotation.set(pose.armR, 0, -pose.armSpread);
     head.current.rotation.set(pose.headPitch, pose.headYaw, 0);
+
+    // a camera pressed against his head (wall clamp) would see the model from inside: hide it until it backs off
+    const cam = state.camera.position;
+    const r = root.current.position;
+    const dy = cam.y - (r.y + HEAD_Y + pose.bodyY);
+    const d2 = (cam.x - r.x) ** 2 + dy * dy + (cam.z - r.z) ** 2;
+    if (root.current.visible ? d2 < HIDE_NEAR * HIDE_NEAR : d2 > SHOW_FAR * SHOW_FAR) root.current.visible = !root.current.visible;
   });
 
   return (
     <group ref={root}>
       <group ref={body}>
-        <mesh geometry={GEO.body} material={MAT} castShadow={cast} />
-        {/* legs pivot at the hips (y 0.62) */}
+        <mesh geometry={GEO.body} material={MAT} castShadow={cast} receiveShadow={cast} />
+        {/* legs pivot at the hips (y 0.62), knees 0.28 lower */}
         <group ref={legL} position={[0.12, 0.62, 0]}>
-          <mesh geometry={GEO.leg} material={MAT} castShadow={cast} />
+          <mesh geometry={GEO.thigh} material={MAT} castShadow={cast} receiveShadow={cast} />
+          <group ref={kneeL} position={[0, -0.28, 0]}>
+            <mesh geometry={GEO.shin} material={MAT} castShadow={cast} receiveShadow={cast} />
+          </group>
         </group>
         <group ref={legR} position={[-0.12, 0.62, 0]}>
-          <mesh geometry={GEO.leg} material={MAT} castShadow={cast} />
+          <mesh geometry={GEO.thigh} material={MAT} castShadow={cast} receiveShadow={cast} />
+          <group ref={kneeR} position={[0, -0.28, 0]}>
+            <mesh geometry={GEO.shin} material={MAT} castShadow={cast} receiveShadow={cast} />
+          </group>
         </group>
         <group ref={armL} position={[0.37, 1.28, 0]}>
-          <mesh geometry={GEO.arm} material={MAT} castShadow={cast} />
+          <mesh geometry={GEO.arm} material={MAT} castShadow={cast} receiveShadow={cast} />
         </group>
         <group ref={armR} position={[-0.37, 1.28, 0]}>
-          <mesh geometry={GEO.arm} material={MAT} castShadow={cast} />
+          <mesh geometry={GEO.arm} material={MAT} castShadow={cast} receiveShadow={cast} />
         </group>
         <group ref={head} position={[0, 1.36, 0]}>
-          <mesh geometry={GEO.head} material={MAT} castShadow={cast} />
+          <mesh geometry={GEO.head} material={MAT} castShadow={cast} receiveShadow={cast} />
         </group>
       </group>
     </group>

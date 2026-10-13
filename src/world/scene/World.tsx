@@ -68,6 +68,8 @@ export function World() {
       <PlayerController />
       <PlayCamera />
       <TourCamera />
+      {/* keep Ezra after PlayerController and the cameras: his frame callback reads this frame's player
+          position (no one-frame lag) and the final camera position (hides the model when it's inside his head) */}
       <Ezra />
     </>
   );
