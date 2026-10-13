@@ -4,11 +4,14 @@ import { boxCells, postCells, type Cell } from "./shared/local";
 /**
  * Single source of island prop positions (island-local, fronts face +z).
  * Components read these to place props; FOOTPRINTS derives collision cells from the same numbers.
- * layouts.test.ts checks: inside 78% of the radius, at least 2 blocks from every crossing anchor.
+ * layouts.test.ts checks: inside 78% of the radius, at least 2 blocks from every crossing anchor, and every panel on
+ * two posts is closed between its posts up to its top row (boardSpan).
  * Voxel titles stay visible from the tour camera (framing.ts): no board, trunk or chart column stands between them.
  */
 
 export const INFO_HALF_SPAN = 1.0; // InfoBoard posts at ±(2.4 / 2 − 0.2)
+// InfoBoard collision rows: the panel ends ≤ 2.83 above the grass (the hero's wrapped title; layouts.test checks every board)
+const INFO_ROWS = 3;
 
 // From the tour camera the title needs the flag on its left and the (2.83-tall, wrapped-title) board on its right, with
 // no overlap: at cell 0.13 the island is ~4 px too narrow for both, at 0.12 each side keeps ~16 px. Ezra sits on the
@@ -87,11 +90,25 @@ export const EZRA = {
 
 const rot = (dx: number, ry: number) => ({ x: dx * Math.cos(ry), z: -dx * Math.sin(ry) });
 
-function boardPosts(at: { x: number; z: number }, halfSpan: number, ry: number): Cell[] {
-  return [-1, 1].flatMap((s) => {
-    const o = rot(s * halfSpan, ry);
-    return postCells(at.x + o.x, at.z + o.z);
-  });
+/**
+ * Collision for a panel on two posts: the post-to-post line sampled every 0.5 block, `rows` rows tall (up to the
+ * panel's top row). The panels hang low (InfoBoard from 1.0, the Petak sign from 0.55): posts alone left a gap Ezra's
+ * 0.6-wide body walked through, and a barrier lower than the panel top could be jumped onto from a prop.
+ */
+function boardSpan(at: { x: number; z: number }, halfSpan: number, ry: number, rows = 2): Cell[] {
+  const n = Math.ceil((2 * halfSpan) / 0.5);
+  const seen = new Set<string>();
+  const out: Cell[] = [];
+  for (let i = 0; i <= n; i++) {
+    const o = rot(-halfSpan + (2 * halfSpan * i) / n, ry);
+    for (const c of postCells(at.x + o.x, at.z + o.z, rows)) {
+      const key = c.join();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push(c);
+    }
+  }
+  return out;
 }
 
 function titleCells(t: { x: number; z: number; cell: number; lines: readonly string[] }): Cell[] {
@@ -106,14 +123,14 @@ export const FOOTPRINTS: Record<string, Cell[]> = {
   hero: [
     ...trunk(HERO.tree),
     ...postCells(HERO.flag.x, HERO.flag.z, 3),
-    ...boardPosts(HERO.info, INFO_HALF_SPAN, HERO.info.ry),
+    ...boardSpan(HERO.info, INFO_HALF_SPAN, HERO.info.ry, INFO_ROWS),
     ...titleCells(HERO.title),
   ],
   gtid: [
     ...GTID.chart.heights.flatMap((h, i) => boxCells(GTID.chart.x0 + i, GTID.chart.x0 + i, 0, h - 1, GTID.chart.z, GTID.chart.z)),
-    ...boardPosts(GTID.board, GTID.board.w / 2 - 0.3, GTID.board.ry),
+    ...boardSpan(GTID.board, GTID.board.w / 2 - 0.3, GTID.board.ry, 5), // the panel spans 1.62–4.28
     ...titleCells(GTID.title),
-    ...boardPosts(GTID.info, INFO_HALF_SPAN, GTID.info.ry),
+    ...boardSpan(GTID.info, INFO_HALF_SPAN, GTID.info.ry, INFO_ROWS),
     ...postCells(GTID.link.x, GTID.link.z),
   ],
   "petak-umpet": [
@@ -130,20 +147,20 @@ export const FOOTPRINTS: Record<string, Cell[]> = {
     ...postCells(PETAK.gentong.x, PETAK.gentong.z, 1),
     ...postCells(PETAK.jemuran.x0, PETAK.jemuran.z),
     ...postCells(PETAK.jemuran.x1, PETAK.jemuran.z),
-    ...boardPosts(PETAK.sign, PETAK.sign.w / 2 - 0.3, PETAK.sign.ry),
-    ...boardPosts(PETAK.info, INFO_HALF_SPAN, PETAK.info.ry),
+    ...boardSpan(PETAK.sign, PETAK.sign.w / 2 - 0.3, PETAK.sign.ry), // the panel spans 0.55–1.95
+    ...boardSpan(PETAK.info, INFO_HALF_SPAN, PETAK.info.ry, INFO_ROWS),
     ...postCells(PETAK.link.x, PETAK.link.z),
   ],
   "orbit-store": [
     ...boxCells(-1, 1, 0, 1, -1, 1),
     ...ORBIT.crates.flatMap((c) => postCells(c.x, c.z, c.stack > 0 ? 2 : 1)),
-    ...boardPosts(ORBIT.info, INFO_HALF_SPAN, ORBIT.info.ry),
+    ...boardSpan(ORBIT.info, INFO_HALF_SPAN, ORBIT.info.ry, INFO_ROWS),
     ...postCells(ORBIT.link.x, ORBIT.link.z),
   ],
   "ezra-bot": [
     ...boxCells(-2, 0, 0, 3, 0, 0),
-    ...boardPosts(EZRA.screen, EZRA.screen.w / 2 - 0.25, EZRA.screen.ry),
-    ...boardPosts(EZRA.info, INFO_HALF_SPAN, EZRA.info.ry),
+    ...boardSpan(EZRA.screen, EZRA.screen.w / 2 - 0.25, EZRA.screen.ry), // the panel spans 0.73–1.87
+    ...boardSpan(EZRA.info, INFO_HALF_SPAN, EZRA.info.ry, INFO_ROWS),
     ...postCells(EZRA.link.x, EZRA.link.z),
   ],
 };
