@@ -18,12 +18,17 @@ import { PlayerController } from "./PlayerController";
 import { RoomEnv } from "./RoomEnv";
 import { Sky } from "./Sky";
 import { TourCamera } from "./TourCamera";
+import { Bridge } from "./crossings/Bridge";
+import { BouncePad } from "./crossings/BouncePad";
+import { Minecart } from "./crossings/Minecart";
+import { SteppingStones } from "./crossings/SteppingStones";
+import { stampCrossings } from "./crossings/stamp";
 
 function build(): BuiltWorld {
   const stamps: Array<(grid: VoxelGrid) => void> = runtime.layout.islands.map(
     (p) => (grid: VoxelGrid) => STAR_ISLANDS[p.id]?.stamp?.(grid, p),
   );
-  const built = buildWorld(runtime.layout, stamps);
+  const built = buildWorld(runtime.layout, [...stamps, (grid: VoxelGrid) => stampCrossings(grid, runtime.layout)]);
   runtime.built = built;
   // Ezra sits on the hero island's rim on the camera side, facing the viewer
   const hero = runtime.islandById("hero");
@@ -68,6 +73,19 @@ export function World() {
       <PlayerController />
       <PlayCamera />
       <TourCamera />
+      {/* crossings after the controllers and cameras: the minecart and pads read this frame's ride and tour progress */}
+      {runtime.layout.crossings.map((c) => {
+        const key = `crossing-${c.from}-${c.to}`;
+        if (c.kind === "bridge")
+          return (
+            <group key={key}>
+              <Bridge crossing={c} />
+              <SteppingStones crossing={c} />
+            </group>
+          );
+        if (c.kind === "bouncePads") return <BouncePad key={key} crossing={c} />;
+        return <Minecart key={key} crossing={c} />;
+      })}
       {/* keep Ezra after PlayerController and the cameras: his frame callback reads this frame's player
           position (no one-frame lag) and the final camera position (hides the model when it's inside his head) */}
       <Ezra />
