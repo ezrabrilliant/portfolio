@@ -26,7 +26,7 @@ export const HERO = {
 export const GTID = {
   chart: { x0: -4, z: -5, heights: [1, 2, 2, 3, 2, 4, 5, 4, 3] },
   lock: { x: 2, z: -5 },
-  lamps: { x: -3, z: 2 },
+  lamps: { x: 1, z: 3.6 }, // in front of the board, clear of the info board and signpost from the tour camera
   board: { x: 2.7, z: 2.4, w: 4, h: 2.5, y: 2.1, ry: -0.35 },
   title: { x: -1.5, z: -3, cell: 0.32, lines: ["GTID."] },
   info: { x: -4.4, z: 3, ry: 0.35 },

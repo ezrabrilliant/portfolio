@@ -23,6 +23,7 @@ import { buildBoardModel, drawBoard, type BoardView } from "./gtid/board";
 import type { GtidData } from "./gtid/types";
 
 const LOCK_Y = GTID.chart.heights[GTID.lock.x - GTID.chart.x0] + 1.7;
+const SPARKLE = { count: 2 } as const;
 
 /** Stone price columns with light caps: the orange title stands right in front, so orange caps would blur its letters. */
 function chartBlocks(): PropBlock[] {
@@ -54,13 +55,15 @@ function DiamondLock({ placement }: { placement: IslandPlacement }) {
 
   useFrame(({ clock }) => {
     const g = ref.current;
-    if (!g || useWorld.getState().reducedMotion) return;
+    const world = useWorld.getState();
+    if (!g || world.reducedMotion) return;
     const t = clock.elapsedTime;
     g.rotation.y = t * 0.5;
     g.position.y = LOCK_Y + Math.sin(t * 1.2) * 0.12;
     if (t > next.current) {
       next.current = t + 0.9;
-      runtime.particles.burst(sparkleAt, "sparkle", { count: 2 });
+      // sparkles only while GTID is the island in view: they share the world's particle pool
+      if (world.activeIsland === placement.id) runtime.particles.burst(sparkleAt, "sparkle", SPARKLE);
     }
   });
 
@@ -77,13 +80,13 @@ function DiamondLock({ placement }: { placement: IslandPlacement }) {
   );
 }
 
-/** Three lamps next to the chart: one lit per mod online (up to three), from the live roster. */
-function ModLamps({ online }: { online: number }) {
+/** Three lamps: one lit per mod in-game (up to three), the same roster as the board's moderators card. */
+function ModLamps({ lit }: { lit: number }) {
   const refs = useRef<(THREE.Mesh | null)[]>([]);
   useFrame(({ clock }) => {
     if (useWorld.getState().reducedMotion) return;
     for (let i = 0; i < refs.current.length; i++) {
-      refs.current[i]?.scale.setScalar(i < online ? 1 + Math.sin(clock.elapsedTime * 2 + i) * 0.06 : 1);
+      refs.current[i]?.scale.setScalar(i < lit ? 1 + Math.sin(clock.elapsedTime * 2 + i) * 0.06 : 1);
     }
   });
   return (
@@ -92,8 +95,8 @@ function ModLamps({ online }: { online: number }) {
         <mesh key={dx} ref={(m) => { refs.current[i] = m; }} position={[GTID.lamps.x + dx, 0.51, GTID.lamps.z]} castShadow>
           <boxGeometry args={[0.3, 0.3, 0.3]} />
           <meshStandardMaterial
-            color={i < online ? "#6cc47f" : "#4c5650"}
-            emissive={i < online ? "#4fbf6c" : "#000000"}
+            color={i < lit ? "#6cc47f" : "#4c5650"}
+            emissive={i < lit ? "#4fbf6c" : "#000000"}
             emissiveIntensity={0.8}
             roughness={0.5}
           />
@@ -140,7 +143,7 @@ function PriceBoard({ placement, data }: { placement: IslandPlacement; data: Gti
       <Interactable
         id="gtid-board"
         island={placement.id}
-        label={view === "chart" ? "Show mods online" : "Show price chart"}
+        label={view === "chart" ? "Show moderators" : "Show price chart"}
         position={worldTuple(placement, x, centreY, z)}
         size={[hitW, h, hitD]}
         radius={3}
@@ -154,12 +157,12 @@ function GtidIsland({ placement }: { placement: IslandPlacement }) {
   const data = useGtidData();
   const blocks = useMemo(chartBlocks, []);
   const project = projectById("gtid");
-  const online = data.mods.online.filter((m) => m.status === "Online").length;
+  const inGame = data.mods.online.length; // gtid.pro counts every listed mod as in-game, idle ones too
   return (
     <>
       <group position={islandFrame(placement)}>
         <PropBlocks blocks={blocks} seed={202} />
-        <ModLamps online={Math.min(3, online)} />
+        <ModLamps lit={Math.min(3, inGame)} />
         <DiamondLock placement={placement} />
       </group>
       <PriceBoard placement={placement} data={data} />
