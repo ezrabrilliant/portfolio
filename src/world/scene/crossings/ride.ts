@@ -35,6 +35,8 @@ export function advanceRide(ride: Ride, player: CharacterState, dt: number): boo
     const from = { x: end.x, y: end.y + SEAT, z: end.z };
     const to = { ...ride.exit };
     const { vel, time } = solveLaunch(from, to, DEFAULT_PARAMS.gravity, HOP_APEX);
+    // in place, so runtime.ride keeps pointing at it: from here on this object is an arc ride (callers must
+    // re-read `kind` after advanceRide, and the narrowed `ride` above is stale — only `hop` is used)
     const hop = Object.assign(ride, { kind: "arc", t: 0, from, to, vel, time }) as Ride;
     return advanceRide(hop, player, over);
   }

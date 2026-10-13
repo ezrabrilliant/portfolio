@@ -17,7 +17,8 @@ import { mergeParts } from "./materials";
 
 const frameMat = new THREE.MeshStandardMaterial({ color: "#3b3a38", roughness: 0.6, metalness: 0.4 });
 const frameGeo = new THREE.BoxGeometry(PAD_SIZE, 0.1, PAD_SIZE);
-// yellow plate + white chevron in one draw; the chevron's arms meet on the far (+z) side: it points at the paired pad
+// yellow plate + white chevron in one draw; the chevron's arms meet on the far (+z) side: it points at the paired pad.
+// Its own material (not the wood paintMat): the plate is a smoother painted metal (roughness 0.6, not 0.9).
 const plateMat = new THREE.MeshStandardMaterial({ color: "#ffffff", roughness: 0.6, vertexColors: true });
 const plateGeo = mergeParts([
   { geo: new THREE.BoxGeometry(1.05, 0.08, 1.05), color: "#d8b04a", position: [0, 0.04, 0] },
@@ -56,12 +57,9 @@ export function BouncePad({ crossing }: { crossing: Crossing }) {
     const p = runtime.player;
     const playing = useWorld.getState().mode === "play";
     if (st.flight && runtime.ride !== st.flight) {
-      // the arc just ended: squash the pad Ezra landed on and puff dust off its plate
+      // the arc just ended: squash the pad Ezra landed on (PlayerController puffs the landing dust)
       const e = ends[st.landsOn];
-      if (Math.abs(p.pos.x - e.x) < 0.65 && Math.abs(p.pos.z - e.z) < 0.65) {
-        st.squash[st.landsOn] = 1;
-        runtime.particles.burst({ x: e.x, y: e.y + 0.2, z: e.z }, "dust", { count: 8 });
-      }
+      if (Math.abs(p.pos.x - e.x) < 0.65 && Math.abs(p.pos.z - e.z) < 0.65) st.squash[st.landsOn] = 1;
       st.flight = null;
     }
     for (let k = 0; k < 2; k++) {

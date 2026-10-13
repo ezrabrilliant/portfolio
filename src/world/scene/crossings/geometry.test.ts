@@ -182,7 +182,8 @@ describe("bridgeDeck on the stamped world", () => {
         const x = c.a.x + ux * d;
         const z = c.a.z + uz * d;
         const top = visibleTop(deck, d / len);
-        samples.push({ d, bad: Math.abs(floorAt(x, z, Math.round(top)) - top) > 0.01 });
+        // a NaN floor (nothing to stand on) counts as a mismatch
+        samples.push({ d, bad: !(Math.abs(floorAt(x, z, Math.round(top)) - top) <= 0.01) });
       }
       for (const run of mismatchRuns(samples)) expect(run).toBeLessThanOrEqual(0.3);
     });
@@ -202,7 +203,7 @@ describe("bridgeDeck on the stamped world", () => {
           if (d >= l) break;
           const s = ((p.pos.x - c.a.x) * ux + (p.pos.z - c.a.z) * uz) / len;
           // in the air he is dropping down a step (the stair's own motion), not standing above the deck
-          samples.push({ d, bad: p.onGround && Math.abs(p.pos.y - visibleTop(deck, s)) > 0.01 });
+          samples.push({ d, bad: p.onGround && !(Math.abs(p.pos.y - visibleTop(deck, s)) <= 0.01) });
         }
         return mismatchRuns(samples);
       };

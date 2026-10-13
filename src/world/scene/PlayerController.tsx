@@ -5,6 +5,7 @@ import { respawn, stepCharacter } from "@/world/engine/physics/character";
 import type { CharacterInput } from "@/world/engine/physics/character";
 import { playSfx } from "@/world/engine/audio/sfx";
 import { runtime } from "@/world/state/runtime";
+import type { Ride } from "@/world/state/runtime";
 import { useWorld } from "@/world/state/store";
 import { axisFromKeys, cameraRelative, sharedKeyboard } from "@/world/input/keyboard";
 import { consumeTouch, touchInput } from "@/world/input/touch";
@@ -38,6 +39,8 @@ export function PlayerController() {
       stepTimer: 0,
       fade: 0,
       fading: false as false | "out" | "in",
+      ride: null as Ride | null,
+      exitHeading: null as number | null,
     }),
     [],
   );
@@ -88,13 +91,22 @@ export function PlayerController() {
     if (runtime.ride) {
       drainJump();
       const ride = runtime.ride;
+      if (ride !== tmp.ride) {
+        // a new ride: a cart ride ends in a hop-out arc and should leave Ezra facing into the island
+        tmp.ride = ride;
+        tmp.exitHeading = ride.kind === "rail" ? ride.exitHeading : null;
+      }
       const done = advanceRide(ride, p, dt);
-      if (ride.kind === "rail") runtime.heading = done ? ride.exitHeading : rideHeading(ride);
+      // read ride.kind only now: advanceRide turns a finished cart ride into its hop arc in place
+      if (ride.kind === "rail") runtime.heading = rideHeading(ride);
+      else if (tmp.exitHeading !== null) runtime.heading = done ? tmp.exitHeading : dampAngle(runtime.heading, tmp.exitHeading, 14, dt);
       else runtime.heading = Math.atan2(ride.to.x - ride.from.x, ride.to.z - ride.from.z);
       runtime.speed = 0;
       runtime.moving = true;
       if (done) {
         runtime.ride = null;
+        tmp.ride = null;
+        tmp.exitHeading = null;
         p.locked = false;
         p.vel.x = p.vel.y = p.vel.z = 0;
         p.onGround = true;

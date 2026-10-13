@@ -7,7 +7,6 @@ export const WOOD = "#6b4f37";
 export const ROPE = "#c9b48a";
 export const IRON = "#4a4b4e";
 
-export const plankMat = new THREE.MeshStandardMaterial({ color: PLANK, roughness: 0.9 });
 export const woodMat = new THREE.MeshStandardMaterial({ color: WOOD, roughness: 0.9 });
 export const ropeMat = new THREE.MeshStandardMaterial({ color: ROPE, roughness: 1 });
 export const ironMat = new THREE.MeshStandardMaterial({ color: IRON, roughness: 0.5, metalness: 0.6 });
