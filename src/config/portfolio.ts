@@ -1,3 +1,5 @@
+import type { WorldProject } from "./schema";
+
 export const config = {
   personal: {
     name: "Ezra",
@@ -486,3 +488,60 @@ export const config = {
 } as const;
 
 export type Config = typeof config;
+
+/* ---------- Voxel world (Phase 1): hero copy and the four star islands ---------- */
+
+export const worldCopy = {
+  heroName: "Ezra Brilliant",
+  heroLine: "I build bots, games and web tools that people use every day.",
+  location: "Surabaya, Indonesia",
+};
+
+export const worldProjects: WorldProject[] = [
+  {
+    id: "gtid",
+    title: "GTID",
+    year: 2026,
+    line: "Live DL & BGL prices for Growtopia Indonesia, price alerts, and which mods are online right now.",
+    stats: ["2,600 visitors / day", "16,000+ items"],
+    tags: ["Next.js", "Node.js", "MongoDB"],
+    district: "game",
+    tier: "star",
+    links: { demo: "https://gtid.pro" },
+    island: { accent: "#FA5D19" },
+  },
+  {
+    id: "petak-umpet",
+    title: "Petak Umpet",
+    year: 2026,
+    line: "Traditional Indonesian hide-and-seek as a Roblox multiplayer game, set in a village.",
+    stats: ["3.1M+ visits", "2.6K peak players"],
+    tags: ["Roblox", "Luau"],
+    district: "game",
+    tier: "star",
+    links: { roblox: "https://www.roblox.com/games/91179701802837/Petak-Umpet" },
+  },
+  {
+    id: "orbit-store",
+    title: "Orbit Store",
+    year: 2024,
+    line: "A Discord store that takes QRIS payments and delivers every order automatically.",
+    stats: ["2,200+ orders", "890+ buyers"],
+    tags: ["Discord.js", "Midtrans", "QRIS"],
+    district: "discord",
+    tier: "star",
+    links: { discord: "" }, // Ezra fills the server invite later; the signpost stays inactive while empty
+    island: { accent: "#3D62F8" },
+  },
+  {
+    id: "ezra-bot",
+    title: "Ezra Bot",
+    year: 2026,
+    line: "An AI bot that answers from its own community's knowledge.",
+    stats: ["1,000+ members"],
+    tags: ["Discord.js", "Gemini", "GPT-4o"],
+    district: "discord",
+    tier: "star",
+    links: { demo: "https://discord.com/oauth2/authorize?client_id=1127105994766426122" },
+  },
+];
