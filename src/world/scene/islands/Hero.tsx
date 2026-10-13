@@ -92,7 +92,7 @@ function HeroIsland({ placement }: { placement: IslandPlacement }) {
         <FlagCloth />
       </group>
       <InfoBoard placement={placement} at={HERO.info} rotationY={HERO.info.ry} title={worldCopy.location} lines={[worldCopy.heroLine]} />
-      <VoxelTitle id="hero-title" placement={placement} at={HERO.title} lines={HERO.title.lines} cell={HERO.title.cell} color="#f1ebdd" />
+      <VoxelTitle id="hero-title" placement={placement} at={HERO.title} lines={HERO.title.lines} cell={HERO.title.cell} color="#4a3626" />
     </>
   );
 }
