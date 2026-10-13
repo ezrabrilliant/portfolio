@@ -21,3 +21,10 @@ html.world-playing, html.world-playing body { overflow: hidden; }
 .seo-mirror--visible h1 { font-size: 40px; letter-spacing: -0.02em; margin: 0 0 8px; }
 .seo-mirror--visible h2 { font-size: 22px; margin: 32px 0 6px; }
 .seo-mirror--visible a { display: inline-block; margin-right: 16px; color: #1f4f8a; }
+
+@font-face {
+  font-family: "Schibsted Grotesk";
+  src: url("/fonts/schibsted-grotesk-700.woff") format("woff");
+  font-weight: 600 800;
+  font-display: swap;
+}
