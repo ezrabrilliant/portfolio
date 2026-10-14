@@ -11,6 +11,7 @@ import { OrbitStoreIsland } from "./OrbitStore";
 import { EzraBotIsland } from "./EzraBot";
 import { PlazaIsland } from "./Plaza";
 import { PosMonosukoIsland } from "./PosMonosuko";
+import { BeeCrmIsland } from "./BeeCrm";
 
 /** Every island shares one tour framing (framing.ts) and stamps its FOOTPRINTS cells as barrier collision. */
 const island = (id: string, Component: FC<{ placement: IslandPlacement }>): IslandModule => ({
@@ -33,6 +34,6 @@ export const ISLANDS: Record<string, IslandModule> = {
   "ezra-bot": island("ezra-bot", EzraBotIsland),
   [WEB_PLAZA_ID]: island(WEB_PLAZA_ID, PlazaIsland),
   "pos-monosuko": island("pos-monosuko", PosMonosukoIsland),
-  "bee-furniture-crm": bare("bee-furniture-crm"),
+  "bee-furniture-crm": island("bee-furniture-crm", BeeCrmIsland),
   pedulipasal: bare("pedulipasal"),
 };
