@@ -4,10 +4,11 @@ import * as THREE from "three";
 import type { Vec3 } from "@/world/engine/types";
 import { runtime } from "@/world/state/runtime";
 import { useWorld } from "@/world/state/store";
-import { isMoveCode, sharedKeyboard } from "@/world/input/keyboard";
+import { sharedKeyboard } from "@/world/input/keyboard";
 import { touchInput } from "@/world/input/touch";
 import { clampPan } from "@/world/engine/camera/closeup";
 import { closeCloseup, closeupPan, scrolledAway } from "./closeupState";
+import { createCloseupWalk, walkedSinceOpen } from "./closeupWalk";
 
 // the master contract names this module; the implementations live in ./closeupState (no three.js, shell-safe)
 // eslint-disable-next-line react-refresh/only-export-components
@@ -25,8 +26,9 @@ function isTypingTarget(t: EventTarget | null): boolean {
  * Input while a closeup is open (spec §6): a click on the face goes to the program (a click beside it closes the
  * closeup), a sideways drag pans a screen wider than a portrait viewport (closeupPan; a press that moves less than
  * CLICK_SLOP is still a tap), the cursor shows where the face is, keys the screen uses (CloseupTarget.key) reach
- * nothing else, Space does not jump in Play, and walking (keys or stick, Play) or scrolling the page more than
- * CLOSEUP_SCROLL_EXIT px (Tour) closes it. Esc is handled by useModeTransitions / useTabCycling, the Back button by the HUD.
+ * nothing else, Space does not jump in Play, and walking that starts after the open (keys or stick, Play; input already
+ * held while opening does not count) or scrolling the page more than CLOSEUP_SCROLL_EXIT px (Tour) closes it. Esc is
+ * handled by useModeTransitions / useTabCycling, the Back button by the HUD.
  */
 export function CloseupController() {
   const camera = useThree((s) => s.camera);
@@ -40,6 +42,7 @@ export function CloseupController() {
     }),
     [],
   );
+  const walk = useMemo(createCloseupWalk, []);
 
   // pointer: taps on the face, closing beside it, dragging a wide screen sideways, the cursor
   useEffect(() => {
@@ -149,19 +152,17 @@ export function CloseupController() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  // Play: walking (move keys or the stick) ends the closeup, and so does a target that unmounted. closeCloseup is
-  // event-like and change-guarded: it fires once, never per frame.
+  // Play: walking that starts after the open (a move key pressed, the stick pushed from rest) ends the closeup; a key or
+  // stick already held when it opened (E pressed mid-walk) does not. A target that unmounted ends it too. closeCloseup
+  // is event-like and change-guarded: it fires once, never per frame.
   useFrame(() => {
     const open = runtime.closeup;
-    if (!open) return;
-    if (!runtime.closeups.has(open.id)) {
+    if (open && !runtime.closeups.has(open.id)) {
       closeCloseup();
       return;
     }
-    if (useWorld.getState().mode !== "play") return;
-    let walking = touchInput.moveForward !== 0 || touchInput.moveRight !== 0;
-    for (const code of sharedKeyboard.keys) if (isMoveCode(code)) walking = true;
-    if (walking) closeCloseup();
+    const play = useWorld.getState().mode === "play";
+    if (walkedSinceOpen(walk, open, play, sharedKeyboard.keys, touchInput.moveForward, touchInput.moveRight)) closeCloseup();
   });
 
   return null;
