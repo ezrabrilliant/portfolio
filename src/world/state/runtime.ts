@@ -17,6 +17,24 @@ export type Ride =
   | { kind: "arc"; t: number; from: Vec3; to: Vec3; vel: Vec3; time: number }
   | { kind: "rail"; t: number; duration: number; rail: Rail; reverse: boolean; exit: Vec3; exitHeading: number };
 
+/** A screen (or board) the closeup camera can frame. LiveScreen registers one per screen in runtime.closeups. */
+export interface CloseupTarget {
+  id: string;
+  island: string;
+  /** World centre of the face, re-read every frame (the returned object is reused between calls). */
+  center: () => Vec3;
+  /** World unit normal the face looks along (the returned object is reused between calls). */
+  normal: () => Vec3;
+  /** World units of the visible face. */
+  size: { w: number; h: number };
+  /** A tap at logical coordinates. */
+  input: (x: number, y: number) => void;
+  /** World ray → logical point on the face, or null when the ray misses the face. */
+  hit: (origin: Vec3, dir: Vec3) => { x: number; y: number } | null;
+  /** Keyboard while in closeup: true when the screen used the key (nothing else then sees it). */
+  key?: (code: string) => boolean;
+}
+
 const reducedMotion =
   typeof window !== "undefined" &&
   typeof window.matchMedia === "function" &&
@@ -58,4 +76,8 @@ export const runtime = {
   speed: 0,
   animPhase: 0,
   landTimer: 0,
+  /** Closeup targets by id (each LiveScreen registers itself). */
+  closeups: new Map<string, CloseupTarget>(),
+  /** The open closeup; openCloseup / closeCloseup write it together with the store's closeupId. */
+  closeup: null as { id: string } | null,
 };

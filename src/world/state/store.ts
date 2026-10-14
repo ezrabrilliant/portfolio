@@ -21,6 +21,9 @@ export interface WorldState {
   reducedMotion: boolean;
   ready: boolean;
   setReady(r: boolean): void;
+  /** Id of the screen in closeup, or null (openCloseup / closeCloseup write it together with runtime.closeup). */
+  closeupId: string | null;
+  setCloseup(id: string | null): void;
 }
 
 const inBrowser = typeof window !== "undefined" && typeof window.matchMedia === "function";
@@ -62,5 +65,9 @@ export const useWorld = create<WorldState>()((set, get) => ({
   ready: false,
   setReady: (ready) => {
     if (get().ready !== ready) set({ ready });
+  },
+  closeupId: null,
+  setCloseup: (closeupId) => {
+    if (get().closeupId !== closeupId) set({ closeupId });
   },
 }));

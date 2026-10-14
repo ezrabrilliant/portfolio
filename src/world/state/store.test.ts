@@ -11,7 +11,7 @@ import { useWorld } from "./store";
 
 describe("useWorld", () => {
   beforeEach(() => {
-    useWorld.setState({ mode: "tour", activeIsland: "hero", muted: true, hoveredId: null, prompt: null, ready: false });
+    useWorld.setState({ mode: "tour", activeIsland: "hero", muted: true, hoveredId: null, prompt: null, ready: false, closeupId: null });
     vi.mocked(setMuted).mockClear();
   });
 
@@ -66,6 +66,18 @@ describe("useWorld", () => {
     useWorld.getState().setPrompt({ id: "gtid-board", label: "Show price chart" });
     expect(listener).toHaveBeenCalledTimes(1);
     expect(useWorld.getState().prompt).toEqual({ id: "gtid-board", label: "Show price chart" });
+    unsub();
+  });
+
+  it("setCloseup is change-guarded", () => {
+    const listener = vi.fn();
+    const unsub = useWorld.subscribe(listener);
+    useWorld.getState().setCloseup(null);
+    expect(listener).not.toHaveBeenCalled();
+    useWorld.getState().setCloseup("pos-screen");
+    useWorld.getState().setCloseup("pos-screen");
+    expect(listener).toHaveBeenCalledTimes(1);
+    expect(useWorld.getState().closeupId).toBe("pos-screen");
     unsub();
   });
 });

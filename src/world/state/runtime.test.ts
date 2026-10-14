@@ -21,4 +21,9 @@ describe("runtime", () => {
     expect(runtime.ride).toBeNull();
     expect(runtime.built).toBeNull();
   });
+
+  it("starts with no closeup targets and no closeup open", () => {
+    expect(runtime.closeups.size).toBe(0);
+    expect(runtime.closeup).toBeNull();
+  });
 });
