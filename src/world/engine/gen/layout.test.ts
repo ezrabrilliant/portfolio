@@ -38,8 +38,9 @@ describe("buildLayout", () => {
   const layout = buildLayout(worldProjects);
 
   it("places the hero and the four stars at their anchors", () => {
-    expect(layout.islands.map((i) => i.id)).toEqual(["hero", "gtid", "petak-umpet", "orbit-store", "ezra-bot"]);
-    for (const isl of layout.islands) {
+    const anchored = layout.islands.filter((i) => i.kind !== "mini");
+    expect(anchored.map((i) => i.id)).toEqual(["hero", "gtid", "petak-umpet", "orbit-store", "ezra-bot"]);
+    for (const isl of anchored) {
       expect(isl.origin).toEqual(STAR_ANCHORS[isl.id].origin);
       expect(isl.radius).toBe(STAR_ANCHORS[isl.id].radius);
     }
@@ -70,7 +71,7 @@ describe("buildLayout", () => {
     }));
     const l = buildLayout([...worldProjects, ...minis]);
     const placed = l.islands.filter((i) => i.kind === "mini");
-    expect(placed).toHaveLength(6);
+    expect(placed).toHaveLength(6 + 3); // the six test minis and the three shipped web minis
     for (const m of placed) {
       for (const other of l.islands) {
         if (other === m) continue;

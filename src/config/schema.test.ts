@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { DISTRICTS, isSiteLink, validateMilestones, validateProjects, type Milestone, type WorldProject } from "@/config/schema";
-import { worldCopy, worldProjects } from "@/config/portfolio";
+import { milestones, worldCopy, worldProjects } from "@/config/portfolio";
 
 const base: WorldProject = {
   id: "sample-app", title: "Sample", year: 2025, line: "A sample app.", tags: ["React"],
@@ -12,10 +12,14 @@ describe("validateProjects", () => {
     expect(validateProjects(worldProjects)).toEqual([]);
   });
 
-  it("ships the four star projects in tour order", () => {
-    expect(worldProjects.map((p) => p.id)).toEqual(["gtid", "petak-umpet", "orbit-store", "ezra-bot"]);
-    expect(worldProjects.every((p) => p.tier === "star")).toBe(true);
+  it("ships the four stars in tour order, then the three web minis in chain order", () => {
+    expect(worldProjects.map((p) => p.id)).toEqual([
+      "gtid", "petak-umpet", "orbit-store", "ezra-bot", "pos-monosuko", "bee-furniture-crm", "pedulipasal",
+    ]);
+    expect(worldProjects.slice(0, 4).every((p) => p.tier === "star")).toBe(true);
+    expect(worldProjects.slice(4).every((p) => p.tier === "mini" && p.district === "web")).toBe(true);
     expect(worldCopy.heroName).toBe("Ezra Brilliant");
+    expect(worldCopy.webDistrict).toBe("Web & Apps");
   });
 
   it("flags duplicate ids", () => {
@@ -77,6 +81,10 @@ describe("isSiteLink", () => {
 });
 
 describe("validateMilestones", () => {
+  it("accepts the shipped milestones", () => {
+    expect(validateMilestones(milestones)).toEqual([]);
+  });
+
   const ok: Milestone[] = [
     { year: 2022, title: "Started", line: "A university" },
     { year: 2026, title: "Graduated", line: "A university", moment: "graduation" },

@@ -1,4 +1,4 @@
-import type { WorldProject } from "./schema";
+import type { Milestone, WorldProject } from "./schema";
 
 export const config = {
   personal: {
@@ -489,12 +489,14 @@ export const config = {
 
 export type Config = typeof config;
 
-/* ---------- Voxel world (Phase 1): hero copy and the four star islands ---------- */
+/* ---------- Voxel world: hero copy, the four star islands and the Web & Apps minis ---------- */
 
 export const worldCopy = {
   heroName: "Ezra Brilliant",
   heroLine: "I build bots, games and web tools that people use every day.",
   location: "Surabaya, Indonesia",
+  /** Name of the Web & Apps district (its plaza island, minecart sign and map label). */
+  webDistrict: "Web & Apps",
 };
 
 export const worldProjects: WorldProject[] = [
@@ -544,4 +546,43 @@ export const worldProjects: WorldProject[] = [
     tier: "star",
     links: { discord: "https://discord.com/oauth2/authorize?client_id=1127105994766426122" },
   },
+  // Web & Apps district: chained from the plaza in this order. The two demo links stay empty (signs inactive)
+  // until the demo builds ship at /demo/monosuko/ and /demo/bee/.
+  {
+    id: "pos-monosuko",
+    title: "POS Monosuko",
+    year: 2026,
+    line: "A point-of-sale for a grilled-chicken restaurant: orders, tables, bills and portion stock.",
+    tags: ["React", "Express", "MySQL"],
+    district: "web",
+    tier: "mini",
+    links: { demo: "" },
+  },
+  {
+    id: "bee-furniture-crm",
+    title: "Bee Furniture CRM",
+    year: 2025,
+    line: "A CRM for a furniture maker: customers, products, sales and promos in one dashboard.",
+    tags: ["React", "PostgreSQL"],
+    district: "web",
+    tier: "mini",
+    links: { demo: "" },
+  },
+  {
+    id: "pedulipasal",
+    title: "PeduliPasal",
+    year: 2024,
+    line: "An Android chatbot that names the article of Indonesian criminal law that fits a described offence.",
+    tags: ["Kotlin", "TensorFlow", "Gemini"],
+    district: "web",
+    tier: "mini",
+    links: { demo: "https://github.com/aliefauzan/Bangkit-Project-PeduliPasal/releases/tag/1.5.3" },
+  },
+];
+
+/** Education, as year milestones on the Hero → GTID bridge (the 2026 one plays the graduation moment). */
+export const milestones: Milestone[] = [
+  { year: 2022, title: "Started Business Information Systems", line: "Petra Christian University" },
+  { year: 2024, title: "Bangkit Academy", line: "Mobile Development, graduated with Distinction" },
+  { year: 2026, title: "Graduated", line: "Business Information Systems, Petra Christian University", moment: "graduation" },
 ];
