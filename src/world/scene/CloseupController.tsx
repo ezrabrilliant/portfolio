@@ -4,11 +4,11 @@ import * as THREE from "three";
 import type { Vec3 } from "@/world/engine/types";
 import { runtime } from "@/world/state/runtime";
 import { useWorld } from "@/world/state/store";
-import { sharedKeyboard } from "@/world/input/keyboard";
+import { isTypingTarget, sharedKeyboard } from "@/world/input/keyboard";
 import { touchInput } from "@/world/input/touch";
 import { clampPan } from "@/world/engine/camera/closeup";
 import { closeCloseup, closeupPan, scrolledAway } from "./closeupState";
-import { createCloseupWalk, walkedSinceOpen } from "./closeupWalk";
+import { createCloseupWalk, stepCloseupWalk } from "./closeupWalk";
 
 // the master contract names this module; the implementations live in ./closeupState (no three.js, shell-safe)
 // eslint-disable-next-line react-refresh/only-export-components
@@ -17,16 +17,17 @@ export { closeCloseup, openCloseup } from "./closeupState";
 /** A press that moves less than this (CSS px) before release is a click, as in InteractionController. */
 const CLICK_SLOP = 6;
 
-function isTypingTarget(t: EventTarget | null): boolean {
-  const el = t as HTMLElement | null;
-  return !!el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.isContentEditable);
+/** A key event aimed at the HUD (Enter on the focused Back button): the HUD's, never the screen's. */
+function fromHud(t: EventTarget | null): boolean {
+  return typeof Element !== "undefined" && t instanceof Element && t.closest(".hud") !== null;
 }
 
 /**
- * Input while a closeup is open (spec §6): a click on the face goes to the program (a click beside it closes the
- * closeup), a sideways drag pans a screen wider than a portrait viewport (closeupPan; a press that moves less than
- * CLICK_SLOP is still a tap), the cursor shows where the face is, keys the screen uses (CloseupTarget.key) reach
- * nothing else, Space does not jump in Play, opening in Play stops Ezra, and walking that starts after the open (keys or
+ * Input while a closeup is open (spec §6): a primary click on the face goes to the program (one beside it closes the
+ * closeup; right and middle clicks do nothing), a sideways drag pans a screen wider than a portrait viewport (closeupPan;
+ * a press that moves less than CLICK_SLOP and never panned is still a tap), the cursor shows where the face is, keys the
+ * screen uses (CloseupTarget.key) reach nothing else (keys aimed at the HUD and keys still held from before the open are
+ * never offered to it), Space does not jump in Play, opening in Play stops Ezra, and walking that starts after the open (keys or
  * stick, Play; input already held while opening does not count) or scrolling the page more than CLOSEUP_SCROLL_EXIT px
  * (Tour) closes it. Esc is handled by useModeTransitions / useTabCycling, the Back button by the HUD.
  */
@@ -67,12 +68,23 @@ export function CloseupController() {
       press.y = e.clientY;
       press.lastX = e.clientX;
       press.panning = false;
-      press.id = runtime.closeup?.id ?? null;
+      // only the primary button (a finger, a pen, a left click) taps or pans: a right or middle click does nothing here
+      press.id = e.button === 0 ? (runtime.closeup?.id ?? null) : null;
+    };
+    const endPress = () => {
+      press.id = null;
+      press.panning = false;
     };
     // a sideways drag that began in the closeup pans it when the screen is wider than the viewport (the face follows
-    // the finger); past CLICK_SLOP the release is no tap
+    // the finger); once it pans, the release is no tap
     const onDrag = (e: PointerEvent) => {
-      if (press.id === null || runtime.closeup?.id !== press.id || closeupPan.limit <= 0) return;
+      if (press.id === null) return;
+      // a release we never saw (outside the window): the press is over, as in PlayCamera
+      if (e.buttons === 0) {
+        endPress();
+        return;
+      }
+      if (runtime.closeup?.id !== press.id || closeupPan.limit <= 0) return;
       if (!press.panning && Math.abs(e.clientX - press.x) <= CLICK_SLOP) return;
       press.panning = true;
       closeupPan.offset = clampPan(closeupPan.offset - (e.clientX - press.lastX) * closeupPan.perPx, closeupPan.limit);
@@ -80,10 +92,12 @@ export function CloseupController() {
     };
     const onUp = (e: PointerEvent) => {
       const id = press.id;
-      press.id = null;
-      // only presses that began in this closeup: the click that opened it is not also a tap on the program
-      if (id === null || runtime.closeup?.id !== id) return;
-      if (Math.hypot(e.clientX - press.x, e.clientY - press.y) > CLICK_SLOP) return;
+      const panned = press.panning;
+      endPress();
+      // only primary presses that began in this closeup: the click that opened it is not also a tap on the program
+      if (id === null || e.button !== 0 || runtime.closeup?.id !== id) return;
+      // a press that panned is no tap, even if it came back to where it started
+      if (panned || Math.hypot(e.clientX - press.x, e.clientY - press.y) > CLICK_SLOP) return;
       const target = activeTarget();
       if (!target) {
         closeCloseup();
@@ -110,11 +124,13 @@ export function CloseupController() {
     });
     el.addEventListener("pointerdown", onDown);
     el.addEventListener("pointerup", onUp);
+    el.addEventListener("pointercancel", endPress);
     el.addEventListener("pointermove", onMove);
     el.addEventListener("pointermove", onDrag);
     return () => {
       el.removeEventListener("pointerdown", onDown);
       el.removeEventListener("pointerup", onUp);
+      el.removeEventListener("pointercancel", endPress);
       el.removeEventListener("pointermove", onMove);
       el.removeEventListener("pointermove", onDrag);
       unsub();
@@ -126,7 +142,11 @@ export function CloseupController() {
     const onKey = (e: KeyboardEvent) => {
       if (!runtime.closeup || e.code === "Escape" || isTypingTarget(e.target)) return;
       if (e.ctrlKey || e.metaKey || e.altKey) return;
-      const target = runtime.closeups.get(runtime.closeup.id);
+      // offered to the screen: not keys aimed at the HUD (Enter on Back activates Back), nor the auto-repeat of a key
+      // still held from before the open (released at the open, it waits for its key-up; a non-repeat keydown of it is a
+      // new press after a lost key-up, as the keyboard counts it)
+      const offer = !fromHud(e.target) && !(e.repeat && sharedKeyboard.isWaiting(e.code));
+      const target = offer ? runtime.closeups.get(runtime.closeup.id) : undefined;
       if (target?.key?.(e.code)) {
         // the screen used it (a map board's arrows): Ezra must not walk, the tour must not switch to Play
         e.preventDefault();
@@ -163,7 +183,8 @@ export function CloseupController() {
       return;
     }
     const play = useWorld.getState().mode === "play";
-    if (walkedSinceOpen(walk, open, play, sharedKeyboard, touchInput.moveForward, touchInput.moveRight)) closeCloseup();
+    // stepCloseupWalk releases the held keys on the first frame of a Play closeup (Ezra stops)
+    if (stepCloseupWalk(walk, open, play, sharedKeyboard, touchInput.moveForward, touchInput.moveRight)) closeCloseup();
   });
 
   return null;

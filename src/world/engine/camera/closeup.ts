@@ -130,3 +130,14 @@ export function closeupNear(base: number, faceDistance: number, weight: number):
   const w = Math.min(1, Math.max(0, weight));
   return base + (clip - base) * w * w * w;
 }
+
+/**
+ * Reduced motion: true on the one frame a closeup has just ended, when a base camera that eases from the camera's last
+ * position (PlayCamera's follow lerp) must cut to its own pose instead of gliding back from the closeup pose.
+ * CloseupCamera's blend already cuts to weight 0 then. `last.open` keeps whether a closeup was open on the previous call.
+ */
+export function closeupExitCut(last: { open: boolean }, open: boolean, reduced: boolean): boolean {
+  const ended = last.open && !open;
+  last.open = open;
+  return ended && reduced;
+}

@@ -1,6 +1,7 @@
 import { useEffect, useMemo } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
+import { closeupExitCut } from "@/world/engine/camera/closeup";
 import { createFollowCam, updateFollowCam } from "@/world/engine/camera/followCam";
 import { runtime } from "@/world/state/runtime";
 import { useWorld } from "@/world/state/store";
@@ -36,6 +37,8 @@ export function PlayCamera() {
       swingFrom: 0,
       swingBy: 0,
       swingT: 0,
+      /** whether a closeup was open last frame (reduced motion cuts back from it, see closeupExitCut) */
+      closeup: { open: false },
     }),
     [],
   );
@@ -97,6 +100,7 @@ export function PlayCamera() {
   useFrame((_, rawDt) => {
     if (useWorld.getState().mode !== "play") {
       track.active = false;
+      track.closeup.open = false;
       return;
     }
     const dt = Math.min(rawDt, 1 / 30);
@@ -143,7 +147,10 @@ export function PlayCamera() {
     // inside Ezra's own (always free) AABB, which is what pullIn needs as its starting point
     const { position, lookAt } = updateFollowCam(cam, p, g.heading, g.follow, dt, orbit);
     goal.set(position.x, position.y, position.z);
-    if (teleported || (entering && reduced)) camera.position.copy(goal);
+    // reduced motion: the frame a closeup ends, cut from its pose to the follow pose instead of easing back (CloseupCamera
+    // cuts its own blend to 0 then, and CloseupController's exits run before this)
+    const closeupCut = closeupExitCut(track.closeup, runtime.closeup !== null, reduced);
+    if (teleported || closeupCut || (entering && reduced)) camera.position.copy(goal);
     else camera.position.lerp(goal, 1 - Math.exp(-6 * dt));
     // keep the camera's own ray to Ezra clear: snap in front of a block at once, ease back out via the lerp
     if (runtime.built) {

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { playSfx } from "@/world/engine/audio/sfx";
 import { useWorld } from "@/world/state/store";
 import { runtime } from "@/world/state/runtime";
@@ -20,6 +20,16 @@ const HINTS = {
   },
 } as const;
 
+/** Re-reads the viewport on resize and rotation (the pan hint follows a phone turned during a closeup). */
+function onViewportChange(cb: () => void) {
+  window.addEventListener("resize", cb);
+  window.addEventListener("orientationchange", cb);
+  return () => {
+    window.removeEventListener("resize", cb);
+    window.removeEventListener("orientationchange", cb);
+  };
+}
+
 export function Hud() {
   const [touch] = useState(() => typeof window !== "undefined" && window.matchMedia("(pointer: coarse)").matches);
   const mode = useWorld((s) => s.mode);
@@ -29,9 +39,14 @@ export function Hud() {
   const prompt = useWorld((s) => s.prompt);
   const ready = useWorld((s) => s.ready);
   const closeupId = useWorld((s) => s.closeupId);
-  // a screen wider than a portrait viewport is panned in its closeup (CloseupCamera fits its height)
+  // a screen wider than a portrait viewport is panned in its closeup (CloseupCamera fits its height). A boolean
+  // snapshot of the viewport: the HUD re-renders only when the answer flips (a phone turned during the closeup)
   const size = closeupId ? runtime.closeups.get(closeupId)?.size : undefined;
-  const pans = size !== undefined && typeof window !== "undefined" && closeupPans(size, window.innerWidth / window.innerHeight);
+  const pans = useSyncExternalStore(
+    onViewportChange,
+    () => size !== undefined && closeupPans(size, window.innerWidth / window.innerHeight),
+    () => false,
+  );
   const hint = closeupId ? (pans ? "closeupPan" : "closeup") : mode;
   return (
     <div className="hud">

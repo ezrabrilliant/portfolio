@@ -26,14 +26,15 @@ function anyMoveKey(keys: ReadonlySet<string>): boolean {
 }
 
 /**
- * Called every frame with the open closeup (or null), before PlayerController reads the keys: true when movement started
- * after it opened, i.e. a move key went down after the open, or the stick (non-zero once past its dead zone) was pushed
- * after coming to rest. The first call for a new `open` takes the snapshot and, in Play, stops Ezra as the phone does
- * (MobileControls drops the stick): `keyboard.release()` lets go of the held keys, which then come back only as a new
- * press after their key-up (auto-repeat is ignored), so any move key held after that is a fresh press. Only Play walks
- * (`play`): in the tour a move key switches modes, which closes the closeup elsewhere. Allocation-free per frame.
+ * One frame of the closeup walking rule, called every frame with the open closeup (or null) before PlayerController reads
+ * the keys. Side effect: the first call for a new `open` in Play calls `keyboard.release()`, so Ezra stops as he does on
+ * the phone (MobileControls drops the stick); the held keys then come back only as a new press after their key-up
+ * (auto-repeat is ignored), so any move key held after that is a fresh press. Returns true when movement started after
+ * the open: a move key went down after it, or the stick (non-zero once past its dead zone) was pushed after coming to
+ * rest. Only Play walks (`play`): in the tour a move key switches modes, which closes the closeup elsewhere, and nothing
+ * is released. Allocation-free per frame.
  */
-export function walkedSinceOpen(
+export function stepCloseupWalk(
   w: CloseupWalk,
   open: object | null,
   play: boolean,
@@ -46,7 +47,7 @@ export function walkedSinceOpen(
   if (open !== w.open) {
     w.open = open;
     w.heldStick = stick;
-    if (open !== null && play) keyboard.release();
+    if (open !== null && play) keyboard.release(); // side effect: Ezra stops, keys held now wait for their key-up
     return false;
   }
   if (!stick) w.heldStick = false; // a stick back at rest counts as fresh input again

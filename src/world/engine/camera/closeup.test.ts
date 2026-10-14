@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import type { Vec3 } from "@/world/engine/types";
 import {
-  CLOSEUP_FILL, CLOSEUP_GLIDE, CLOSEUP_HUD_PX, CLOSEUP_NEAR_MARGIN, clampPan, closeupNear, closeupPanLimit, closeupPans,
-  closeupPose, closeupWeight, stepCloseupBlend,
+  CLOSEUP_FILL, CLOSEUP_GLIDE, CLOSEUP_HUD_PX, CLOSEUP_NEAR_MARGIN, clampPan, closeupExitCut, closeupNear, closeupPanLimit,
+  closeupPans, closeupPose, closeupWeight, stepCloseupBlend,
 } from "./closeup";
 
 const FOV = 40; // the world camera's vertical fov (WorldCanvas, framing.ts TOUR_FOV)
@@ -198,5 +198,25 @@ describe("closeup blend", () => {
     }
     expect(closeupWeight(-1)).toBe(0);
     expect(closeupWeight(2)).toBe(1);
+  });
+});
+
+describe("closeupExitCut", () => {
+  it("cuts the base camera on the one frame a closeup ends, under reduced motion", () => {
+    const last = { open: false };
+    expect(closeupExitCut(last, false, true)).toBe(false); // nothing open
+    expect(closeupExitCut(last, true, true)).toBe(false); // opened: CloseupCamera cuts in by itself
+    expect(closeupExitCut(last, true, true)).toBe(false); // still open
+    expect(closeupExitCut(last, false, true)).toBe(true); // just ended
+    expect(closeupExitCut(last, false, true)).toBe(false); // only that frame
+  });
+
+  it("never cuts with full motion (the follow camera's ease is part of the glide back), but still tracks the edge", () => {
+    const last = { open: false };
+    expect(closeupExitCut(last, true, false)).toBe(false);
+    expect(closeupExitCut(last, false, false)).toBe(false);
+    expect(last.open).toBe(false);
+    // the edge was consumed: turning reduced motion on afterwards does not cut late
+    expect(closeupExitCut(last, false, true)).toBe(false);
   });
 });

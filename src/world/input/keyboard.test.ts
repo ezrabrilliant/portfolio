@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { axisFromKeys, cameraRelative, createKeyboard, isMoveCode } from "./keyboard";
+import { axisFromKeys, cameraRelative, createKeyboard, isMoveCode, isTypingTarget } from "./keyboard";
 
 const key = (type: string, code: string, repeat = false) => Object.assign(new Event(type), { code, repeat });
 
@@ -133,5 +133,38 @@ describe("createKeyboard", () => {
     target.dispatchEvent(key("keydown", "KeyW")); // not a repeat: a new press
     expect(kb.keys.has("KeyW")).toBe(true);
     kb.dispose();
+  });
+});
+
+describe("isWaiting", () => {
+  it("is true for a key let go of by release() until its key-up or a new press, never for other keys", () => {
+    const target = new EventTarget();
+    const kb = createKeyboard(target, null);
+    const send = (type: string, code: string, repeat = false) => target.dispatchEvent(key(type, code, repeat));
+    send("keydown", "KeyW");
+    send("keydown", "ArrowUp");
+    expect(kb.isWaiting("KeyW")).toBe(false); // held, not released
+    kb.release();
+    expect(kb.isWaiting("KeyW")).toBe(true);
+    expect(kb.isWaiting("KeyA")).toBe(false);
+    send("keydown", "KeyW", true);
+    expect(kb.isWaiting("KeyW")).toBe(true); // auto-repeat keeps it waiting
+    send("keyup", "KeyW");
+    expect(kb.isWaiting("KeyW")).toBe(false);
+    send("keydown", "ArrowUp"); // a new press (its key-up was lost)
+    expect(kb.isWaiting("ArrowUp")).toBe(false);
+    kb.dispose();
+  });
+});
+
+describe("isTypingTarget", () => {
+  it("knows text fields, selects and editable content", () => {
+    expect(isTypingTarget({ tagName: "INPUT" } as unknown as EventTarget)).toBe(true);
+    expect(isTypingTarget({ tagName: "TEXTAREA" } as unknown as EventTarget)).toBe(true);
+    expect(isTypingTarget({ tagName: "SELECT" } as unknown as EventTarget)).toBe(true);
+    expect(isTypingTarget({ tagName: "DIV", isContentEditable: true } as unknown as EventTarget)).toBe(true);
+    expect(isTypingTarget({ tagName: "BUTTON", isContentEditable: false } as unknown as EventTarget)).toBe(false);
+    expect(isTypingTarget(null)).toBe(false);
+    expect(isTypingTarget(new EventTarget())).toBe(false);
   });
 });

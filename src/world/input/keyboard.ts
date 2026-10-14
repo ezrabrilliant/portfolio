@@ -46,10 +46,13 @@ export interface Keyboard {
    * as a new press after its key-up: its auto-repeat keydowns are ignored until then.
    */
   release(): void;
+  /** True while `code` is a key let go of by release() and still down (its auto-repeat keydowns are ignored). */
+  isWaiting(code: string): boolean;
   dispose(): void;
 }
 
-function isTypingTarget(t: EventTarget | null): boolean {
+/** A text field, select or editable element has the keys (typing there is not a move or a screen key). */
+export function isTypingTarget(t: EventTarget | null): boolean {
   const el = t as { tagName?: string; isContentEditable?: boolean } | null;
   if (!el || typeof el.tagName !== "string") return false;
   return el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.tagName === "SELECT" || el.isContentEditable === true;
@@ -83,20 +86,20 @@ export function createKeyboard(target: EventTarget, doc: VisibilityTarget | null
     keys.delete(k.code);
     waiting.delete(k.code);
   };
-  const release = () => {
+  const releaseAll = () => {
     keys.clear();
     pressed.clear();
   };
   const visibility = () => {
-    if (doc?.visibilityState === "hidden") release();
+    if (doc?.visibilityState === "hidden") releaseAll();
   };
   // a blocked menu (Play's right-drag orbit) opens nothing, so its key-ups still arrive and held keys stay held
   const menu = (e: Event) => {
-    if (!e.defaultPrevented) release();
+    if (!e.defaultPrevented) releaseAll();
   };
   target.addEventListener("keydown", down);
   target.addEventListener("keyup", up);
-  target.addEventListener("blur", release);
+  target.addEventListener("blur", releaseAll);
   target.addEventListener("contextmenu", menu);
   doc?.addEventListener("visibilitychange", visibility);
   return {
@@ -108,13 +111,15 @@ export function createKeyboard(target: EventTarget, doc: VisibilityTarget | null
     },
     release() {
       for (const code of keys) waiting.add(code);
-      keys.clear();
-      pressed.clear();
+      releaseAll();
+    },
+    isWaiting(code: string) {
+      return waiting.has(code);
     },
     dispose() {
       target.removeEventListener("keydown", down);
       target.removeEventListener("keyup", up);
-      target.removeEventListener("blur", release);
+      target.removeEventListener("blur", releaseAll);
       target.removeEventListener("contextmenu", menu);
       doc?.removeEventListener("visibilitychange", visibility);
     },
