@@ -41,6 +41,11 @@ export function cameraRelative(forward: number, right: number, camF: { x: number
 export interface Keyboard {
   readonly keys: ReadonlySet<string>;
   consume(code: string): boolean;
+  /**
+   * Lets go of every held key now (a closeup opening in Play: Ezra stops). A key still physically down counts again only
+   * as a new press after its key-up: its auto-repeat keydowns are ignored until then.
+   */
+  release(): void;
   dispose(): void;
 }
 
@@ -60,15 +65,23 @@ type VisibilityTarget = EventTarget & { visibilityState?: string };
 export function createKeyboard(target: EventTarget, doc: VisibilityTarget | null = typeof document !== "undefined" ? document : null): Keyboard {
   const keys = new Set<string>();
   const pressed = new Set<string>();
+  /** keys let go of by release() while still down: their auto-repeat is ignored until a key-up or a new press */
+  const waiting = new Set<string>();
   const down = (e: Event) => {
     const k = e as Event & { code?: string; repeat?: boolean };
     if (!k.code || isTypingTarget(e.target)) return;
+    if (waiting.has(k.code)) {
+      if (k.repeat) return;
+      waiting.delete(k.code);
+    }
     keys.add(k.code);
     if (!k.repeat) pressed.add(k.code);
   };
   const up = (e: Event) => {
     const k = e as Event & { code?: string };
-    if (k.code) keys.delete(k.code);
+    if (!k.code) return;
+    keys.delete(k.code);
+    waiting.delete(k.code);
   };
   const release = () => {
     keys.clear();
@@ -92,6 +105,11 @@ export function createKeyboard(target: EventTarget, doc: VisibilityTarget | null
       const had = pressed.has(code);
       pressed.delete(code);
       return had;
+    },
+    release() {
+      for (const code of keys) waiting.add(code);
+      keys.clear();
+      pressed.clear();
     },
     dispose() {
       target.removeEventListener("keydown", down);

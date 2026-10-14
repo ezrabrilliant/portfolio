@@ -102,4 +102,36 @@ describe("createKeyboard", () => {
     expect(kb.keys.size).toBe(0);
     kb.dispose();
   });
+  it("release() lets go of held keys: one still down comes back only as a new press after its key-up, never by auto-repeat", () => {
+    const target = new EventTarget();
+    const kb = createKeyboard(target, null);
+    target.dispatchEvent(key("keydown", "KeyW"));
+    target.dispatchEvent(key("keydown", "ShiftLeft"));
+    kb.release();
+    expect(kb.keys.size).toBe(0);
+    expect(kb.consume("KeyW")).toBe(false); // its pending press went too
+    target.dispatchEvent(key("keydown", "KeyW", true)); // the OS keeps repeating the key still held
+    target.dispatchEvent(key("keydown", "KeyW", true));
+    expect(kb.keys.has("KeyW")).toBe(false);
+    expect(kb.consume("KeyW")).toBe(false);
+    target.dispatchEvent(key("keyup", "KeyW"));
+    target.dispatchEvent(key("keydown", "KeyW"));
+    expect(kb.keys.has("KeyW")).toBe(true);
+    expect(kb.consume("KeyW")).toBe(true);
+    target.dispatchEvent(key("keydown", "KeyW", true)); // a held key's own repeats are normal again
+    expect(kb.keys.has("KeyW")).toBe(true);
+    kb.dispose();
+  });
+  it("release() leaves keys pressed afterwards alone, and a fresh press of a released key counts even if its key-up was lost", () => {
+    const target = new EventTarget();
+    const kb = createKeyboard(target, null);
+    target.dispatchEvent(key("keydown", "KeyW"));
+    kb.release();
+    target.dispatchEvent(key("keydown", "KeyA"));
+    target.dispatchEvent(key("keydown", "KeyA", true));
+    expect(kb.keys.has("KeyA")).toBe(true);
+    target.dispatchEvent(key("keydown", "KeyW")); // not a repeat: a new press
+    expect(kb.keys.has("KeyW")).toBe(true);
+    kb.dispose();
+  });
 });

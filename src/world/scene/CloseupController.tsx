@@ -26,9 +26,9 @@ function isTypingTarget(t: EventTarget | null): boolean {
  * Input while a closeup is open (spec §6): a click on the face goes to the program (a click beside it closes the
  * closeup), a sideways drag pans a screen wider than a portrait viewport (closeupPan; a press that moves less than
  * CLICK_SLOP is still a tap), the cursor shows where the face is, keys the screen uses (CloseupTarget.key) reach
- * nothing else, Space does not jump in Play, and walking that starts after the open (keys or stick, Play; input already
- * held while opening does not count) or scrolling the page more than CLOSEUP_SCROLL_EXIT px (Tour) closes it. Esc is
- * handled by useModeTransitions / useTabCycling, the Back button by the HUD.
+ * nothing else, Space does not jump in Play, opening in Play stops Ezra, and walking that starts after the open (keys or
+ * stick, Play; input already held while opening does not count) or scrolling the page more than CLOSEUP_SCROLL_EXIT px
+ * (Tour) closes it. Esc is handled by useModeTransitions / useTabCycling, the Back button by the HUD.
  */
 export function CloseupController() {
   const camera = useThree((s) => s.camera);
@@ -152,9 +152,10 @@ export function CloseupController() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  // Play: walking that starts after the open (a move key pressed, the stick pushed from rest) ends the closeup; a key or
-  // stick already held when it opened (E pressed mid-walk) does not. A target that unmounted ends it too. closeCloseup
-  // is event-like and change-guarded: it fires once, never per frame.
+  // Play: opening stops Ezra (held keys are let go of and wait for their key-up, as MobileControls drops the stick), and
+  // walking that starts after the open (a move key pressed, the stick pushed from rest) ends the closeup; a key or stick
+  // already held when it opened (E pressed mid-walk) does neither. Runs before PlayerController reads the keys. A target
+  // that unmounted ends it too. closeCloseup is event-like and change-guarded: it fires once, never per frame.
   useFrame(() => {
     const open = runtime.closeup;
     if (open && !runtime.closeups.has(open.id)) {
@@ -162,7 +163,7 @@ export function CloseupController() {
       return;
     }
     const play = useWorld.getState().mode === "play";
-    if (walkedSinceOpen(walk, open, play, sharedKeyboard.keys, touchInput.moveForward, touchInput.moveRight)) closeCloseup();
+    if (walkedSinceOpen(walk, open, play, sharedKeyboard, touchInput.moveForward, touchInput.moveRight)) closeCloseup();
   });
 
   return null;
