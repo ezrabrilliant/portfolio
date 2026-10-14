@@ -1,56 +1,62 @@
 import { useEffect, useRef, useState } from "react";
 import type { PointerEvent as ReactPointerEvent } from "react";
-import { joystickVector, resetTouch, touchInput } from "@/world/input/touch";
+import { clampKnob, joystickVector, resetTouch, stickOrigin, touchInput } from "@/world/input/touch";
 import { orbitInput } from "@/world/input/orbit";
 import { useWorld } from "@/world/state/store";
 
 const RADIUS = 56;
 
+/**
+ * Phone controls. One joystick, drawn the same in both modes: it rests at the bottom left. In the tour, pressing it
+ * enters Play and the same drag already walks (the stick element persists across the mode switch, so it keeps the
+ * pointer). In Play, a touch on the resting stick grabs it; a touch elsewhere on the left half floats it to the thumb;
+ * letting go returns it to rest. The right half orbits the camera.
+ */
 export function MobileControls() {
   const mode = useWorld((s) => s.mode);
   const setMode = useWorld((s) => s.setMode);
   const prompt = useWorld((s) => s.prompt);
+  const ready = useWorld((s) => s.ready);
   const [coarse] = useState(() => typeof window !== "undefined" && window.matchMedia("(pointer: coarse)").matches);
   const [stick, setStick] = useState<{ ox: number; oy: number; kx: number; ky: number } | null>(null);
   const stickId = useRef<number | null>(null);
   const orbitId = useRef<number | null>(null);
   const last = useRef({ x: 0, y: 0 });
+  const rest = useRef<HTMLSpanElement>(null);
 
   useEffect(() => {
     if (mode !== "play") {
       resetTouch();
+      stickId.current = null;
       setStick(null);
     }
   }, [mode]);
 
-  if (!coarse) return null;
-
-  if (mode === "tour") {
-    return (
-      <div className="mobile-controls">
-        <button type="button" className="mc-start" aria-label="Play: walk around the world" onClick={() => setMode("play")}>
-          <span className="mc-start-knob" />
-        </button>
-      </div>
-    );
-  }
+  if (!coarse || !ready) return null;
 
   const onStickDown = (e: ReactPointerEvent<HTMLDivElement>) => {
+    const r = rest.current?.getBoundingClientRect();
+    const origin = r
+      ? stickOrigin({ x: r.left + r.width / 2, y: r.top + r.height / 2, r: r.width / 2 }, { x: e.clientX, y: e.clientY })
+      : { x: e.clientX, y: e.clientY };
     stickId.current = e.pointerId;
     e.currentTarget.setPointerCapture(e.pointerId);
+    if (mode !== "play") setMode("play");
     touchInput.active = true;
-    setStick({ ox: e.clientX, oy: e.clientY, kx: e.clientX, ky: e.clientY });
+    const knob = clampKnob(origin, { x: e.clientX, y: e.clientY }, RADIUS);
+    setStick({ ox: origin.x, oy: origin.y, kx: knob.x, ky: knob.y });
+    const v = joystickVector(origin, { x: e.clientX, y: e.clientY }, RADIUS);
+    touchInput.moveForward = v.y;
+    touchInput.moveRight = v.x;
   };
   const onStickMove = (e: ReactPointerEvent<HTMLDivElement>) => {
     if (e.pointerId !== stickId.current || !stick) return;
-    const v = joystickVector({ x: stick.ox, y: stick.oy }, { x: e.clientX, y: e.clientY }, RADIUS);
+    const origin = { x: stick.ox, y: stick.oy };
+    const v = joystickVector(origin, { x: e.clientX, y: e.clientY }, RADIUS);
     touchInput.moveForward = v.y;
     touchInput.moveRight = v.x;
-    const dx = e.clientX - stick.ox;
-    const dy = e.clientY - stick.oy;
-    const d = Math.hypot(dx, dy);
-    const k = d > RADIUS ? RADIUS / d : 1;
-    setStick({ ...stick, kx: stick.ox + dx * k, ky: stick.oy + dy * k });
+    const knob = clampKnob(origin, { x: e.clientX, y: e.clientY }, RADIUS);
+    setStick({ ...stick, kx: knob.x, ky: knob.y });
   };
   const onStickUp = (e: ReactPointerEvent<HTMLDivElement>) => {
     if (e.pointerId !== stickId.current) return;
@@ -74,9 +80,22 @@ export function MobileControls() {
     if (e.pointerId === orbitId.current) orbitId.current = null;
   };
 
+  const play = mode === "play";
   return (
     <div className="mobile-controls">
-      <div className="mc-zone mc-zone--stick" onPointerDown={onStickDown} onPointerMove={onStickMove} onPointerUp={onStickUp} onPointerCancel={onStickUp}>
+      {/* the same element in both modes: in the tour it is only the resting stick (the page still scrolls elsewhere) */}
+      <div
+        className={play ? "mc-zone mc-zone--stick" : "mc-zone mc-zone--rest"}
+        role={play ? undefined : "button"}
+        aria-label={play ? undefined : "Walk around: drag the stick"}
+        onPointerDown={onStickDown}
+        onPointerMove={onStickMove}
+        onPointerUp={onStickUp}
+        onPointerCancel={onStickUp}
+      >
+        <span ref={rest} className={stick ? "mc-rest mc-rest--off" : "mc-rest"}>
+          <span className="mc-rest-knob" />
+        </span>
         {stick && (
           <>
             <span className="mc-base" style={{ left: stick.ox, top: stick.oy }} />
@@ -84,15 +103,19 @@ export function MobileControls() {
           </>
         )}
       </div>
-      <div className="mc-zone mc-zone--orbit" onPointerDown={onOrbitDown} onPointerMove={onOrbitMove} onPointerUp={onOrbitUp} onPointerCancel={onOrbitUp} />
-      <div className="mc-buttons">
-        <button type="button" className="mc-btn" onPointerDown={() => (touchInput.interact = true)} disabled={!prompt} aria-label={prompt ? prompt.label : "Nothing to interact with"}>
-          {prompt ? prompt.label : "Use"}
-        </button>
-        <button type="button" className="mc-btn mc-btn--jump" onPointerDown={() => (touchInput.jump = true)} aria-label="Jump">
-          Jump
-        </button>
-      </div>
+      {play && (
+        <>
+          <div className="mc-zone mc-zone--orbit" onPointerDown={onOrbitDown} onPointerMove={onOrbitMove} onPointerUp={onOrbitUp} onPointerCancel={onOrbitUp} />
+          <div className="mc-buttons">
+            <button type="button" className="mc-btn" onPointerDown={() => (touchInput.interact = true)} disabled={!prompt} aria-label={prompt ? prompt.label : "Nothing to interact with"}>
+              {prompt ? prompt.label : "Use"}
+            </button>
+            <button type="button" className="mc-btn mc-btn--jump" onPointerDown={() => (touchInput.jump = true)} aria-label="Jump">
+              Jump
+            </button>
+          </div>
+        </>
+      )}
     </div>
   );
 }

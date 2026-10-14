@@ -1,7 +1,14 @@
+import { useState } from "react";
 import { playSfx } from "@/world/engine/audio/sfx";
 import { useWorld } from "@/world/state/store";
 
+const HINTS = {
+  keys: { play: "WASD move · Space jump · Shift run · E interact · Esc tour", tour: "Scroll to explore · Play to walk around" },
+  touch: { play: "Stick: walk · Swipe the right side: look · Tour: back", tour: "Scroll to explore · Drag the stick to walk around" },
+} as const;
+
 export function Hud() {
+  const [touch] = useState(() => typeof window !== "undefined" && window.matchMedia("(pointer: coarse)").matches);
   const mode = useWorld((s) => s.mode);
   const setMode = useWorld((s) => s.setMode);
   const muted = useWorld((s) => s.muted);
@@ -32,9 +39,7 @@ export function Hud() {
           {muted ? "Sound off" : "Sound on"}
         </button>
       </div>
-      <p className="hud-hint">
-        {mode === "play" ? "WASD move · Space jump · Shift run · E interact · Esc tour" : "Scroll to explore · Play to walk around"}
-      </p>
+      <p className="hud-hint">{HINTS[touch ? "touch" : "keys"][mode]}</p>
       <div className="hud-prompt" aria-live="polite">
         {prompt ? (
           <>
