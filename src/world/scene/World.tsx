@@ -11,6 +11,8 @@ import { ReadySignal } from "./ReadySignal";
 import { findSeat } from "./ezra/seat";
 import { IslandTerrain } from "./IslandTerrain";
 import { InitialView } from "./InitialView";
+import { CloseupCamera } from "./CloseupCamera";
+import { CloseupController } from "./CloseupController";
 import { InteractionController } from "./InteractionController";
 import { Lights } from "./Lights";
 import { ParticlesRenderer } from "./ParticlesRenderer";
@@ -75,9 +77,12 @@ export function World() {
       })}
       <ParticlesRenderer />
       <InteractionController />
+      <CloseupController />
       <PlayerController />
       <PlayCamera />
       <TourCamera />
+      {/* after both cameras (and before crossings and Ezra): blends their pose toward the screen in closeup and back */}
+      <CloseupCamera />
       {/* crossings after the controllers and cameras: the minecart and pads read this frame's ride and tour progress */}
       {runtime.layout.crossings.map((c) => {
         const key = `crossing-${c.from}-${c.to}`;

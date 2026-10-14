@@ -47,7 +47,8 @@ export function PlayCamera() {
     let lastX = 0;
     let lastY = 0;
     const down = (e: PointerEvent) => {
-      if (useWorld.getState().mode !== "play" || e.pointerType === "touch") return;
+      // in a closeup a press is a tap on the screen (CloseupController), never an orbit drag
+      if (useWorld.getState().mode !== "play" || e.pointerType === "touch" || runtime.closeup) return;
       dragging = true;
       lastX = e.clientX;
       lastY = e.clientY;
@@ -68,6 +69,7 @@ export function PlayCamera() {
     const wheel = (e: WheelEvent) => {
       if (useWorld.getState().mode !== "play") return;
       e.preventDefault();
+      if (runtime.closeup) return; // no zooming the follow camera behind a closeup
       orbitInput.addZoom(e.deltaY);
     };
     // the world is an app surface: no browser context menu over it in either mode ("Save image as" on a right-click is

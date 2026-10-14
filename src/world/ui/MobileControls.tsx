@@ -16,6 +16,7 @@ export function MobileControls() {
   const mode = useWorld((s) => s.mode);
   const setMode = useWorld((s) => s.setMode);
   const prompt = useWorld((s) => s.prompt);
+  const closeupId = useWorld((s) => s.closeupId);
   const ready = useWorld((s) => s.ready);
   const [coarse] = useState(() => typeof window !== "undefined" && window.matchMedia("(pointer: coarse)").matches);
   const [stick, setStick] = useState<{ ox: number; oy: number; kx: number; ky: number } | null>(null);
@@ -25,14 +26,17 @@ export function MobileControls() {
   const rest = useRef<HTMLSpanElement>(null);
 
   useEffect(() => {
-    if (mode !== "play") {
+    // leaving Play, or a closeup opening, drops a held stick (Ezra must not walk on, nor close the closeup at once)
+    if (mode !== "play" || closeupId) {
       resetTouch();
       stickId.current = null;
       setStick(null);
     }
-  }, [mode]);
+  }, [mode, closeupId]);
 
   if (!coarse || !ready) return null;
+  // a closeup owns the screen: taps go to the program on it; the HUD's Back button or a tap beside it leaves
+  if (closeupId) return null;
 
   const onStickDown = (e: ReactPointerEvent<HTMLDivElement>) => {
     const r = rest.current?.getBoundingClientRect();

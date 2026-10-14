@@ -6,6 +6,7 @@ import { useWorld } from "@/world/state/store";
 import { isMoveCode, sharedKeyboard } from "@/world/input/keyboard";
 import { consumeTouch } from "@/world/input/touch";
 import { STAND_UP_SECONDS } from "./ezra/anim";
+import { closeCloseup } from "./closeupState";
 import { islandTop } from "./islands/types";
 import { dropStart, enterKind, landingColumn, watchPoint } from "./modes";
 import { progressToScroll } from "./tour/tourMath";
@@ -101,6 +102,8 @@ export function useModeTransitions(enabled: boolean) {
     if (!enabled) return;
     return useWorld.subscribe((s, prev) => {
       if (s.mode === prev.mode) return;
+      // a closeup belongs to the mode it was opened in: switching (HUD button, a move key in the tour) ends it
+      closeCloseup();
       if (s.mode === "play") enterPlay();
       else exitPlay();
     });
@@ -113,7 +116,10 @@ export function useModeTransitions(enabled: boolean) {
       if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
       if (e.ctrlKey || e.metaKey || e.altKey) return; // browser shortcuts (Ctrl+D, Alt+←) are not moves
       const s = useWorld.getState();
-      if (s.mode === "tour" && isMoveCode(e.code)) s.setMode("play");
+      // Esc closes an open closeup instead (in Play the next Esc leaves Play); in the tour useTabCycling may have
+      // closed it already when the canvas has focus, and then this Esc does nothing more
+      if (e.code === "Escape" && runtime.closeup) closeCloseup();
+      else if (s.mode === "tour" && isMoveCode(e.code)) s.setMode("play");
       else if (s.mode === "play" && e.code === "Escape") s.setMode("tour");
       // Space is jump in Play: it must not also press a focused HUD button (the "Tour" button right after clicking Play)
       else if (s.mode === "play" && e.code === "Space" && t?.tagName === "BUTTON" && t.closest(".hud")) e.preventDefault();
