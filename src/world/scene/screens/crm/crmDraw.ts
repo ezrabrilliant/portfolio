@@ -1,7 +1,7 @@
 import { CANVAS_FONTS } from "@/world/scene/islands/shared/canvasFonts";
 import { formatRupiah, roundRect, wrapText } from "../format";
 import type { HitRegion } from "../types";
-import { CRM_LOGICAL, PULSE_SECONDS, chartMax, dayLabel, dueLabel } from "./crm";
+import { CRM_LOGICAL, PULSE_SECONDS, chartMax, dayLabel, dueLabel, pulsing } from "./crm";
 import type { CrmState } from "./crm";
 import { CRM_STRINGS as S } from "./strings";
 
@@ -73,6 +73,8 @@ function sidebar(g: CanvasRenderingContext2D) {
   g.font = EMOJI_FONT;
   g.textAlign = "center";
   g.textBaseline = "middle";
+  // colour emoji fonts ignore this; a monochrome one would draw the bee in the disc's own indigo
+  g.fillStyle = C.white;
   g.fillText(S.logoEmoji, 22, 23);
   g.textAlign = "left";
   g.textBaseline = "alphabetic";
@@ -146,7 +148,7 @@ function header(g: CanvasRenderingContext2D) {
 
 function kpis(g: CanvasRenderingContext2D, s: CrmState, t: number) {
   const values = [formatRupiah(s.revenue), String(s.customers), String(s.transactions), String(s.promos)];
-  const fresh = t - s.pulse < PULSE_SECONDS;
+  const fresh = pulsing(s, t);
   S.kpis.forEach((title, i) => {
     const x = 132 + i * 126;
     const y = 78;
@@ -218,13 +220,14 @@ function chart(g: CanvasRenderingContext2D, s: CrmState, t: number, hits: HitReg
     g.fillText(dayLabel(s, i), xs[i], py1 + 11);
     g.textAlign = "left";
   }
-  // today's point pulses after a sale
-  const age = t - s.pulse;
-  if (age < PULSE_SECONDS) {
-    g.strokeStyle = `rgba(79,70,229,${1 - age / PULSE_SECONDS})`;
+  // today's point pulses after a sale: a ring that grows and fades, never past the chart card's right edge (point is 14 in)
+  if (pulsing(s, t)) {
+    const k = (t - s.pulse) / PULSE_SECONDS;
+    const reach = cx + cw - xs[6] - 1.5;
+    g.strokeStyle = `rgba(79,70,229,${1 - k})`;
     g.lineWidth = 1.5;
     g.beginPath();
-    g.arc(xs[6], ys[6], 3 + age * 12, 0, TAU);
+    g.arc(xs[6], ys[6], 3 + (reach - 3) * k, 0, TAU);
     g.stroke();
     g.lineWidth = 1;
   }

@@ -94,6 +94,7 @@ export function LiveScreen<S>({
       regions: [] as HitRegion[],
       t: 0,
       dirty: true,
+      wasBusy: false,
       version: -1,
       lastDraw: -Infinity,
       pausedUntil: 0,
@@ -207,7 +208,11 @@ export function LiveScreen<S>({
       st.version = version;
       st.dirty = true;
     }
-    if (!st.fontsReady || !redrawDue(t, st.lastDraw, st.dirty, app.busy(st.s, t))) return;
+    const busy = app.busy(st.s, t);
+    // the last busy frame still showed the animation: when it ends, paint the settled frame once (dirty waits for view)
+    if (st.wasBusy && !busy) st.dirty = true;
+    st.wasBusy = busy;
+    if (!st.fontsReady || !redrawDue(t, st.lastDraw, st.dirty, busy)) return;
     const mesh = face.current;
     if (!mesh) return;
     // out of view: keep the redraw pending until the screen comes into view

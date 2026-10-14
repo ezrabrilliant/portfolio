@@ -12,6 +12,7 @@ import {
   dayLabel,
   dueLabel,
   initCrm,
+  pulsing,
   recordSale,
   toggleTask,
 } from "./crm";
@@ -43,6 +44,17 @@ describe("CRM sales", () => {
     expect(busyCrm(s1, 5 + PULSE_SECONDS)).toBe(false);
   });
 
+  it("pulses for exactly PULSE_SECONDS after a sale, and is busy exactly while it pulses", () => {
+    const s = recordSale(initCrm(NOW), 5);
+    expect(pulsing(s, 5 + PULSE_SECONDS - 0.01)).toBe(true);
+    expect(pulsing(s, 5 + PULSE_SECONDS)).toBe(false);
+    expect(pulsing(initCrm(NOW), 0)).toBe(false);
+    for (let f = 0; f < 120; f++) {
+      const t = 4.9 + f / 60;
+      expect(busyCrm(s, t)).toBe(pulsing(s, t));
+    }
+  });
+
   it("moves the series on a day when a sale would pass the cap; the new day starts with that sale", () => {
     const s0 = { ...initCrm(NOW), days: [1, 2, 3, 4, 5, 6, DAY_CAP - 100] };
     const s1 = recordSale(s0, 1);
@@ -50,18 +62,43 @@ describe("CRM sales", () => {
     expect(s1.days).toEqual([2, 3, 4, 5, 6, DAY_CAP - 100, price]);
   });
 
-  it("picks the product deterministically from the seed", () => {
-    expect(recordSale(initCrm(NOW), 1)).toEqual(recordSale(initCrm(NOW), 1));
+  it("a sale that brings today exactly to the cap stays on today", () => {
+    const base = initCrm(NOW);
+    const price = recordSale(base, 1).revenue - base.revenue;
+    const s0 = { ...base, days: [1, 2, 3, 4, 5, 6, DAY_CAP - price] };
+    expect(recordSale(s0, 1).days).toEqual([1, 2, 3, 4, 5, 6, DAY_CAP]);
+  });
+
+  it("picks the product deterministically from the seed, and each sale advances the seed", () => {
+    const s0 = initCrm(NOW);
+    const s1 = recordSale(s0, 1);
+    expect(recordSale(initCrm(NOW), 1)).toEqual(s1);
+    expect(s1.seed).not.toBe(s0.seed);
+    const prices = new Set<number>();
+    let s = s0;
+    for (let i = 0; i < 10; i++) {
+      const n = recordSale(s, i);
+      prices.add(n.revenue - s.revenue);
+      s = n;
+    }
+    expect(prices.size).toBeGreaterThan(1);
+  });
+
+  it("the idle demo waits SALE_GAP before its first sale, so the seed KPIs show first", () => {
+    const s0 = initCrm(NOW);
+    expect(s0.next).toBe(SALE_GAP);
+    expect(autoCrm(s0, 0)).toBeNull();
+    expect(autoCrm(s0, SALE_GAP - 0.01)).toBeNull();
   });
 
   it("the idle demo records a sale every SALE_GAP seconds", () => {
     const s0 = initCrm(NOW);
-    const s1 = autoCrm(s0, 0);
+    const s1 = autoCrm(s0, SALE_GAP);
     if (!s1) throw new Error("no demo step");
     expect(s1.transactions).toBe(s0.transactions + 1);
-    expect(s1.next).toBe(SALE_GAP);
-    expect(autoCrm(s1, SALE_GAP - 0.01)).toBeNull();
-    expect(autoCrm(s1, SALE_GAP)?.transactions).toBe(s0.transactions + 2);
+    expect(s1.next).toBe(2 * SALE_GAP);
+    expect(autoCrm(s1, 2 * SALE_GAP - 0.01)).toBeNull();
+    expect(autoCrm(s1, 2 * SALE_GAP)?.transactions).toBe(s0.transactions + 2);
   });
 
   it("the chart's top grows in Rp 500,000 steps and is at least Rp 1,500,000", () => {
@@ -82,6 +119,8 @@ describe("CRM tasks", () => {
   it("ignores unknown task indices", () => {
     const s = initCrm(NOW);
     expect(toggleTask(s, 3)).toBe(s);
+    expect(toggleTask(s, -1)).toBe(s);
+    expect(toggleTask(s, 1.5)).toBe(s);
     expect(actCrm(s, "task", undefined, 1)).toBe(s);
   });
 });

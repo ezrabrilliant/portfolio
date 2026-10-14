@@ -56,7 +56,8 @@ export function initCrm(now: Date): CrmState {
     days: [...SEED_DAYS],
     tasks: SEED_TASKS.map((task) => ({ ...task })),
     pulse: -Infinity,
-    next: 0,
+    // the first demo sale waits a gap, so the seed KPIs are readable first
+    next: SALE_GAP,
     seed: Math.floor(now.getTime() / 1000) >>> 0,
   };
 }
@@ -87,8 +88,14 @@ export function autoCrm(s: CrmState, t: number): CrmState | null {
   return { ...recordSale(s, t), next: t + SALE_GAP };
 }
 
-export function busyCrm(s: CrmState, t: number): boolean {
+/** The latest sale still shows: today's point pulses and revenue and transactions are green. The draw's one test of it. */
+export function pulsing(s: CrmState, t: number): boolean {
   return t < s.pulse + PULSE_SECONDS;
+}
+
+/** Animating exactly while the sale pulses; LiveScreen paints the settled frame once it ends. */
+export function busyCrm(s: CrmState, t: number): boolean {
+  return pulsing(s, t);
 }
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
