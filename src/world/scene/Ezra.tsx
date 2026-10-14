@@ -119,6 +119,11 @@ export function Ezra() {
   useFrame((state) => {
     if (!root.current || !body.current || !legL.current || !legR.current || !kneeL.current || !kneeR.current) return;
     if (!armL.current || !armR.current || !head.current) return;
+    // in a closeup he would stand in front of a low screen
+    if (runtime.closeup !== null) {
+      root.current.visible = false;
+      return;
+    }
     const p = runtime.player;
     const seated = runtime.seated && runtime.seat !== null;
     const anim = pickAnim({

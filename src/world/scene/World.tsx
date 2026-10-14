@@ -16,6 +16,7 @@ import { CloseupController } from "./CloseupController";
 import { InteractionController } from "./InteractionController";
 import { Lights } from "./Lights";
 import { ParticlesRenderer } from "./ParticlesRenderer";
+import { openCloseup } from "./closeupState";
 import { PlayCamera } from "./PlayCamera";
 import { PlayerController } from "./PlayerController";
 import { RoomEnv } from "./RoomEnv";
@@ -59,6 +60,19 @@ export function World() {
     const top = islandTop(runtime.islandById("hero"));
     const id = window.setInterval(() => runtime.particles.burst({ x: top.x, y: top.y + 2.5, z: top.z }, "confetti"), 600);
     return () => window.clearInterval(id);
+  }, []);
+
+  // ?closeup=<screen id> debug hook (screenshots): open that screen's closeup once it has registered and the world is ready
+  useEffect(() => {
+    const id = new URLSearchParams(window.location.search).get("closeup");
+    if (!id) return;
+    let raf = 0;
+    const tick = () => {
+      if (useWorld.getState().ready && runtime.closeups.has(id)) openCloseup(id);
+      else raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
   }, []);
 
   return (

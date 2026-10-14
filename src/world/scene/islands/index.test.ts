@@ -9,7 +9,7 @@ import { FOOTPRINTS } from "./layouts";
 
 const WEB = [WEB_PLAZA_ID, "pos-monosuko", "bee-furniture-crm", "pedulipasal"];
 /** The Web & Apps islands whose module has landed (C2–C4 add one each; C4 replaces this file). */
-const DRESSED = [WEB_PLAZA_ID];
+const DRESSED = [WEB_PLAZA_ID, "pos-monosuko"];
 
 describe("island registry", () => {
   const layout = buildLayout(worldProjects);
