@@ -4,15 +4,19 @@ import * as THREE from "three";
 import { runtime } from "@/world/state/runtime";
 import { useWorld } from "@/world/state/store";
 import { LEG, pickAnim, poseFor } from "./ezra/anim";
-import { EZRA_CAP, EZRA_FIT, EZRA_HEAD } from "@/world/engine/physics/ezraModel";
+import { EZRA_CAP, EZRA_FIT, EZRA_HEAD, EZRA_REACH } from "@/world/engine/physics/ezraModel";
+import { closeupBlend, closeupHidesEzra } from "./camera/closeupBlend";
 import { EZRA_GEOMETRY as GEO } from "./ezra/geometry";
 import { GOWN_POP_Y } from "./graduation";
 import { GownSkirt, GownSleeve, GraduationCap, GraduationGown } from "./GraduationCap";
 import { capPopScale } from "./milestones/moment";
 
 const MAT = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.9 });
-/** Head height above the feet; the model hides while a camera is inside this radius of it (play-camera wall clamp). */
-const HEAD_Y = 1.6;
+/**
+ * His head's middle above the feet (from its base, the head pivot, to the hair's top); the model hides while a camera
+ * is inside HIDE_NEAR of it (play-camera wall clamp).
+ */
+const HEAD_Y = (EZRA_HEAD.pivot + EZRA_REACH.hairTop) / 2;
 const HIDE_NEAR = 0.6;
 const SHOW_FAR = 0.7;
 
@@ -43,8 +47,10 @@ export function Ezra() {
   useFrame((state, dt) => {
     if (!root.current || !body.current || !legL.current || !legR.current || !kneeL.current || !kneeR.current) return;
     if (!armL.current || !armR.current || !head.current) return;
-    // between a fast travel's two puffs he is gone; in a closeup he would stand in front of a low screen
-    if (runtime.hidden || runtime.closeup !== null) {
+    // between a fast travel's two puffs he is gone. A closeup's camera glides from behind him to the screen he faces:
+    // he would stand in front of a low screen, so he goes once the glide is past half way (closeupBlend, written by
+    // CloseupCamera earlier this frame) and is back from half way out, instead of blinking out on the glide's first frame
+    if (runtime.hidden || closeupHidesEzra(closeupBlend.weight)) {
       root.current.visible = false;
       return;
     }

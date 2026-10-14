@@ -7,10 +7,10 @@ import { DEFAULT_PARAMS } from "@/world/engine/physics/character";
 import { playSfx } from "@/world/engine/audio/sfx";
 import type { Vec3 } from "@/world/engine/types";
 import type { Ride } from "@/world/state/runtime";
-import { worldProjects } from "@/config/portfolio";
 import { runtime } from "@/world/state/runtime";
 import { useWorld } from "@/world/state/store";
 import { Interactable } from "../Interactable";
+import { islandTitle } from "../islands/shared/project";
 import { scrollToIsland } from "../tour/scrollToIsland";
 import { PAD_SIZE, padPair } from "./geometry";
 import { mergeParts } from "./materials";
@@ -25,8 +25,6 @@ const plateGeo = mergeParts([
   { geo: new THREE.BoxGeometry(0.1, 0.03, 0.42), color: "#f4f3ef", position: [0.14, 0.09, 0.1], rotation: [0, -Math.PI / 4, 0] },
   { geo: new THREE.BoxGeometry(0.1, 0.03, 0.42), color: "#f4f3ef", position: [-0.14, 0.09, 0.1], rotation: [0, Math.PI / 4, 0] },
 ]);
-
-const titleOf = (id: string) => worldProjects.find((p) => p.id === id)?.title ?? "Ezra Brilliant";
 
 export function BouncePad({ crossing }: { crossing: Crossing }) {
   const from = runtime.islandById(crossing.from);
@@ -87,7 +85,7 @@ export function BouncePad({ crossing }: { crossing: Crossing }) {
             key={i}
             id={`pad-${crossing.from}-${crossing.to}-${i}`}
             island={i === 0 ? crossing.from : crossing.to}
-            label={`Bounce to ${titleOf(dest)}`}
+            label={`Bounce to ${islandTitle(dest)}`}
             position={[e.x, e.y + 0.3, e.z]}
             size={[extent, 0.6, extent]}
             radius={2}

@@ -29,7 +29,7 @@ describe("yawBehind (the follow camera after a fast travel's arrival or a respaw
     }
   });
 
-  it("stays in (−π, π]", () => {
+  it("stays in [−π, π]", () => {
     for (const heading of [-3, -1, 0, 1, 3, 7, -9]) {
       const y = yawBehind(heading);
       expect(y).toBeGreaterThan(-Math.PI - 1e-12);

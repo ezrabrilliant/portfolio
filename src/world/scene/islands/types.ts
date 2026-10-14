@@ -12,9 +12,6 @@ export interface IslandModule {
   tourStop: (placement: IslandPlacement) => TourStop;
 }
 
-/** Phase 1 name of IslandModule, kept for existing imports. */
-export type StarIslandModule = IslandModule;
-
 /** Heading of every tour camera (looks toward +x, −z); ≈ (0.582, −0.813), derived from one angle so it is exactly unit length. */
 const VIEW_YAW = Math.atan2(0.582, -0.813);
 

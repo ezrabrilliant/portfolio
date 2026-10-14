@@ -87,8 +87,11 @@ html.world-playing, html.world-playing body { overflow: hidden; }
 .hud-btn--on, .hud-btn--on:hover { background: #13212b; color: #f4f3ef; }
 /* dark outer ring plus a light inner one, so focus also shows on the dark "on" button */
 .hud-btn:focus-visible { outline: 2px solid #13212b; outline-offset: 2px; box-shadow: inset 0 0 0 2px #f4f3ef; }
+/* phones show their touch lines too (Hud.tsx HINTS.touch): one line from 360 px wide, so a closeup's hint ends inside
+   the CLOSEUP_HUD_PX (96 px) band the closeup camera leaves free; a narrower screen wraps it inside the side gutters */
 .hud-hint {
   position: absolute; top: calc(max(16px, env(safe-area-inset-top)) + 46px); left: 16px; margin: 0;
+  box-sizing: border-box; max-width: calc(100% - 32px);
   font: 500 12px/1.4 ui-monospace, "SFMono-Regular", Menlo, monospace; color: rgba(19, 33, 43, 0.8);
   background: rgba(244, 243, 239, 0.85); padding: 4px 8px; border-radius: 4px;
   backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
@@ -104,7 +107,6 @@ html.world-playing, html.world-playing body { overflow: hidden; }
   background: #f4f3ef; color: #13212b; font: 700 12px/1 ui-monospace, monospace; text-align: center;
 }
 .world-fade { position: fixed; inset: 0; background: #0d1418; opacity: 0; pointer-events: none; }
-@media (pointer: coarse) { .hud-hint { display: none; } }
 @media (prefers-reduced-motion: reduce) { .hud-btn { transition: none; } }
 .hud-btn:disabled, .hud-btn:disabled:hover { opacity: 0.5; cursor: default; background: rgba(244, 243, 239, 0.9); }
 

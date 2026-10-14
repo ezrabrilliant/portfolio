@@ -134,7 +134,7 @@ interface ScreenApp<S> {
   All, Grilled Chicken, Value Meals, Soups & Veg, Drinks · 3 × 2 menu cards (photo, name, variant/combo badge, price,
   stock badge) · order panel ("Order", "N items", Dine-in/Takeaway, "Choose a table" 1–9 with 2 and 7 occupied, order
   lines "Rp 30,000 × 2", empty state "No items yet" / "Pick a menu item to start the order.", Subtotal, "10%
-  restaurant tax (PB1) is added at payment.", Save, **Pay**) · payment confirmation ("Payment", "Table N", total, check).
+  restaurant tax (PB1) is calculated at payment." (the source: "PB1 10% dihitung saat pembayaran"), Save, **Pay**) · payment confirmation ("Payment", "Table N", total, check).
 - Menu (seed prices): Grilled Chicken Piece (Variant) Rp 30,000 · Combo A (1 pax) (Combo) Rp 50,000 · Chicken Tauco
   Soup Rp 35,000 · Smashed Beef Empal Rp 25,000 · Steamed Rice Rp 10,000 · Iced Tea (Variant) Rp 8,000.
 - Stock badges (portion items only), counting what is already in the order: green number → amber "N left" below the
@@ -217,19 +217,21 @@ used anywhere.
 
 ### 7.2 Graduation moment
 
-- **Play**: the first time Ezra comes within 2.5 blocks of the 2026 milestone in a session, a voxel graduation cap pops onto his head
-  (added to the head part in `Ezra.tsx`, toggled by a runtime flag) with a pop sound and a `confetti` burst. The cap
-  stays for the session. Clicking the milestone replays the confetti.
+- **Play**: the first time Ezra comes within 2.5 blocks of the 2026 milestone in a session, his graduation outfit pops
+  on, the cap on his head and the full gown with it (`Ezra.tsx`, toggled by the runtime flag `capOn`), with a pop sound
+  and a `confetti` burst. The outfit stays for the session. Clicking the milestone replays the confetti.
 - **Tour**: Ezra is seated on the Hero island, so when the tour camera's progress passes the 2026 milestone's
   position on the Hero → GTID segment, a cap is tossed into the air
   from it (a short arc with spin) with confetti, once per page load; clicking replays it.
-- Outfit, from Ezra's graduation photos (Petra Christian University, 90th graduation, 5 September 2026) and his
-  choice: accessories over his usual black tee, no gown.
+- Outfit, from Ezra's graduation photos (Petra Christian University, 90th graduation, 5 September 2026): the cap and
+  the full gown in Play (`scene/graduation.ts`); the tour toss throws the cap only.
   - **Cap**: royal-blue mortarboard (board and skull cap `#1f4fc4`) with a black cord and tassel (`#1b1e24`) hanging
     on his right side.
-  - **Collar band**: an orange (`#f26a1b`) V with a thin black inner edge over both shoulders (Petra's hood edging).
-  - **Medal**: a bronze disc (`#a8907e`) on a royal-blue ribbon, mid-chest.
-  - The tour toss throws the cap only.
+  - **Gown**: the cap's royal blue (`#1f4fc4`), wide sleeves ending in broad black cuffs (`#1b1e24`), a thin black
+    facing down the front, and two skirt halves that swing with his legs, the hem at mid-shin so his shoes show.
+  - **Hood band**: an orange (`#f26a1b`) V edged in black on both sides, on the chest and mirrored on the back, joined
+    over the shoulders (Petra's hood edging).
+  - **Medal**: a bronze disc (`#a8907e`) on a deeper royal-blue ribbon (`#173b93`, so it reads on the gown), mid-chest.
 
 ## 8. Map signposts (fast travel)
 

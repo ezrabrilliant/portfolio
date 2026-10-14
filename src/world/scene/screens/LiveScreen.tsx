@@ -87,10 +87,10 @@ export function LiveScreen<S>({
   );
   useEffect(() => () => bezel?.dispose(), [bezel]);
 
-  // the program's state and the redraw bookkeeping: frame callbacks and taps mutate it, React never re-renders for it
+  // the program's state and the redraw bookkeeping: frame callbacks and taps mutate it, React never re-renders for it.
+  // Keyed on the app too: another program starts from a fresh state (st.s is the old program's)
   const st = useMemo(
     () => ({
-      app,
       canvas: texture.image as HTMLCanvasElement,
       s: null as S | null,
       regions: [] as HitRegion[],
@@ -107,6 +107,7 @@ export function LiveScreen<S>({
       viewProj: new THREE.Matrix4(),
       frustum: new THREE.Frustum(),
     }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `app` is a reset key, not read inside
     [app, texture],
   );
 

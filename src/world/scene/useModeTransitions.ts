@@ -3,7 +3,7 @@ import { playSfx } from "@/world/engine/audio/sfx";
 import { characterCollides } from "@/world/engine/physics/character";
 import { runtime } from "@/world/state/runtime";
 import { useWorld } from "@/world/state/store";
-import { isMoveCode, sharedKeyboard } from "@/world/input/keyboard";
+import { isMoveCode, isTypingTarget, sharedKeyboard } from "@/world/input/keyboard";
 import { consumeTouch } from "@/world/input/touch";
 import { STAND_UP_SECONDS } from "./ezra/anim";
 import { closeCloseup } from "./closeupState";
@@ -112,8 +112,9 @@ export function useModeTransitions(enabled: boolean) {
   useEffect(() => {
     if (!enabled) return;
     const onKey = (e: KeyboardEvent) => {
+      // typing in a field (a select's arrow keys and type-ahead too) is not a move, an Esc or a jump
+      if (isTypingTarget(e.target)) return;
       const t = e.target as HTMLElement | null;
-      if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
       if (e.ctrlKey || e.metaKey || e.altKey) return; // browser shortcuts (Ctrl+D, Alt+←) are not moves
       const s = useWorld.getState();
       // Esc closes an open closeup instead (in Play the next Esc leaves Play); in the tour useTabCycling may have

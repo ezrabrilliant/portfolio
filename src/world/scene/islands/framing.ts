@@ -8,8 +8,10 @@ type V = readonly [number, number, number];
 
 /**
  * Camera and look-at offsets from islandFrame(p). Target left of the subject → subject sits centre-right.
- * One shared view (from the front-left, ~10° yaw, ~19° down, ~18.5 blocks): at 1280×720 (fov 40) every island fits
- * with its props, and InfoBoard / Signpost text stays ≥ ~13 px tall. Closer is bigger text but crops the island.
+ * Every view comes from the front-left, ~18–20° down. The star islands: ~10° yaw at ~18.5–19 blocks (hero, GTID,
+ * Petak Umpet), Orbit ~20° at ~16 and Ezra Bot ~10° at ~15; the Web & Apps islands ~17° at ~14 (plaza) and ~13 (minis).
+ * At 1280×720 (fov 40) every island fits with its props, and InfoBoard / Signpost text stays ≥ ~13 px tall. Closer is
+ * bigger text but crops the island.
  */
 export const FRAMING: Record<string, { cam: V; target: V; dwell: number }> = {
   hero: { cam: [-4.8, 7.3, 16.1], target: [-1.8, 1, -1], dwell: 1.4 }, // 1.4: with nine stops, 1.2 eased off too abruptly

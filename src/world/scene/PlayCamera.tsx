@@ -137,7 +137,8 @@ export function PlayCamera() {
     }
     // a respawn or a fast travel teleports Ezra while the screen is faded out: cut the camera there instead of
     // sweeping it up from the void (entering Play still blends in from the tour camera), and behind his new heading
-    // instead of at the angle it had where he left (a travel faces him away from the destination's tour camera)
+    // instead of at the angle it had where he left (a travel faces him away from the destination's tour camera). The map
+    // board's closeup is still gliding out then: CloseupCamera cuts it from the arrival on (closeupBlend.travelCutsCloseup)
     const teleported = !entering && isTeleport(track.prev, p);
     if (teleported) {
       track.lookT = LOOK_BLEND;

@@ -1,12 +1,12 @@
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
-import {
-  CLOSEUP_HUD_PX, clampPan, closeupNear, closeupPanLimit, closeupPose, closeupWeight, stepCloseupBlend,
-} from "@/world/engine/camera/closeup";
+import { CLOSEUP_HUD_PX, clampPan, closeupNear, closeupPanLimit, closeupPose } from "@/world/engine/camera/closeup";
 import type { Vec3 } from "@/world/engine/types";
 import { runtime } from "@/world/state/runtime";
 import { useWorld } from "@/world/state/store";
+import { closeupBlend, stepBlendClock } from "./camera/closeupBlend";
+import type { BlendClock } from "./camera/closeupBlend";
 import { closeupPan } from "./closeupState";
 
 /** The HUD never takes more than this share of the frame (a very short window keeps a usable closeup). */
@@ -18,15 +18,16 @@ const MAX_INSET = 0.3;
  * weight in and out; reduced motion cuts. The pose leaves the HUD's band at the top free, a wide target on a portrait
  * viewport is fitted by its height and panned (closeupPan), and the near plane moves up to just in front of the face so
  * nothing between the camera and the screen (a prop, Ezra) covers it. At weight 0 the camera is the base cameras' again,
- * with its default near plane.
+ * with its default near plane. A Play fast travel's arrival cuts the blend (closeupBlend.travelCutsCloseup): the glide
+ * out from the departure map board must not pull the camera back toward it. The weight is published in closeupBlend
+ * for frame code mounted after this one (Ezra hides past half way).
  */
 export function CloseupCamera() {
   const camera = useThree((s) => s.camera) as THREE.PerspectiveCamera;
   const st = useMemo(
     () => ({
-      k: 0,
-      /** the target being framed: the open one, or the last one while gliding back out */
-      id: null as string | null,
+      /** the blend clock and the target it frames (stepBlendClock) */
+      clock: { k: 0, id: null } as BlendClock,
       pose: { camera: { x: 0, y: 0, z: 0 } as Vec3, target: { x: 0, y: 0, z: 0 } as Vec3 },
       eye: new THREE.Vector3(),
       look: new THREE.Vector3(),
@@ -44,25 +45,26 @@ export function CloseupCamera() {
     camera.updateProjectionMatrix();
   };
 
+  // a remounted camera starts unblended: nothing reads a weight left over from the last one
+  useEffect(
+    () => () => {
+      closeupBlend.weight = 0;
+    },
+    [],
+  );
+
   useFrame((state, rawDt) => {
     const dt = Math.min(rawDt, 1 / 30);
-    const open = runtime.closeup;
-    if (open) st.id = open.id;
-    const target = st.id ? runtime.closeups.get(st.id) : undefined;
-    if (!target) {
-      // nothing open, or the target unmounted mid-glide: the base camera is the camera
-      st.k = 0;
-      st.id = null;
+    const reduced = useWorld.getState().reducedMotion;
+    const w = stepBlendClock(st.clock, runtime.closeup, runtime.closeups, runtime.travel, dt, reduced);
+    closeupBlend.weight = w;
+    const target = st.clock.id !== null ? runtime.closeups.get(st.clock.id) : undefined;
+    if (w <= 0 || !target) {
+      // nothing open, the glide out has landed, the target unmounted, or a fast travel arrived: the base camera is the
+      // camera, with its own near plane
       setNear(st.baseNear);
       return;
     }
-    st.k = stepCloseupBlend(st.k, open !== null, dt, useWorld.getState().reducedMotion);
-    if (st.k <= 0) {
-      st.id = null;
-      setNear(st.baseNear);
-      return;
-    }
-    const w = closeupWeight(st.k);
     // the HUD covers the canvas's top CLOSEUP_HUD_PX: the target is fitted and centred in the frame below it
     const inset = Math.min(MAX_INSET, CLOSEUP_HUD_PX / Math.max(1, state.size.height));
     closeupPan.limit = closeupPanLimit(target.size, camera.aspect, camera.fov, inset);

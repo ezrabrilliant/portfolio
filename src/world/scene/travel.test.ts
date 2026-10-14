@@ -39,16 +39,29 @@ describe("startTravel", () => {
     expect(runtime.travel).toEqual({ to: "pedulipasal", phase: "out", t: 0 });
   });
 
-  it("Play: ignores a second pick while travelling, and the island Ezra already stands on", () => {
+  it("Play: ignores a second pick while travelling", () => {
     useWorld.setState({ mode: "play" });
     standOn("hero");
     startTravel("gtid");
     startTravel("orbit-store");
     expect(runtime.travel?.to).toBe("gtid");
-    runtime.travel = null;
+    expect(mocks.closeCloseup).toHaveBeenCalledOnce();
+  });
+
+  it("Play: the island Ezra already stands on is a no-op that leaves the map open (\"You are here\", Enter on it)", () => {
+    useWorld.setState({ mode: "play" });
+    standOn("hero");
     startTravel("hero");
     expect(runtime.travel).toBeNull();
-    expect(mocks.closeCloseup).toHaveBeenCalledTimes(2);
+    expect(mocks.closeCloseup).not.toHaveBeenCalled();
+    expect(mocks.scrollToIsland).not.toHaveBeenCalled();
+  });
+
+  it("Tour: the island in view still closes the map and re-centres on its stop", () => {
+    standOn("hero");
+    startTravel("hero");
+    expect(mocks.closeCloseup).toHaveBeenCalledOnce();
+    expect(mocks.scrollToIsland).toHaveBeenCalledWith("hero");
   });
 
   it("ignores ids that are not islands", () => {

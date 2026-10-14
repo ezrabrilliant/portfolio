@@ -7,7 +7,7 @@ import { useWorld } from "@/world/state/store";
 import { isTypingTarget, sharedKeyboard } from "@/world/input/keyboard";
 import { touchInput } from "@/world/input/touch";
 import { clampPan } from "@/world/engine/camera/closeup";
-import { isControlTarget } from "./closeupFocus";
+import { closeupSpace, offersKeyToScreen } from "./closeupKeys";
 import { closeCloseup, closeupPan, scrolledAway } from "./closeupState";
 import { createCloseupWalk, stepCloseupWalk } from "./closeupWalk";
 
@@ -22,8 +22,9 @@ const CLICK_SLOP = 6;
  * Input while a closeup is open (spec §6): a primary click on the face goes to the program (one beside it closes the
  * closeup; right and middle clicks do nothing), a sideways drag pans a screen wider than a portrait viewport (closeupPan;
  * a press that moves less than CLICK_SLOP and never panned is still a tap), the cursor shows where the face is, keys the
- * screen uses (CloseupTarget.key) reach nothing else (keys aimed at the HUD or another link, button or field, and keys
- * still held from before the open, are never offered to it), Space does not jump in Play, opening in Play stops Ezra,
+ * screen uses (CloseupTarget.key) reach nothing else (keys aimed at the HUD or another link, button or field, Enter's
+ * auto-repeat and keys still held from before the open are never offered to it: closeupKeys.offersKeyToScreen), Space
+ * does not jump in Play (on a focused Back it still presses Back: closeupKeys.closeupSpace), opening in Play stops Ezra,
  * and walking that starts after the open (keys or stick, Play; input already held while opening does not count) or
  * scrolling the page more than CLOSEUP_SCROLL_EXIT px (Tour) closes it. Esc is handled by useModeTransitions /
  * useTabCycling, the Back button by the HUD.
@@ -139,22 +140,19 @@ export function CloseupController() {
     const onKey = (e: KeyboardEvent) => {
       if (!runtime.closeup || e.code === "Escape" || isTypingTarget(e.target)) return;
       if (e.ctrlKey || e.metaKey || e.altKey) return;
-      // offered to the screen: not keys aimed at an interactive element (Enter on Back activates Back; a focused mirror
-      // link keeps its Enter and arrows), nor the auto-repeat of a key still held from before the open (released at the
-      // open, it waits for its key-up; a non-repeat keydown of it is a new press after a lost key-up, as the keyboard
-      // counts it)
-      const offer = !isControlTarget(e.target) && !(e.repeat && sharedKeyboard.isWaiting(e.code));
-      const target = offer ? runtime.closeups.get(runtime.closeup.id) : undefined;
+      // offered to the screen: not keys aimed at a control, Enter's auto-repeat, or a key held from before the open
+      const target = offersKeyToScreen(e, sharedKeyboard) ? runtime.closeups.get(runtime.closeup.id) : undefined;
       if (target?.key?.(e.code)) {
         // the screen used it (a map board's arrows): Ezra must not walk, the tour must not switch to Play
         e.preventDefault();
         e.stopPropagation();
         return;
       }
-      if (useWorld.getState().mode === "play" && e.code === "Space") {
-        // no jumping behind the closeup
-        e.preventDefault();
+      // Play: no jumping behind the closeup; Space on a focused Back keeps its default and presses it
+      const space = closeupSpace(e.code, useWorld.getState().mode === "play", e.target);
+      if (space !== "none") {
         e.stopPropagation();
+        if (space === "block") e.preventDefault();
       }
     };
     window.addEventListener("keydown", onKey, true);

@@ -2,12 +2,14 @@ import { useLayoutEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import type { IslandPlacement } from "@/world/engine/gen/layout";
 import { worldCopy } from "@/config/portfolio";
+import { runtime } from "@/world/state/runtime";
 import { WorldText } from "@/world/scene/WorldText";
 import { PLAZA } from "./layouts";
 import { MapBoard } from "./shared/MapBoard";
 import { PropBlocks } from "./shared/PropBlocks";
 import { islandFrame } from "./shared/local";
 import { LANTERN_Y, districtSignBlocks, plazaPropBlocks } from "./plaza/blocks";
+import { projectsAheadLine } from "./plaza/sign";
 
 const LANTERN_GEO = new THREE.BoxGeometry(0.28, 0.28, 0.28);
 const LANTERN_MAT = new THREE.MeshStandardMaterial({ color: "#f1dfb0", emissive: "#f3d58e", emissiveIntensity: 0.6, roughness: 0.6 });
@@ -26,11 +28,13 @@ function Lanterns() {
 }
 
 /**
- * The Web & Apps plaza (spec §3.1): where the minecart from Ezra Bot arrives. A district sign facing the tour camera,
- * a tree, two lamps and flowers; the station itself is drawn by the minecart crossing.
+ * The Web & Apps plaza (spec §3.1): where the minecart from Ezra Bot arrives. A district sign facing the tour camera
+ * (its second line counts the minis chained from here), a tree, two lamps and flowers; the station itself is drawn by
+ * the minecart crossing.
  */
 export function PlazaIsland({ placement }: { placement: IslandPlacement }) {
   const blocks = useMemo(() => [...districtSignBlocks(), ...plazaPropBlocks()], []);
+  const ahead = useMemo(() => projectsAheadLine(runtime.layout.islands), []);
   const { sign } = PLAZA;
   const textZ = 0.05 + 0.031;
   return (
@@ -40,7 +44,7 @@ export function PlazaIsland({ placement }: { placement: IslandPlacement }) {
         <Lanterns />
         <group position={[sign.x, 0, sign.z]} rotation={[0, sign.ry, 0]}>
           <WorldText text={worldCopy.webDistrict.toUpperCase()} position={[0, sign.y + 0.12, textZ]} size={0.42} color="#3a2a1c" font="pixel" />
-          <WorldText text="Three projects ahead" position={[0, sign.y - 0.33, textZ]} size={0.15} color="#5a4130" font="ui" />
+          <WorldText text={ahead} position={[0, sign.y - 0.33, textZ]} size={0.15} color="#5a4130" font="ui" />
         </group>
       </group>
       <MapBoard placement={placement} at={PLAZA.map} />

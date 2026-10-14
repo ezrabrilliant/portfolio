@@ -30,7 +30,8 @@ export const POS_STRINGS = {
   emptyTitle: "No items yet",
   emptyLine: "Pick a menu item to start the order.",
   subtotal: "Subtotal",
-  taxNote: "10% restaurant tax (PB1) is added at payment.",
+  // the source: "PB1 10% dihitung saat pembayaran"
+  taxNote: "10% restaurant tax (PB1) is calculated at payment.",
   save: "Save",
   pay: "Pay",
   payment: "Payment",

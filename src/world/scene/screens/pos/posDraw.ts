@@ -33,8 +33,11 @@ const BADGE: Record<"ok" | "low" | "out", readonly [string, string]> = {
   low: [C.amberBg, C.amber],
   out: ["#fee2e2", "#991b1b"],
 };
-/** Inter as in the app; the site's self-hosted grotesk where Inter isn't installed. */
-const font = (weight: number, size: number) => `${weight} ${size}px Inter, ${CANVAS_FONTS.ui}`;
+/**
+ * The site's self-hosted grotesk (canvasFonts), the same for every visitor. The app itself uses Inter, which the world
+ * does not load: listing it first drew the screen in Inter only where it happened to be installed.
+ */
+const font = (weight: number, size: number) => `${weight} ${size}px ${CANVAS_FONTS.ui}`;
 const TAU = Math.PI * 2;
 const SIDEBAR = 118;
 /** Left edge of the order panel. */

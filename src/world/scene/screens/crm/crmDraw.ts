@@ -24,8 +24,11 @@ const C = {
 };
 const KPI_COLORS = ["#10B981", "#3B82F6", "#F59E0B", "#8B5CF6"];
 const TASK = { doneDot: "#28a745", pendingDot: "#ffc107", doneBg: "#d4edda", doneFg: "#155724", pendingBg: "#fff3cd", pendingFg: "#856404" };
-/** Inter as in the app; the site's self-hosted grotesk where Inter isn't installed. */
-const font = (weight: number, size: number) => `${weight} ${size}px Inter, ${CANVAS_FONTS.ui}`;
+/**
+ * The site's self-hosted grotesk (canvasFonts), the same for every visitor. The app itself uses Inter, which the world
+ * does not load: listing it first drew the screen in Inter only where it happened to be installed.
+ */
+const font = (weight: number, size: number) => `${weight} ${size}px ${CANVAS_FONTS.ui}`;
 const EMOJI_FONT = '12px "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif';
 const TAU = Math.PI * 2;
 const CHART = { x: 132, y: 142, w: 326, h: 246 };

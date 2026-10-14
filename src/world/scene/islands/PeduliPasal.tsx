@@ -9,7 +9,7 @@ import { chatApp } from "@/world/scene/screens/chat";
 import { MINI_BOARD_SCALE, MINI_SIGN_SCALE, PEDULI } from "./layouts";
 import { InfoBoard } from "./shared/InfoBoard";
 import { MapBoard } from "./shared/MapBoard";
-import { BRASS, SCALES_Y, pavilionBlocks } from "./peduli/blocks";
+import { BRASS, SCALES_Y, pavilionBlocks, phoneBody } from "./peduli/blocks";
 import { PropBlocks } from "./shared/PropBlocks";
 import { Signpost } from "./shared/Signpost";
 import { islandFrame } from "./shared/local";
@@ -44,7 +44,10 @@ function Scales() {
   );
 }
 
-const PHONE_GEO = new RoundedBoxGeometry(PEDULI.phone.w, PEDULI.phone.h, PEDULI.phone.d, 3, 0.14);
+// RoundedBoxGeometry clamps its radius to half the smallest side: the phone's corners round by half its depth
+const PHONE_GEO = new RoundedBoxGeometry(PEDULI.phone.w, PEDULI.phone.h, PEDULI.phone.d, 3, PEDULI.phone.d / 2);
+/** The phone's body on its plinth (layouts.test checks the boards and signs against the same box). */
+const PHONE_BODY = phoneBody();
 const PHONE_MAT = new THREE.MeshStandardMaterial({ color: "#1b1c20", roughness: 0.45 });
 
 /**
@@ -54,13 +57,13 @@ const PHONE_MAT = new THREE.MeshStandardMaterial({ color: "#1b1c20", roughness: 
 export function PeduliPasalIsland({ placement }: { placement: IslandPlacement }) {
   const blocks = useMemo(pavilionBlocks, []);
   const project = projectById("pedulipasal");
-  const { phone, screen } = PEDULI;
+  const { screen } = PEDULI;
   return (
     <>
       <group position={islandFrame(placement)}>
         <PropBlocks blocks={blocks} seed={808} />
         <Scales />
-        <mesh geometry={PHONE_GEO} material={PHONE_MAT} position={[phone.x, phone.plinth + phone.h / 2, phone.z]} castShadow />
+        <mesh geometry={PHONE_GEO} material={PHONE_MAT} position={[PHONE_BODY.x, PHONE_BODY.y, PHONE_BODY.z]} castShadow />
       </group>
       <LiveScreen
         id="pedulipasal-screen"

@@ -15,19 +15,21 @@ export const TRAVEL_IN = 0.35;
 const FADE = 0.2;
 
 /**
- * Fast travel from a map board (spec §8). Tour: the closeup closes and the page scrolls to the island's stop. Play: the
- * closeup closes and runtime.travel starts; PlayerController puffs Ezra away, moves him to a landing column on `to`
- * and puffs him back (stepTravel). Ignored while a travel runs, for unknown ids, and (Play) for the island he is on.
+ * Fast travel from a map board (spec §8). Tour: the closeup closes and the page scrolls to the island's stop (the one
+ * in view too: it re-centres there). Play: the closeup closes and runtime.travel starts; PlayerController puffs Ezra
+ * away, moves him to a landing column on `to` and puffs him back (stepTravel). Ignored while a travel runs, for unknown
+ * ids, and (Play) for the island he is on: "You are here" leaves the map open.
  */
 export function startTravel(to: string): void {
   if (runtime.travel || !runtime.layout.islands.some((i) => i.id === to)) return;
-  closeCloseup();
   if (useWorld.getState().mode !== "play") {
+    closeCloseup();
     scrollToIsland(to);
     return;
   }
   const p = runtime.player.pos;
   if (islandUnder(runtime.layout.islands, p.x, p.z)?.id === to) return;
+  closeCloseup();
   runtime.travel = { to, phase: "out", t: 0 };
 }
 
