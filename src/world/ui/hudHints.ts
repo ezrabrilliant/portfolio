@@ -1,11 +1,8 @@
 /**
- * The HUD's hint line (Hud.tsx): keyboard and mouse lines, and the touch lines phones show instead. Monospace 12 px is
- * ~7.2 px a character on phones (SF Mono, Droid Sans Mono), and a 360 px phone leaves 312 px for the text (world.css
- * .hud-hint: 16 px gutters, 8 px padding): a touch line of up to TOUCH_HINT_MAX characters stays on one line there, so
- * a closeup's hint ends inside the CLOSEUP_HUD_PX band the closeup camera leaves free.
+ * The HUD's hint line (Hud.tsx): keyboard and mouse lines, and the touch lines phones show instead. Each touch line stays
+ * on one line on a 360 px phone, and a closeup's on a 320 px one too, so it ends inside the CLOSEUP_HUD_PX band the
+ * closeup camera leaves free (hudHints.test checks them against world.css's .hud-hint box).
  */
-export const TOUCH_HINT_MAX = 43;
-
 export const HINTS = {
   keys: {
     play: "WASD move · Space jump · Shift run · E interact · Esc tour",
@@ -23,11 +20,15 @@ export const HINTS = {
 
 export type HintKey = keyof typeof HINTS.keys;
 
+const WITH_E = { key: "E" } as const;
+const PLAIN = { key: null } as const;
+
 /**
- * The key cap shown before the prompt's label (Hud.tsx): Play's E on a keyboard. None on touch, where the prompt reads
- * like the Use button beside the stick (MobileControls), which shows the same label; none in the tour, where a click (or
- * Enter on the item Tab focused) uses it.
+ * The prompt pill at the bottom of the HUD (Hud.tsx), or null for none. On touch in Play the Use button beside the stick
+ * (MobileControls) already shows the prompt's label, so a pill would repeat it right below. Its key cap: Play's E on a
+ * keyboard; none in the tour, where a tap or click (or Enter on the item Tab focused) uses it.
  */
-export function promptKey(mode: "tour" | "play", touch: boolean): "E" | null {
-  return mode === "play" && !touch ? "E" : null;
+export function promptPill(mode: "tour" | "play", touch: boolean): { readonly key: "E" | null } | null {
+  if (mode !== "play") return PLAIN;
+  return touch ? null : WITH_E;
 }

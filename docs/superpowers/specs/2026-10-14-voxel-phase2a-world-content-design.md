@@ -127,14 +127,15 @@ interface ScreenApp<S> {
 ### 5.2 POS Monosuko (from the real "Input Order" page)
 
 - Look: light theme, page `#f4f4f3`, white cards/sidebar/panel, borders `#e8ece9`, green `#1f7a4d` (prices
-  `#1a623e`, tints `#f0faf3` / `#ddf3e5`), text `#1a201c` / `#5a655e` / `#6c756f`, Inter (fallback to the site's
-  grotesk), 12 px card / 6 px button radii.
+  `#1a623e`, tints `#f0faf3` / `#ddf3e5`), text `#1a201c` / `#5a655e` / `#6c756f`, the site's self-hosted grotesk
+  (the app uses Inter; self-hosting Inter for the canvases is a follow-up), 12 px card / 6 px button radii.
 - Layout: sidebar (logo badge, "Ayam Bakar Banjar Monosuko", "Point of Sale", nav: Home, **Transactions** (active),
   Tables, History, Close Register, Stock) · header "Input Order" / "Morning shift" · search "Search menu…" · pills
   All, Grilled Chicken, Value Meals, Soups & Veg, Drinks · 3 × 2 menu cards (photo, name, variant/combo badge, price,
   stock badge) · order panel ("Order", "N items", Dine-in/Takeaway, "Choose a table" 1–9 with 2 and 7 occupied, order
   lines "Rp 30,000 × 2", empty state "No items yet" / "Pick a menu item to start the order.", Subtotal, "10%
-  restaurant tax (PB1) is calculated at payment." (the source: "PB1 10% dihitung saat pembayaran"), Save, **Pay**) · payment confirmation ("Payment", "Table N", total, check).
+  restaurant tax (PB1) is calculated at payment." (the source: "PB1 10% dihitung saat pembayaran"), Save, **Pay**) ·
+  payment confirmation ("Payment", "Table N", total, check).
 - Menu (seed prices): Grilled Chicken Piece (Variant) Rp 30,000 · Combo A (1 pax) (Combo) Rp 50,000 · Chicken Tauco
   Soup Rp 35,000 · Smashed Beef Empal Rp 25,000 · Steamed Rice Rp 10,000 · Iced Tea (Variant) Rp 8,000.
 - Stock badges (portion items only), counting what is already in the order: green number → amber "N left" below the
@@ -145,7 +146,8 @@ interface ScreenApp<S> {
 ### 5.3 Bee Furniture CRM (from the real `DashboardHome`)
 
 - Look: page `#f9fafb`, white sidebar/header/cards (card shadow `0 4px 12px rgba(0,0,0,.08)`), indigo `#4F46E5`,
-  active nav `#3E37F7` on `#f5f5ff` with a 3 px bar, text `#1F2937` / `#4B5563` / `#6b7280`, Inter.
+  active nav `#3E37F7` on `#f5f5ff` with a 3 px bar, text `#1F2937` / `#4B5563` / `#6b7280`, the
+  site's self-hosted grotesk (the app uses Inter; self-hosting it for the canvases is a follow-up).
 - Layout: sidebar (indigo circle with 🐝, "Bee Furniture Admin", nav Dashboard (active), Customers, Products,
   Transactions, Promo, Analytics, Task To Do, Tickets, About) · header "Dashboard", "+ Add New", "Logout", search, "JD"
   avatar · "Main Dashboard" / "Monitor your business performance in real-time." · KPI cards Total Revenue

@@ -1,11 +1,12 @@
-import { useRef } from "react";
+import { useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import { runtime } from "@/world/state/runtime";
 import { useWorld } from "@/world/state/store";
 import { LEG, pickAnim, poseFor } from "./ezra/anim";
 import { EZRA_CAP, EZRA_FIT, EZRA_HEAD, EZRA_REACH } from "@/world/engine/physics/ezraModel";
-import { closeupBlend, closeupHidesEzra } from "./camera/closeupBlend";
+import { closeupBlend, ezraCloseupHidden } from "./camera/closeupBlend";
+import type { EzraCloseupHold } from "./camera/closeupBlend";
 import { EZRA_GEOMETRY as GEO } from "./ezra/geometry";
 import { GOWN_POP_Y } from "./graduation";
 import { GownSkirt, GownSleeve, GraduationCap, GraduationGown } from "./GraduationCap";
@@ -41,6 +42,7 @@ export function Ezra() {
   const skirtL = useRef<THREE.Group>(null);
   const skirtR = useRef<THREE.Group>(null);
   const capAge = useRef(0);
+  const hold = useMemo<EzraCloseupHold>(() => ({ open: false, held: false }), []);
   // everything the graduation moment puts on him: shown, and popped, together
   const outfit = [cap, gown, sleeveL, sleeveR, skirtL, skirtR];
 
@@ -50,8 +52,9 @@ export function Ezra() {
     // between a fast travel's two puffs he is gone. A closeup's camera glides from behind him to the screen he faces:
     // he would stand in front of a low screen, so he goes once the glide's weight passes EZRA_HIDE_WEIGHT (closeupBlend,
     // written by CloseupCamera earlier this frame) and is back below it on the way out, instead of blinking out on the
-    // glide's first frame
-    if (runtime.hidden || closeupHidesEzra(closeupBlend.weight)) {
+    // glide's first frame; one already hidden when the closeup opened (the camera pressed against him) stays hidden
+    const byCloseup = ezraCloseupHidden(hold, runtime.closeup !== null, root.current.visible, closeupBlend.weight);
+    if (runtime.hidden || byCloseup) {
       root.current.visible = false;
       return;
     }

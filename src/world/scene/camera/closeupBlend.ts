@@ -64,3 +64,23 @@ export function stepBlendClock(
 export function closeupHidesEzra(weight: number): boolean {
   return weight > EZRA_HIDE_WEIGHT;
 }
+
+/** Ezra.tsx's closeup state: whether a closeup was open last frame, and whether he was already hidden when it opened. */
+export interface EzraCloseupHold {
+  open: boolean;
+  held: boolean;
+}
+
+/**
+ * Whether the closeup hides Ezra this frame (Ezra.tsx): past EZRA_HIDE_WEIGHT on the way in and on the way out, and,
+ * while a closeup is open, all along when he was already hidden as it opened (`shown`: his visibility going into the
+ * frame). The near-camera check hides him while the follow camera is pressed against his head (the Petak Umpet and GTID
+ * boards); the glide pulls the camera off his head before the weight reaches the threshold, which would show him for a
+ * few frames and hide him again. Closing lets go: the glide out is the weight alone. Mutates `hold`.
+ */
+export function ezraCloseupHidden(hold: EzraCloseupHold, open: boolean, shown: boolean, weight: number): boolean {
+  if (!open) hold.held = false;
+  else if (!hold.open) hold.held = !shown;
+  hold.open = open;
+  return hold.held || closeupHidesEzra(weight);
+}

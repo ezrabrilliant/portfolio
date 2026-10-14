@@ -17,7 +17,8 @@ export function useTabCycling(ref: RefObject<HTMLElement | null>) {
     const onKey = (e: KeyboardEvent) => {
       const s = useWorld.getState();
       if (s.mode !== "tour") return;
-      // a closeup has the stage: Tab and Enter don't wander to the islands behind it (Tab moves on to the HUD's Back)
+      // a closeup has the stage: Tab and Enter don't wander to the islands behind it (Tab moves on to the HUD: Play,
+      // Sound, then Back, the bar's last button)
       if (runtime.closeup && e.key !== "Escape") return;
       if (e.key === "Tab") {
         const items = runtime.registry.onIsland(s.activeIsland).filter((i) => (i.enabled ? i.enabled() : true));

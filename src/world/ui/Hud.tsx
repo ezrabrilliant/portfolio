@@ -6,7 +6,7 @@ import { runtime } from "@/world/state/runtime";
 import { closeupPans } from "@/world/engine/camera/closeup";
 import { closeCloseup } from "@/world/scene/closeupState";
 import { closeFromBack } from "./backFocus";
-import { HINTS, promptKey } from "./hudHints";
+import { HINTS, promptPill } from "./hudHints";
 
 /** Re-reads the viewport on resize and rotation (the pan hint follows a phone turned during a closeup). */
 function onViewportChange(cb: () => void) {
@@ -46,7 +46,7 @@ export function Hud() {
     () => false,
   );
   const hint = closeupId ? (pans ? "closeupPan" : "closeup") : mode;
-  const key = promptKey(mode, touch);
+  const pill = promptPill(mode, touch);
   return (
     <div className="hud">
       {/* plain buttons whose visible text is the name (no aria-pressed: the text already flips with the state) */}
@@ -82,9 +82,9 @@ export function Hud() {
       </div>
       <p className="hud-hint">{HINTS[touch ? "touch" : "keys"][hint]}</p>
       <div className="hud-prompt" aria-live="polite">
-        {prompt && !closeupId ? (
+        {prompt && !closeupId && pill ? (
           <>
-            {key && <kbd>{key}</kbd>} {prompt.label}
+            {pill.key && <kbd>{pill.key}</kbd>} {prompt.label}
           </>
         ) : null}
       </div>

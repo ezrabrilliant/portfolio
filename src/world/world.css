@@ -87,8 +87,9 @@ html.world-playing, html.world-playing body { overflow: hidden; }
 .hud-btn--on, .hud-btn--on:hover { background: #13212b; color: #f4f3ef; }
 /* dark outer ring plus a light inner one, so focus also shows on the dark "on" button */
 .hud-btn:focus-visible { outline: 2px solid #13212b; outline-offset: 2px; box-shadow: inset 0 0 0 2px #f4f3ef; }
-/* phones show their touch lines too (Hud.tsx HINTS.touch): one line from 360 px wide, so a closeup's hint ends inside
-   the CLOSEUP_HUD_PX (96 px) band the closeup camera leaves free; a narrower screen wraps it inside the side gutters */
+/* phones show their touch lines too (Hud.tsx HINTS.touch): one line from 360 px wide, and a closeup's on smaller phones
+   too (the rule below), so it ends inside the CLOSEUP_HUD_PX (96 px) band the closeup camera leaves free; a longer line
+   wraps inside the side gutters. hudHints.test reads these numbers */
 .hud-hint {
   position: absolute; top: calc(max(16px, env(safe-area-inset-top)) + 46px); left: 16px; margin: 0;
   box-sizing: border-box; max-width: calc(100% - 32px);
@@ -96,6 +97,7 @@ html.world-playing, html.world-playing body { overflow: hidden; }
   background: rgba(244, 243, 239, 0.85); padding: 4px 8px; border-radius: 4px;
   backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
 }
+@media (max-width: 359px) { .hud-hint { font-size: 11px; padding: 4px 6px; } }
 .hud-prompt {
   position: absolute; left: 50%; bottom: max(28px, env(safe-area-inset-bottom)); transform: translateX(-50%);
   font: 700 14px/1 "Schibsted Grotesk", system-ui, sans-serif; color: #f4f3ef;
