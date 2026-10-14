@@ -23,7 +23,7 @@ const SCALES_Y = 1.26; // the beam's pivot above the grass, on its post
 
 /** Stone floor, four posts, the flat roof, the bookshelf of statute books, the scales' table and post, the plinth, the tree. */
 function pavilionBlocks(): PropBlock[] {
-  const { pavilion, shelf, scales, phone, tree } = PEDULI;
+  const { pavilion, roof, shelf, scales, phone, tree } = PEDULI;
   const out: PropBlock[] = [];
   for (let x = pavilion.x0; x <= pavilion.x1; x++) for (let z = pavilion.z0; z <= pavilion.z1; z++) {
     out.push({ x, y: 0.06, z, c: PALETTE.stone[1], sy: 0.12 });
@@ -33,8 +33,8 @@ function pavilionBlocks(): PropBlock[] {
   }
   const cx = (pavilion.x0 + pavilion.x1) / 2;
   const cz = (pavilion.z0 + pavilion.z1) / 2;
-  out.push({ x: cx, y: 3.31, z: cz, c: "#6f6157", sx: 3.6, sy: 0.22, sz: 2.6 });
-  out.push({ x: cx, y: 3.52, z: cz, c: "#83756a", sx: 3.0, sy: 0.2, sz: 2.0 });
+  out.push({ ...roof[0], x: cx, z: cz, c: "#6f6157" });
+  out.push({ ...roof[1], x: cx, z: cz, c: "#83756a" });
   out.push({ x: shelf.x, y: shelf.h / 2, z: shelf.z, c: PALETTE.wood, sx: shelf.w, sy: shelf.h, sz: 0.5 });
   const r = mulberry32(88);
   for (let s = 0; s < 3; s++) {

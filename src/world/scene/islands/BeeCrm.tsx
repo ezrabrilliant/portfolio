@@ -6,7 +6,7 @@ import type { IslandPlacement } from "@/world/engine/gen/layout";
 import { useWorld } from "@/world/state/store";
 import { LiveScreen } from "@/world/scene/screens/LiveScreen";
 import { crmApp } from "@/world/scene/screens/crm";
-import { BEE, MINI_BOARD_SCALE, MINI_SIGN_SCALE } from "./layouts";
+import { BEE, MINI_BOARD_SCALE, MINI_SIGN_SCALE, beeRoofPlanks, beeRoofY } from "./layouts";
 import { InfoBoard } from "./shared/InfoBoard";
 import { MapBoard } from "./shared/MapBoard";
 import { PropBlocks } from "./shared/PropBlocks";
@@ -23,8 +23,8 @@ const STAND = "#2b2e33";
 /** Plank floor, back and left walls, posts, the sloped roof, the workbench with a half-built chair and a saw, the logs, the monitor stand. */
 function shedBlocks(): PropBlock[] {
   const { shed, bench, logs, monitor, screen } = BEE;
-  // the roof planks' centre line: 3.2 up over the back wall, dropping 0.12 every half block towards the front
-  const roofY = (z: number) => 3.2 - 0.24 * (z - (shed.z0 - 0.5));
+  // the roof planks' centre line (layouts.ts BEE.roof): 3.2 up over the back wall, dropping 0.12 every half block
+  const roofY = beeRoofY;
   const out: PropBlock[] = [];
   for (let x = shed.x0; x <= shed.x1; x++) for (let z = shed.z0; z <= shed.z1; z++) out.push({ x, y: 0.06, z, c: PALETTE.plank[1], sy: 0.12 });
   for (let x = shed.x0; x <= shed.x1; x++) for (let row = 0; row < shed.rows; row++) {
@@ -38,10 +38,7 @@ function shedBlocks(): PropBlock[] {
   out.push({ x: shed.x1 + 0.4, y: 1.55, z: shed.z0 - 0.35, c: PALETTE.wood, sx: 0.2, sy: 3.1, sz: 0.2 });
   out.push({ x: shed.x0 - 0.4, y: 1.35, z: shed.z1 + 0.4, c: PALETTE.wood, sx: 0.2, sy: 2.7, sz: 0.2 });
   out.push({ x: shed.x1 + 0.4, y: 1.35, z: shed.z1 + 0.4, c: PALETTE.wood, sx: 0.2, sy: 2.7, sz: 0.2 });
-  for (let i = 0; i < 5; i++) {
-    const z = shed.z0 - 0.5 + i * 0.5;
-    out.push({ x: 0, y: roofY(z), z, c: PALETTE.roof[i % 3], sx: 3.4, sy: 0.16, sz: 0.55, rx: 0.2 });
-  }
+  for (const [i, p] of beeRoofPlanks().entries()) out.push({ ...p, c: PALETTE.roof[i % 3] });
   // workbench against the back wall
   out.push({ x: bench.x, y: 0.86, z: bench.z, c: PALETTE.plank[0], sx: 1.8, sy: 0.12, sz: 0.7 });
   for (const dx of [-0.8, 0.8]) for (const dz of [-0.25, 0.25]) out.push({ x: bench.x + dx, y: 0.4, z: bench.z + dz, c: PALETTE.wood, sx: 0.1, sy: 0.8, sz: 0.1 });

@@ -63,7 +63,7 @@ const ROBOT = {
   body: bake([
     [0.45, 0.62, 0.5, -0.35, 0.31, 0, BODY],
     [0.45, 0.62, 0.5, 0.35, 0.31, 0, BODY],
-    [1.5, 1.2, 1.0, 0, 1.22, 0, BODY],
+    [EZRA.robot.w, 1.2, EZRA.robot.d, 0, 1.22, 0, BODY],
     [0.62, 0.34, 0.06, 0, 1.34, 0.51, SLATE],
     [0.34, 1.0, 0.42, -0.95, 1.14, 0, LIGHT],
     [0.34, 1.0, 0.42, 0.95, 1.14, 0, LIGHT],
@@ -71,7 +71,7 @@ const ROBOT = {
   ]),
   // head, visor and antenna stalk, relative to the neck pivot
   head: bake([
-    [1.32, 1.0, 1.0, 0, 0.48, 0, LIGHT],
+    [1.32, 1.0, EZRA.robot.d, 0, 0.48, 0, LIGHT],
     [1.1, 0.58, 0.06, 0, 0.48, 0.51, SLATE],
     [0.08, 0.46, 0.08, 0, 1.2, 0, SLATE],
   ]),
@@ -95,10 +95,10 @@ const ROBOT_MAT = {
  * slightly larger slate plate: the thin dark rim makes the white chat read as UI against the pale sky.
  */
 const BUBBLE_GEO = (() => {
-  const { w, h } = EZRA.bubbles;
+  const { w, h, d } = EZRA.bubbles;
   const rim = "#5d6872";
   return merge([
-    paint(new RoundedBoxGeometry(w, h, 0.16, 2, 0.07).translate(w / 2, 0, 0), "#ffffff"),
+    paint(new RoundedBoxGeometry(w, h, d, 2, 0.07).translate(w / 2, 0, 0), "#ffffff"),
     paint(new RoundedBoxGeometry(w + 0.1, h + 0.1, 0.1, 2, 0.09).translate(w / 2, 0, -0.04), rim),
     paint(flatBox(0.22, 0.22, 0.12).rotateZ(Math.PI / 4).translate(0.12, -0.42, 0), "#ffffff"),
     paint(flatBox(0.29, 0.29, 0.08).rotateZ(Math.PI / 4).translate(0.12, -0.42, -0.04), rim),
@@ -244,7 +244,7 @@ export function EzraBotIsland({ placement }: { placement: IslandPlacement }) {
         radius={3}
         onActivate={advance}
       />
-      <InfoBoard placement={placement} at={EZRA.info} rotationY={EZRA.info.ry} title="Discord" lines={project.stats ?? []} />
+      <InfoBoard placement={placement} at={EZRA.info} rotationY={EZRA.info.ry} title={EZRA.info.title} lines={project.stats ?? []} />
       <Signpost id="ezra-link" placement={placement} at={EZRA.link} rotationY={EZRA.link.ry} label="Add to Discord" url={project.links.discord} />
       <MapBoard placement={placement} at={EZRA.map} />
     </>

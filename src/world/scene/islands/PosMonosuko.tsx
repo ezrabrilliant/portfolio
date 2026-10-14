@@ -18,7 +18,7 @@ import { miniBoardLines } from "./shared/text";
 
 const POS_GREEN = "#1f7a4d";
 const AWNING_WHITE = "#efede6";
-const GRILL_TOP = 1.36; // chicken pieces on the grate, on the counter top (1.0)
+const GRILL_TOP = MONOSUKO.grill.top - 0.04; // the chicken pieces' centre (0.08 tall) on the grate, on the counter top (1.0)
 
 /** Stone floor, plank back wall, back posts, counter, the green-and-white awning, the grill, table and stools. */
 function stallBlocks(): PropBlock[] {
@@ -46,7 +46,7 @@ function stallBlocks(): PropBlock[] {
     out.push({ x, y: postTop / 2, z: postZ, c: PALETTE.wood, sx: 0.2, sy: postTop, sz: 0.2 });
   }
   // a tabletop charcoal grill with chicken pieces on the counter's right end
-  out.push({ x: grill.x, y: 1.15, z: grill.z, c: "#4a4d52", sx: 0.7, sy: 0.3, sz: 0.45 });
+  out.push({ x: grill.x, y: 1.15, z: grill.z, c: "#4a4d52", sx: grill.w, sy: 0.3, sz: grill.d });
   out.push({ x: grill.x, y: 1.31, z: grill.z, c: "#2b2d30", sx: 0.62, sy: 0.03, sz: 0.38 });
   for (const [dx, dz] of [[-0.18, -0.06], [0.02, 0.06], [0.2, -0.04]] as const) {
     out.push({ x: grill.x + dx, y: GRILL_TOP, z: grill.z + dz, c: "#8a4a22", sx: 0.18, sy: 0.08, sz: 0.12 });

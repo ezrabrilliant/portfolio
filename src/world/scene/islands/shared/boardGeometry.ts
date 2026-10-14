@@ -41,3 +41,9 @@ export const SIGNPOST_FACE = {
 
 /** The sign's hit area: the face padded to x −1.0..1.6 and z −0.2..0.4 (centre (cx, cz), half extents hx × hz). */
 export const SIGNPOST_HIT = { cx: 0.3, cz: 0.1, hx: 1.3, hz: 0.3 } as const;
+
+/**
+ * A LiveScreen's bezel (screens/LiveScreen.tsx, frame "bezel"): it reaches `rim` past the face on every side
+ * (its frame is 2 × rim wider and taller) and runs `depth` back from the face.
+ */
+export const SCREEN_BEZEL = { rim: 0.08, depth: 0.14 } as const;
