@@ -1,7 +1,5 @@
-import * as THREE from "three";
-import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
-import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { EZRA_FIT, EZRA_HEAD } from "@/world/engine/physics/ezraModel";
+import { bakeBoxes, type BakeBox } from "@/world/scene/shared/bake";
 import { LEG } from "./anim";
 
 /*
@@ -22,30 +20,14 @@ const C = {
   sole: "#b3ab9e",
 };
 
-/** [width, height, depth, x, y, z, colour, corner radius?] relative to the part's pivot. */
-type Box = readonly [number, number, number, number, number, number, string, number?];
-
-/** Bakes a rig part into one rounded, vertex-coloured geometry (one draw call per part). */
-function part(boxes: readonly Box[]): THREE.BufferGeometry {
-  const c = new THREE.Color();
-  const pieces = boxes.map(([w, h, d, x, y, z, colour, radius = 0.035]) => {
-    const g = new RoundedBoxGeometry(w, h, d, 2, Math.min(radius, Math.min(w, h, d) * 0.3));
-    g.translate(x, y, z);
-    c.set(colour);
-    const n = g.attributes.position.count;
-    const rgb = new Float32Array(n * 3);
-    for (let i = 0; i < n; i++) rgb.set([c.r, c.g, c.b], i * 3);
-    g.setAttribute("color", new THREE.BufferAttribute(rgb, 3));
-    return g;
-  });
-  const merged = mergeGeometries(pieces);
-  for (const g of pieces) g.dispose();
-  if (!merged) throw new Error("Ezra: could not merge part geometry");
-  return merged;
-}
+/**
+ * Bakes a rig part (boxes relative to the part's pivot) into one rounded, vertex-coloured geometry: one draw call per
+ * part. Corners are rounded 0.035 unless a box gives its own radius.
+ */
+const part = (boxes: readonly BakeBox[]) => bakeBoxes(boxes, "Ezra's rig part", { radius: 0.035 });
 
 /** A box `halfW` / `halfD` either side of its part's pivot axis (centred `z` forward), from height `bottom` up to `top`. */
-function slab(halfW: number, halfD: number, bottom: number, top: number, colour: string, z = 0): Box {
+function slab(halfW: number, halfD: number, bottom: number, top: number, colour: string, z = 0): BakeBox {
   return [2 * halfW, top - bottom, 2 * halfD, 0, (top + bottom) / 2, z, colour];
 }
 

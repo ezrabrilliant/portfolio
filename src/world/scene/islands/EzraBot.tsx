@@ -2,10 +2,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
-import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import type { IslandPlacement } from "@/world/engine/gen/layout";
 import { playSfx } from "@/world/engine/audio/sfx";
 import { Interactable } from "@/world/scene/Interactable";
+import { bakeBoxes, mergeBaked, paint, type BakeBox } from "@/world/scene/shared/bake";
 import { useWorld } from "@/world/state/store";
 import { EZRA } from "./layouts";
 import { InfoBoard } from "./shared/InfoBoard";
@@ -18,33 +18,8 @@ import { useCanvasTexture } from "./shared/useCanvasTexture";
 import { useHoverLift } from "./shared/useHoverLift";
 import { CHAT_SCRIPT, drawBotScreen, drawBubble, pushMessage, startLog, visibleWindow, type ChatMessage } from "./ezrabot/chat";
 
-/** [width, height, depth, x, y, z, colour]: one box of a baked part, relative to the part's pivot. */
-type Box = readonly [number, number, number, number, number, number, string];
-
-const tint = new THREE.Color();
-
-/** Gives every vertex of `g` one colour (for vertex-coloured merged parts). */
-function paint(g: THREE.BufferGeometry, colour: string): THREE.BufferGeometry {
-  tint.set(colour);
-  const n = g.attributes.position.count;
-  const rgb = new Float32Array(n * 3);
-  for (let i = 0; i < n; i++) rgb.set([tint.r, tint.g, tint.b], i * 3);
-  g.setAttribute("color", new THREE.BufferAttribute(rgb, 3));
-  return g;
-}
-
-/** Merges pieces into one geometry (one draw call) and disposes the pieces. */
-function merge(pieces: THREE.BufferGeometry[]): THREE.BufferGeometry {
-  const merged = mergeGeometries(pieces);
-  for (const g of pieces) g.dispose();
-  if (!merged) throw new Error("EzraBot: could not merge part geometry");
-  return merged;
-}
-
-/** Bakes static boxes into one vertex-coloured geometry, so each part costs one draw call. */
-function bake(boxes: readonly Box[]): THREE.BufferGeometry {
-  return merge(boxes.map(([w, h, d, x, y, z, colour]) => paint(new THREE.BoxGeometry(w, h, d).translate(x, y, z), colour)));
-}
+/** Bakes a part's sharp boxes (relative to its pivot) into one vertex-coloured geometry, so each part costs one draw call. */
+const bake = (boxes: readonly BakeBox[]) => bakeBoxes(boxes, "an Ezra Bot part");
 
 /** A non-indexed box (RoundedBoxGeometry is non-indexed, and merged pieces must match). */
 function flatBox(w: number, h: number, d: number): THREE.BufferGeometry {
@@ -97,12 +72,15 @@ const ROBOT_MAT = {
 const BUBBLE_GEO = (() => {
   const { w, h, d, rim: margin, tail } = EZRA.bubbles;
   const rim = "#5d6872";
-  return merge([
-    paint(new RoundedBoxGeometry(w, h, d, 2, 0.07).translate(w / 2, 0, 0), "#ffffff"),
-    paint(new RoundedBoxGeometry(w + 2 * margin, h + 2 * margin, 0.1, 2, 0.09).translate(w / 2, 0, -0.04), rim),
-    paint(flatBox(0.22, 0.22, 0.12).rotateZ(Math.PI / 4).translate(tail.x, tail.y, 0), "#ffffff"),
-    paint(flatBox(tail.size, tail.size, 0.08).rotateZ(Math.PI / 4).translate(tail.x, tail.y, -0.04), rim),
-  ]);
+  return mergeBaked(
+    [
+      paint(new RoundedBoxGeometry(w, h, d, 2, 0.07).translate(w / 2, 0, 0), "#ffffff"),
+      paint(new RoundedBoxGeometry(w + 2 * margin, h + 2 * margin, 0.1, 2, 0.09).translate(w / 2, 0, -0.04), rim),
+      paint(flatBox(0.22, 0.22, 0.12).rotateZ(Math.PI / 4).translate(tail.x, tail.y, 0), "#ffffff"),
+      paint(flatBox(tail.size, tail.size, 0.08).rotateZ(Math.PI / 4).translate(tail.x, tail.y, -0.04), rim),
+    ],
+    "the Ezra Bot chat bubble",
+  );
 })();
 const BUBBLE_MAT = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.8 });
 /** Bubble canvas resolution: 230 px per world unit. */

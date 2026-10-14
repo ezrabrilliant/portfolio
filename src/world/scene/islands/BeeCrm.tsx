@@ -1,11 +1,11 @@
 import { useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
-import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import type { IslandPlacement } from "@/world/engine/gen/layout";
 import { useWorld } from "@/world/state/store";
 import { LiveScreen } from "@/world/scene/screens/LiveScreen";
 import { crmApp } from "@/world/scene/screens/crm";
+import { bakeBoxes, mergeBaked } from "@/world/scene/shared/bake";
 import { BEE, MINI_BOARD_SCALE, MINI_SIGN_SCALE } from "./layouts";
 import { shedBlocks } from "./bee/blocks";
 import { InfoBoard } from "./shared/InfoBoard";
@@ -16,38 +16,21 @@ import { islandFrame } from "./shared/local";
 import { projectById } from "./shared/project";
 import { miniBoardLines } from "./shared/text";
 
-const BEE_BODY = (() => {
-  const c = new THREE.Color();
-  const parts = (
-    [
-      [0.24, 0.17, 0.17, 0, 0, "#e3b23c"],
-      [0.04, 0.18, 0.18, -0.04, 0, "#2b2420"],
-      [0.04, 0.18, 0.18, 0.06, 0, "#2b2420"],
-    ] as const
-  ).map(([w, h, d, x, y, colour]) => {
-    const g = new THREE.BoxGeometry(w, h, d).translate(x, y, 0);
-    c.set(colour);
-    const n = g.attributes.position.count;
-    const rgb = new Float32Array(n * 3);
-    for (let i = 0; i < n; i++) rgb.set([c.r, c.g, c.b], i * 3);
-    g.setAttribute("color", new THREE.BufferAttribute(rgb, 3));
-    return g;
-  });
-  const merged = mergeGeometries(parts);
-  for (const g of parts) g.dispose();
-  if (!merged) throw new Error("BeeCrm: could not merge the bee");
-  return merged;
-})();
+/** The bee's body (yellow, two dark stripes) in one vertex-coloured geometry. */
+const BEE_BODY = bakeBoxes(
+  [
+    [0.24, 0.17, 0.17, 0, 0, 0, "#e3b23c"],
+    [0.04, 0.18, 0.18, -0.04, 0, 0, "#2b2420"],
+    [0.04, 0.18, 0.18, 0.06, 0, 0, "#2b2420"],
+  ],
+  "the bee",
+);
 const BEE_MAT = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.6 });
-const WINGS = (() => {
-  const a = new THREE.PlaneGeometry(0.14, 0.2).rotateX(Math.PI / 2).translate(0, 0.1, 0.1);
-  const b = new THREE.PlaneGeometry(0.14, 0.2).rotateX(Math.PI / 2).translate(0, 0.1, -0.1);
-  const merged = mergeGeometries([a, b]);
-  a.dispose();
-  b.dispose();
-  if (!merged) throw new Error("BeeCrm: could not merge the wings");
-  return merged;
-})();
+/** Both wings in one geometry (one colour, from WING_MAT). */
+const WINGS = mergeBaked(
+  [0.1, -0.1].map((z) => new THREE.PlaneGeometry(0.14, 0.2).rotateX(Math.PI / 2).translate(0, 0.1, z)),
+  "the bee's wings",
+);
 const WING_MAT = new THREE.MeshStandardMaterial({ color: "#ffffff", transparent: true, opacity: 0.75, roughness: 0.4, side: THREE.DoubleSide });
 
 /** The bee: a figure-eight over the shed roof, wings beating (held still under reduced motion). */

@@ -1,7 +1,6 @@
 import * as THREE from "three";
-import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
-import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { EZRA_CAP, EZRA_FIT } from "@/world/engine/physics/ezraModel";
+import { mergeBaked, paint, roundedBox } from "@/world/scene/shared/bake";
 import { LEG } from "./ezra/anim";
 
 /**
@@ -57,39 +56,30 @@ interface Piece {
   radius?: number;
 }
 
-/** Bakes pieces into one non-indexed, vertex-coloured geometry: one draw call for the whole part. */
-function bake(pieces: readonly Piece[]): THREE.BufferGeometry {
-  const c = new THREE.Color();
-  const parts = pieces.map((p) => {
-    let g: THREE.BufferGeometry;
-    if (p.disc) {
-      const cyl = new THREE.CylinderGeometry(p.size[0] / 2, p.size[0] / 2, p.size[1], 20);
-      g = cyl.toNonIndexed();
-      cyl.dispose();
-      g.rotateX(Math.PI / 2);
-    } else if (p.outline) {
-      const shape = new THREE.Shape(p.outline.map(([x, y]) => new THREE.Vector2(x, y)));
-      g = new THREE.ExtrudeGeometry(shape, { depth: p.size[2], bevelEnabled: false });
-      g.translate(0, 0, -p.size[2] / 2);
-    } else {
-      const [w, h, d] = p.size;
-      g = new RoundedBoxGeometry(w, h, d, 2, Math.min(p.radius ?? 0.01, Math.min(w, h, d) * 0.3));
-    }
-    if (p.ry) g.rotateY(p.ry);
-    if (p.rz) g.rotateZ(p.rz);
-    g.translate(p.at[0], p.at[1], p.at[2]);
-    c.set(p.color);
-    const n = g.attributes.position.count;
-    const rgb = new Float32Array(n * 3);
-    for (let i = 0; i < n; i++) rgb.set([c.r, c.g, c.b], i * 3);
-    g.setAttribute("color", new THREE.BufferAttribute(rgb, 3));
-    return g;
-  });
-  const merged = mergeGeometries(parts);
-  for (const g of parts) g.dispose();
-  if (!merged) throw new Error("graduation: could not merge the outfit geometry");
-  return merged;
+/** One piece's geometry, placed and painted: a non-indexed disc, outline slab or rounded box. */
+function pieceGeometry(p: Piece): THREE.BufferGeometry {
+  let g: THREE.BufferGeometry;
+  if (p.disc) {
+    const cyl = new THREE.CylinderGeometry(p.size[0] / 2, p.size[0] / 2, p.size[1], 20);
+    g = cyl.toNonIndexed();
+    cyl.dispose();
+    g.rotateX(Math.PI / 2);
+  } else if (p.outline) {
+    const shape = new THREE.Shape(p.outline.map(([x, y]) => new THREE.Vector2(x, y)));
+    g = new THREE.ExtrudeGeometry(shape, { depth: p.size[2], bevelEnabled: false });
+    g.translate(0, 0, -p.size[2] / 2);
+  } else {
+    const [w, h, d] = p.size;
+    g = roundedBox(w, h, d, p.radius ?? 0.01);
+  }
+  if (p.ry) g.rotateY(p.ry);
+  if (p.rz) g.rotateZ(p.rz);
+  g.translate(p.at[0], p.at[1], p.at[2]);
+  return paint(g, p.color);
 }
+
+/** Bakes pieces into one non-indexed, vertex-coloured geometry: one draw call for the whole part. */
+const bake = (pieces: readonly Piece[]) => mergeBaked(pieces.map(pieceGeometry), "the graduation outfit");
 
 const K = GRAD_COLORS;
 
