@@ -13,12 +13,26 @@ describe("followCam", () => {
   it("orbits, clamps pitch and zoom", () => {
     const cam = createFollowCam();
     updateFollowCam(cam, target, 0, false, 1 / 60, { orbitX: 0.5, orbitY: 5, zoom: 10 });
-    expect(cam.yaw).toBeCloseTo(0.5, 9);
+    expect(cam.yaw).toBeCloseTo(-0.5, 9);
     expect(cam.pitch).toBe(1.2);
     expect(cam.distance).toBe(14);
     updateFollowCam(cam, target, 0, false, 1 / 60, { orbitX: 0, orbitY: -5, zoom: -0.99 });
     expect(cam.pitch).toBe(0.05);
     expect(cam.distance).toBe(3);
+  });
+
+  it("a drag to the right turns the view to the right, like a drag down tips it down (game-style look)", () => {
+    const view = (orbitX: number, orbitY: number) => {
+      const cam = createFollowCam();
+      const { position, lookAt } = updateFollowCam(cam, target, 0, false, 1 / 60, { orbitX, orbitY, zoom: 0 });
+      return { x: lookAt.x - position.x, y: lookAt.y - position.y, z: lookAt.z - position.z };
+    };
+    // yaw 0 sits the camera on the +z side looking toward −z, so the view's right is +x
+    expect(view(0, 0).x).toBeCloseTo(0, 9);
+    expect(view(0.3, 0).x).toBeGreaterThan(0.5);
+    expect(view(-0.3, 0).x).toBeLessThan(-0.5);
+    // dragging down looks further down
+    expect(view(0, 0.3).y).toBeLessThan(view(0, 0).y);
   });
 
   it("keeps the camera `distance` away from a look-at above the target", () => {

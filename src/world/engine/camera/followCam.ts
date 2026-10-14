@@ -18,7 +18,9 @@ export function updateFollowCam(
   cam: FollowCam, target: Vec3, heading: number, moving: boolean, dt: number,
   input: { orbitX: number; orbitY: number; zoom: number },
 ): { position: Vec3; lookAt: Vec3 } {
-  cam.yaw += input.orbitX;
+  // game-style look: a drag to the right turns the view right (the camera swings left around Ezra), matching the
+  // vertical axis where a drag down looks further down
+  cam.yaw -= input.orbitX;
   cam.pitch = clamp(cam.pitch + input.orbitY, MIN_PITCH, MAX_PITCH);
   cam.distance = clamp(cam.distance * (1 + input.zoom), MIN_DIST, MAX_DIST);
   if (moving && input.orbitX === 0 && input.orbitY === 0) {
