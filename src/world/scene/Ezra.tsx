@@ -6,8 +6,8 @@ import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js
 import { runtime } from "@/world/state/runtime";
 import { useWorld } from "@/world/state/store";
 import { LEG, pickAnim, poseFor } from "./ezra/anim";
-import { CAP_ON_HEAD_Y } from "./graduation";
-import { GraduationCap, GraduationRegalia } from "./GraduationCap";
+import { CAP_ON_HEAD_Y, EZRA_FIT, GOWN_POP_Y } from "./graduation";
+import { GownSkirt, GownSleeve, GraduationCap, GraduationGown } from "./GraduationCap";
 import { capPopScale } from "./milestones/moment";
 
 // colours from the approved sketch and the avatar photo: black tee, short black hair, jeans, light shoes
@@ -45,7 +45,8 @@ function part(boxes: readonly Box[]): THREE.BufferGeometry {
   return merged;
 }
 
-// model faces +Z, its left is +X; limbs are symmetric about their own pivot
+// model faces +Z, its left is +X; limbs are symmetric about their own pivot. The graduation gown is cut to these
+// measurements (EZRA_FIT in graduation.ts): change them together
 const GEO = {
   // pivot at the hip; runs half a leg past the knee so a bent knee stays square
   thigh: part([[0.22, 0.41, 0.22, 0, -0.185, 0, C.jeans]]),
@@ -118,9 +119,17 @@ export function Ezra() {
   const armL = useRef<THREE.Group>(null);
   const armR = useRef<THREE.Group>(null);
   const head = useRef<THREE.Group>(null);
+  const thighL = useRef<THREE.Mesh>(null);
+  const thighR = useRef<THREE.Mesh>(null);
   const cap = useRef<THREE.Group>(null);
-  const regalia = useRef<THREE.Group>(null);
+  const gown = useRef<THREE.Group>(null);
+  const sleeveL = useRef<THREE.Group>(null);
+  const sleeveR = useRef<THREE.Group>(null);
+  const skirtL = useRef<THREE.Group>(null);
+  const skirtR = useRef<THREE.Group>(null);
   const capAge = useRef(0);
+  // everything the graduation moment puts on him: shown, and popped, together
+  const outfit = [cap, gown, sleeveL, sleeveR, skirtL, skirtR];
 
   useFrame((state, dt) => {
     if (!root.current || !body.current || !legL.current || !legR.current || !kneeL.current || !kneeR.current) return;
@@ -164,14 +173,22 @@ export function Ezra() {
     armL.current.rotation.set(pose.armL, 0, pose.armSpread);
     armR.current.rotation.set(pose.armR, 0, -pose.armSpread);
     head.current.rotation.set(pose.headPitch, pose.headYaw, 0);
-    // the graduation outfit (Play moment): the cap pops on with a small overshoot, the collar and medal just appear
-    if (cap.current && regalia.current) {
-      const on = runtime.capOn;
-      cap.current.visible = on;
-      regalia.current.visible = on;
-      capAge.current = on ? capAge.current + dt : 0;
-      if (on) cap.current.scale.setScalar(reduced ? 1 : Math.max(0.001, capPopScale(capAge.current)));
+    // the graduation outfit (Play moment): cap and gown pop on together with a small overshoot (reduced motion: they
+    // are simply there). Each piece grows from its own pivot: the sleeves from the shoulders, the skirt halves from the
+    // hips, the gown body from his chest. Once the gown is fully on, the thighs it wraps are not drawn
+    const on = runtime.capOn;
+    capAge.current = on ? capAge.current + dt : 0;
+    const s = on && !reduced ? Math.max(0.001, capPopScale(capAge.current)) : 1;
+    for (let i = 0; i < outfit.length; i++) {
+      const o = outfit[i].current;
+      if (!o) continue;
+      o.visible = on;
+      o.scale.setScalar(s);
     }
+    if (gown.current) gown.current.position.y = GOWN_POP_Y * (1 - s);
+    const bare = !on || s !== 1;
+    if (thighL.current) thighL.current.visible = bare;
+    if (thighR.current) thighR.current.visible = bare;
 
     // a camera pressed against his head (wall clamp) would see the model from inside: hide it until it backs off
     const cam = state.camera.position;
@@ -185,24 +202,37 @@ export function Ezra() {
     <group ref={root}>
       <group ref={body}>
         <mesh geometry={GEO.body} material={MAT} castShadow={cast} receiveShadow={cast} />
-        {/* legs pivot at the hips, knees LEG.knee lower (the rim-clearance tests use the same rig) */}
+        {/* legs pivot at the hips, knees LEG.knee lower (the rim-clearance tests use the same rig); each gown skirt
+            half rides on its leg, so no stride can push a leg through it */}
         <group ref={legL} position={[LEG.hipX, LEG.hipY, 0]}>
-          <mesh geometry={GEO.thigh} material={MAT} castShadow={cast} receiveShadow={cast} />
+          <mesh ref={thighL} geometry={GEO.thigh} material={MAT} castShadow={cast} receiveShadow={cast} />
           <group ref={kneeL} position={[0, -LEG.knee, 0]}>
             <mesh geometry={GEO.shin} material={MAT} castShadow={cast} receiveShadow={cast} />
           </group>
+          <group ref={skirtL} visible={false}>
+            <GownSkirt side="left" cast={cast} />
+          </group>
         </group>
         <group ref={legR} position={[-LEG.hipX, LEG.hipY, 0]}>
-          <mesh geometry={GEO.thigh} material={MAT} castShadow={cast} receiveShadow={cast} />
+          <mesh ref={thighR} geometry={GEO.thigh} material={MAT} castShadow={cast} receiveShadow={cast} />
           <group ref={kneeR} position={[0, -LEG.knee, 0]}>
             <mesh geometry={GEO.shin} material={MAT} castShadow={cast} receiveShadow={cast} />
           </group>
+          <group ref={skirtR} visible={false}>
+            <GownSkirt side="right" cast={cast} />
+          </group>
         </group>
-        <group ref={armL} position={[0.37, 1.28, 0]}>
+        <group ref={armL} position={[EZRA_FIT.shoulder.x, EZRA_FIT.shoulder.y, 0]}>
           <mesh geometry={GEO.arm} material={MAT} castShadow={cast} receiveShadow={cast} />
+          <group ref={sleeveL} visible={false}>
+            <GownSleeve side="left" cast={cast} />
+          </group>
         </group>
-        <group ref={armR} position={[-0.37, 1.28, 0]}>
+        <group ref={armR} position={[-EZRA_FIT.shoulder.x, EZRA_FIT.shoulder.y, 0]}>
           <mesh geometry={GEO.arm} material={MAT} castShadow={cast} receiveShadow={cast} />
+          <group ref={sleeveR} visible={false}>
+            <GownSleeve side="right" cast={cast} />
+          </group>
         </group>
         <group ref={head} position={[0, 1.36, 0]}>
           <mesh geometry={GEO.head} material={MAT} castShadow={cast} receiveShadow={cast} />
@@ -210,8 +240,8 @@ export function Ezra() {
             <GraduationCap cast={cast} />
           </group>
         </group>
-        <group ref={regalia} visible={false}>
-          <GraduationRegalia cast={cast} />
+        <group ref={gown} visible={false}>
+          <GraduationGown cast={cast} />
         </group>
       </group>
     </group>
