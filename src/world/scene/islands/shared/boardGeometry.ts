@@ -18,7 +18,8 @@ const SIGN_POST_H = 2.1;
 
 /**
  * Signpost: one post `postW` square and `postH` tall; on it a board `boardW` × `boardH` centred at (boardX, boardY),
- * and an arrow head (a square `arrowSize` turned 45°) centred at arrowX.
+ * and an arrow head (a square `arrowSize` turned 45°) centred at arrowX, both `faceDepth` deep and `faceZ` in front of
+ * the post's centre.
  */
 export const SIGNPOST = {
   postW: 0.16,
@@ -29,6 +30,8 @@ export const SIGNPOST = {
   boardH: 0.5,
   arrowX: 1.27,
   arrowSize: 0.36,
+  faceZ: 0.1,
+  faceDepth: 0.08,
 } as const;
 
 /** The sign's face, from the board's left end to the arrow's tip: x −0.85..1.53, y 1.6..2.1. */

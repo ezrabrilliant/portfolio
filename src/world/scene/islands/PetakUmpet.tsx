@@ -501,7 +501,7 @@ export function PetakUmpetIsland({ placement }: { placement: IslandPlacement }) 
         <PetakSign />
       </group>
       <HidingKid placement={placement} />
-      <InfoBoard placement={placement} at={PETAK.info} rotationY={PETAK.info.ry} title="Roblox" lines={project.stats ?? []} />
+      <InfoBoard placement={placement} at={PETAK.info} rotationY={PETAK.info.ry} title={PETAK.info.title} lines={project.stats ?? []} />
       <Signpost id="petak-link" placement={placement} at={PETAK.link} rotationY={PETAK.link.ry} label="Play on Roblox" url={project.links.roblox} />
       <MapBoard placement={placement} at={PETAK.map} />
     </>

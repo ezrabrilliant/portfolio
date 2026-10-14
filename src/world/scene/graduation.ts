@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
+import { EZRA_CAP, EZRA_FIT } from "@/world/engine/physics/ezraModel";
 import { LEG } from "./ezra/anim";
 
 /**
@@ -27,26 +28,10 @@ export const GRAD_COLORS = {
 } as const;
 
 /** Height of the cap's base (its skull cap's bottom) above Ezra's head pivot: just under his hair top (~0.65). */
-export const CAP_ON_HEAD_Y = 0.49;
+export const CAP_ON_HEAD_Y = EZRA_CAP.base;
 
-/**
- * Ezra's body measurements, in blocks: Ezra.tsx builds his model from these and the gown is cut to them, so the two
- * cannot drift apart. Body space: feet at the origin, facing +z, his left +x.
- * - torso and hips: their half width and depth, and their bottom and top heights.
- * - arm: hangs from its shoulder pivot. The tee sleeve runs from `top` above the pivot down to `sleeve` below it; the
- *   skin (forearm and hand) runs from `skin.top` below it down to the hand's bottom, `hand` below it.
- * - thigh: hangs from the hip pivot (LEG in ezra/anim.ts), `top` above it and `bottom` below it; the shin below the knee
- *   shares its half width.
- * - shoe: the shoe's top above the sole.
- */
-export const EZRA_FIT = {
-  torso: { halfW: 0.28, halfD: 0.16, bottom: 0.75, top: 1.33 },
-  hips: { halfW: 0.25, halfD: 0.15, bottom: 0.56, top: 0.76 },
-  shoulder: { x: 0.37, y: 1.28 },
-  arm: { halfW: 0.09, halfD: 0.1, top: 0.02, sleeve: 0.2, skin: { halfW: 0.075, halfD: 0.08, top: 0.19 }, hand: 0.55 },
-  thigh: { half: 0.11, top: 0.02, bottom: 0.39 },
-  shoe: 0.12,
-} as const;
+/** Ezra's body measurements (engine/physics/ezraModel.ts): Ezra.tsx builds his model from them and the gown is cut to them. */
+export { EZRA_FIT };
 
 /**
  * The gown body: a little outside the tee and the hips, from the shoulders (just under the head, at 1.36) to just
@@ -110,12 +95,13 @@ const K = GRAD_COLORS;
 
 /**
  * The mortarboard, its base at the origin (model space: faces +z, Ezra's right is −x): skull cap, square board, centre
- * button, the cord running to the board's right edge and down to a tassel that hangs beside his face.
+ * button (EZRA_CAP), the cord running to the board's right edge and down to a tassel that hangs beside his face.
  */
+const { skull, board, button } = EZRA_CAP;
 export const CAP_GEOMETRY = bake([
-  { size: [0.6, 0.18, 0.54], at: [0, 0.09, 0], color: K.cap, radius: 0.04 },
-  { size: [0.78, 0.035, 0.78], at: [0, 0.1975, 0], color: K.cap, radius: 0.012 },
-  { size: [0.07, 0.025, 0.07], at: [0, 0.2275, 0], color: K.cord },
+  { size: [skull.w, skull.h, skull.d], at: [0, skull.h / 2, 0], color: K.cap, radius: 0.04 },
+  { size: [board.size, board.h, board.size], at: [0, board.y, 0], color: K.cap, radius: 0.012 },
+  { size: [button.size, button.h, button.size], at: [0, button.y, 0], color: K.cord },
   // from the button to the edge at (−0.39, 0.12): a 0.408 cord turned 0.2985 rad about y
   { size: [0.408, 0.012, 0.018], at: [-0.195, 0.221, 0.06], color: K.cord, ry: 0.2985 },
   { size: [0.014, 0.22, 0.014], at: [-0.395, 0.105, 0.12], color: K.cord },

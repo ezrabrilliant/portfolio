@@ -9,7 +9,7 @@ import { useHoverLift } from "./useHoverLift";
 
 // the sign's extents and hit area are shared with the tour-view rules (boardGeometry.ts)
 const { postW: POST_W, postH: POST_H, boardX: BOARD_X, boardY: BOARD_Y, boardW: BOARD_W, boardH: BOARD_H } = SIGNPOST;
-const { arrowX: ARROW_X, arrowSize: ARROW } = SIGNPOST;
+const { arrowX: ARROW_X, arrowSize: ARROW, faceZ: FACE_Z, faceDepth: FACE_D } = SIGNPOST;
 const { cx: HIT_CX, cz: HIT_CZ, hx: HIT_HX, hz: HIT_HZ } = SIGNPOST_HIT;
 const OFF = "#9b938a";
 
@@ -52,12 +52,12 @@ export function Signpost({
             <meshStandardMaterial color={PALETTE.wood} roughness={0.9} />
           </mesh>
           <group ref={lift}>
-            <mesh position={[BOARD_X, BOARD_Y, 0.1]} castShadow>
-              <boxGeometry args={[BOARD_W, BOARD_H, 0.08]} />
+            <mesh position={[BOARD_X, BOARD_Y, FACE_Z]} castShadow>
+              <boxGeometry args={[BOARD_W, BOARD_H, FACE_D]} />
               <meshStandardMaterial color={wood} roughness={0.85} />
             </mesh>
-            <mesh position={[ARROW_X, BOARD_Y, 0.1]} rotation={[0, 0, Math.PI / 4]} castShadow>
-              <boxGeometry args={[ARROW, ARROW, 0.08]} />
+            <mesh position={[ARROW_X, BOARD_Y, FACE_Z]} rotation={[0, 0, Math.PI / 4]} castShadow>
+              <boxGeometry args={[ARROW, ARROW, FACE_D]} />
               <meshStandardMaterial color={wood} roughness={0.85} />
             </mesh>
             <WorldText text={label} position={[0.12, BOARD_Y, 0.16]} size={0.2} color={enabled ? "#3a2a1c" : "#6e6760"} font="ui" anchorX="center" maxWidth={1.9} />

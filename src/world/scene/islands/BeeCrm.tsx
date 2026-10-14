@@ -23,8 +23,6 @@ const STAND = "#2b2e33";
 /** Plank floor, back and left walls, posts, the sloped roof, the workbench with a half-built chair and a saw, the logs, the monitor stand. */
 function shedBlocks(): PropBlock[] {
   const { shed, bench, logs, monitor, screen } = BEE;
-  // the roof planks' centre line (layouts.ts BEE.roof): 3.2 up over the back wall, dropping 0.12 every half block
-  const roofY = beeRoofY;
   const out: PropBlock[] = [];
   for (let x = shed.x0; x <= shed.x1; x++) for (let z = shed.z0; z <= shed.z1; z++) out.push({ x, y: 0.06, z, c: PALETTE.plank[1], sy: 0.12 });
   for (let x = shed.x0; x <= shed.x1; x++) for (let row = 0; row < shed.rows; row++) {
@@ -32,7 +30,7 @@ function shedBlocks(): PropBlock[] {
   }
   for (let z = shed.z0; z <= shed.z1; z++) for (let row = 0; row < shed.rows; row++) {
     // left wall: its top row stops at the roof line over the cell's front edge (a full row poked through the slope)
-    const top = Math.min(row + 1, roofY(z + 0.5));
+    const top = Math.min(row + 1, beeRoofY(z + 0.5));
     out.push({ x: shed.x0 - 0.35, y: (row + top) / 2, z, c: PALETTE.plank[0], sx: 0.2, sy: top - row });
   }
   out.push({ x: shed.x1 + 0.4, y: 1.55, z: shed.z0 - 0.35, c: PALETTE.wood, sx: 0.2, sy: 3.1, sz: 0.2 });

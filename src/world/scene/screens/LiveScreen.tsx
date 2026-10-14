@@ -11,6 +11,7 @@ import type { CloseupTarget } from "@/world/state/runtime";
 import { useWorld } from "@/world/state/store";
 import { Interactable } from "@/world/scene/Interactable";
 import { closeCloseup, openCloseup } from "@/world/scene/closeupState";
+import { SCREEN_BEZEL } from "@/world/scene/islands/shared/boardGeometry";
 import { loadCanvasFonts } from "@/world/scene/islands/shared/canvasFonts";
 import { islandFrame, worldTuple } from "@/world/scene/islands/shared/local";
 import { screensVersion } from "./dirty";
@@ -81,7 +82,7 @@ export function LiveScreen<S>({
   useEffect(() => () => texture.dispose(), [texture]);
 
   const bezel = useMemo(
-    () => (frame === "bezel" ? new RoundedBoxGeometry(size.w + 0.16, size.h + 0.16, 0.14, 2, 0.05) : null),
+    () => (frame === "bezel" ? new RoundedBoxGeometry(size.w + 2 * SCREEN_BEZEL.rim, size.h + 2 * SCREEN_BEZEL.rim, SCREEN_BEZEL.depth, 2, 0.05) : null),
     [frame, size.w, size.h],
   );
   useEffect(() => () => bezel?.dispose(), [bezel]);
@@ -245,7 +246,7 @@ export function LiveScreen<S>({
       <group position={islandFrame(placement)}>
         <group position={[at.x, at.y, at.z]} rotation={[0, rotationY, 0]}>
           {bezel && (
-            <mesh geometry={bezel} position={[0, 0, -0.07]} castShadow>
+            <mesh geometry={bezel} position={[0, 0, -SCREEN_BEZEL.depth / 2]} castShadow>
               <meshStandardMaterial color={bezelColor} roughness={0.6} />
             </mesh>
           )}

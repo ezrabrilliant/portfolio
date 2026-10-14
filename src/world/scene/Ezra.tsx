@@ -6,7 +6,8 @@ import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js
 import { runtime } from "@/world/state/runtime";
 import { useWorld } from "@/world/state/store";
 import { LEG, pickAnim, poseFor } from "./ezra/anim";
-import { CAP_ON_HEAD_Y, EZRA_FIT, GOWN_POP_Y } from "./graduation";
+import { EZRA_CAP, EZRA_FIT, EZRA_HEAD } from "@/world/engine/physics/ezraModel";
+import { GOWN_POP_Y } from "./graduation";
 import { GownSkirt, GownSleeve, GraduationCap, GraduationGown } from "./GraduationCap";
 import { capPopScale } from "./milestones/moment";
 
@@ -51,7 +52,8 @@ function slab(halfW: number, halfD: number, bottom: number, top: number, colour:
 }
 
 // model faces +Z, its left is +X; limbs are symmetric about their own pivot. The torso, hips, arms, legs and shoes are
-// built from EZRA_FIT (graduation.ts), the measurements the graduation gown is cut to, so the two cannot drift apart
+// built from EZRA_FIT (engine/physics/ezraModel.ts), the measurements the graduation gown is cut to, so the two cannot
+// drift apart; the head's pivot and its highest hair box come from EZRA_HEAD there too
 const F = EZRA_FIT;
 /** The shoe's top below the knee (the sole's bottom is LEG.shin below it). */
 const SHOE_TOP = -(LEG.shin - F.shoe);
@@ -103,7 +105,7 @@ const GEO = {
     [0.54, 0.06, 0.05, 0, 0.445, 0.23, C.hair, 0.012],
     [0.15, 0.08, 0.05, 0.185, 0.4, 0.228, C.hair, 0.012],
     [0.05, 0.12, 0.12, 0.248, 0.43, 0.18, C.hair, 0.012],
-    [0.26, 0.11, 0.24, -0.12, 0.595, 0.12, C.hair, 0.012],
+    [0.26, EZRA_HEAD.crown.h, 0.24, -0.12, EZRA_HEAD.crown.y, 0.12, C.hair, 0.012],
     [0.2, 0.08, 0.18, 0.11, 0.575, 0.15, C.hair, 0.012],
     [0.3, 0.06, 0.2, 0, 0.57, -0.1, C.hair, 0.012],
     [0.06, 0.08, 0.14, -0.265, 0.55, 0.13, C.hair, 0.012],
@@ -242,9 +244,9 @@ export function Ezra() {
             <GownSleeve side="right" cast={cast} />
           </group>
         </group>
-        <group ref={head} position={[0, 1.36, 0]}>
+        <group ref={head} position={[0, EZRA_HEAD.pivot, 0]}>
           <mesh geometry={GEO.head} material={MAT} castShadow={cast} receiveShadow={cast} />
-          <group ref={cap} position={[0, CAP_ON_HEAD_Y, 0]} visible={false}>
+          <group ref={cap} position={[0, EZRA_CAP.base, 0]} visible={false}>
             <GraduationCap cast={cast} />
           </group>
         </group>

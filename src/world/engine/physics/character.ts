@@ -1,4 +1,5 @@
 import type { IsSolid, Vec3 } from "@/world/engine/types";
+import { EZRA_REACH } from "./ezraModel";
 
 export interface CharacterParams {
   width: number; height: number; walkSpeed: number; runSpeed: number; accel: number;
@@ -11,11 +12,12 @@ export const DEFAULT_PARAMS: CharacterParams = {
 };
 
 /**
- * How high above his feet Ezra's model reaches in its neutral pose, hair included: scene/Ezra.tsx puts the head's
- * pivot 1.36 up and its hair tops out 0.65 above that. His collision box stops at DEFAULT_PARAMS.height, so the model
- * stands ~0.21 taller; the head-clearance rules (scene/islands/layouts) keep visuals clear of this, not of the box.
+ * How high above his feet Ezra's model reaches (ezraModel.ts): his hair (~2.01), or once the 2026 moment has put the
+ * mortarboard on him for the rest of the visit, its button (~2.09). His collision box stops at DEFAULT_PARAMS.height,
+ * so the model stands up to ~0.29 taller; the head-clearance rules (scene/islands/layouts) keep visuals clear of this,
+ * not of the box.
  */
-export const MODEL_TOP = 2.01;
+export const MODEL_TOP = Math.max(EZRA_REACH.hairTop, EZRA_REACH.capTop);
 
 export interface CharacterState {
   pos: Vec3; vel: Vec3; onGround: boolean; sinceGround: number; jumpTimer: number;

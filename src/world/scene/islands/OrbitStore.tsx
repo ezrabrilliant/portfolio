@@ -184,7 +184,7 @@ export function OrbitStoreIsland({ placement }: { placement: IslandPlacement }) 
         radius={3}
         onActivate={print}
       />
-      <InfoBoard placement={placement} at={ORBIT.info} rotationY={ORBIT.info.ry} title="Orbit Store" lines={project.stats ?? []} />
+      <InfoBoard placement={placement} at={ORBIT.info} rotationY={ORBIT.info.ry} title={ORBIT.info.title} lines={project.stats ?? []} />
       <Signpost id="orbit-link" placement={placement} at={ORBIT.link} rotationY={ORBIT.link.ry} label="Visit Orbit Store" url={project.links.demo} />
       <MapBoard placement={placement} at={ORBIT.map} />
     </>
