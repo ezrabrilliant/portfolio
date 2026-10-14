@@ -11,8 +11,11 @@ import { LEG, pickAnim, poseFor } from "./ezra/anim";
 const C = {
   jeans: "#4b5a6e",
   shirt: "#2e3336",
-  skin: "#d6ab88",
+  skin: "#d09676",
   hair: "#1e1b19",
+  // the clipper-short sides and back: skin shows through, so they read lighter than the top, lightest at the nape
+  fade: "#463830",
+  nape: "#624a3e",
   shoe: "#e7e2d8",
   sole: "#b3ab9e",
 };
@@ -70,15 +73,28 @@ const GEO = {
     [0.065, 0.085, 0.02, -0.11, 0.19, 0.235, C.hair],
     [0.11, 0.03, 0.02, 0.11, 0.275, 0.235, C.hair],
     [0.11, 0.03, 0.02, -0.11, 0.275, 0.235, C.hair],
-    // short hair as one mass: pieces share outer planes and overlap past their rounded edges so no seams
-    // show; the hairline dips at his right temple and the volume sweeps up at the front
-    [0.54, 0.11, 0.52, 0, 0.495, -0.005, C.hair, 0.012],
-    [0.54, 0.35, 0.08, 0, 0.345, -0.225, C.hair, 0.012],
-    [0.05, 0.22, 0.52, 0.245, 0.41, -0.005, C.hair, 0.012],
-    [0.05, 0.22, 0.52, -0.245, 0.41, -0.005, C.hair, 0.012],
-    [0.54, 0.13, 0.07, 0, 0.435, 0.22, C.hair, 0.012],
-    [0.16, 0.08, 0.07, -0.17, 0.385, 0.22, C.hair, 0.012],
-    [0.44, 0.11, 0.3, -0.03, 0.545, 0.105, C.hair, 0.012],
+    // tapered sides and back sit flush on the head so the ears show; only the top stands proud of them, and
+    // that step is what reads as a haircut instead of a helmet
+    [0.53, 0.25, 0.03, 0, 0.335, -0.238, C.fade, 0.01],
+    [0.53, 0.14, 0.03, 0, 0.15, -0.238, C.nape, 0.01],
+    [0.03, 0.17, 0.4, 0.258, 0.375, -0.03, C.fade, 0.01],
+    [0.03, 0.17, 0.4, -0.258, 0.375, -0.03, C.fade, 0.01],
+    [0.03, 0.08, 0.17, 0.258, 0.25, -0.155, C.fade, 0.01],
+    [0.03, 0.08, 0.17, -0.258, 0.25, -0.155, C.fade, 0.01],
+    [0.03, 0.14, 0.17, 0.258, 0.15, -0.155, C.nape, 0.01],
+    [0.03, 0.14, 0.17, -0.258, 0.15, -0.155, C.nape, 0.01],
+    [0.03, 0.07, 0.05, 0.258, 0.27, 0.105, C.fade, 0.01],
+    [0.03, 0.07, 0.05, -0.258, 0.27, 0.105, C.fade, 0.01],
+    // the top: a high hairline with his left temple lower, then messy volume pushed up and forward, one strand
+    // flaring out at his right
+    [0.54, 0.12, 0.49, 0, 0.5, 0.005, C.hair, 0.012],
+    [0.54, 0.06, 0.05, 0, 0.445, 0.23, C.hair, 0.012],
+    [0.15, 0.08, 0.05, 0.185, 0.4, 0.228, C.hair, 0.012],
+    [0.05, 0.12, 0.12, 0.248, 0.43, 0.18, C.hair, 0.012],
+    [0.26, 0.11, 0.24, -0.12, 0.595, 0.12, C.hair, 0.012],
+    [0.2, 0.08, 0.18, 0.11, 0.575, 0.15, C.hair, 0.012],
+    [0.3, 0.06, 0.2, 0, 0.57, -0.1, C.hair, 0.012],
+    [0.06, 0.08, 0.14, -0.265, 0.55, 0.13, C.hair, 0.012],
   ]),
 };
 const MAT = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.9 });
