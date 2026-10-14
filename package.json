@@ -14,7 +14,8 @@
     "start": "PORT=3000 node server.js",
     "start:dev": "node server.js",
     "serve": "npm run build && PORT=3000 node server.js",
-    "shots": "node scripts/shoot-stops.mjs"
+    "shots": "node scripts/shoot-stops.mjs",
+    "draw-calls": "node scripts/draw-calls.mjs"
   },
   "dependencies": {
     "@emailjs/browser": "^4.4.1",
