@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { DISTRICTS, validateProjects, type WorldProject } from "@/config/schema";
+import { DISTRICTS, isSiteLink, validateMilestones, validateProjects, type Milestone, type WorldProject } from "@/config/schema";
 import { worldCopy, worldProjects } from "@/config/portfolio";
 
 const base: WorldProject = {
@@ -43,20 +43,74 @@ describe("validateProjects", () => {
     expect(messages).toContain("line must describe the result, not the process");
   });
 
-  it("requires https links but allows empty ones", () => {
+  it("accepts https links, site paths and empty links; rejects anything else", () => {
     expect(validateProjects([{ ...base, links: { discord: "" } }])).toEqual([]);
-    const messages = validateProjects([{ ...base, links: { demo: "http://x.dev" } }]).map((i) => i.message);
-    expect(messages).toContain("links.demo must start with https://");
+    expect(validateProjects([{ ...base, links: { demo: "/demo/monosuko/", github: "https://github.com/x/y" } }])).toEqual([]);
+    for (const demo of ["http://x.dev", "//evil.dev/x", "demo/monosuko/", "javascript:alert(1)"]) {
+      const messages = validateProjects([{ ...base, links: { demo } }]).map((i) => i.message);
+      expect(messages, demo).toContain("links.demo must be an https:// URL or a site path starting with one /");
+    }
   });
 
-  it("checks island template and accent format", () => {
-    const bad = { ...base, island: { template: "castle", accent: "blue" } } as unknown as WorldProject;
-    const messages = validateProjects([bad]).map((i) => i.message);
-    expect(messages).toContain('unknown island template "castle"');
+  it("checks the island accent format", () => {
+    const messages = validateProjects([{ ...base, island: { accent: "blue" } }]).map((i) => i.message);
     expect(messages).toContain("island.accent must be #RRGGBB");
+    expect(validateProjects([{ ...base, island: { accent: "#1f7a4d" } }])).toEqual([]);
   });
 
   it("lists the three districts", () => {
     expect(DISTRICTS).toEqual(["game", "discord", "web"]);
+  });
+});
+
+describe("isSiteLink", () => {
+  it("accepts https URLs and paths that start with exactly one slash", () => {
+    for (const url of ["https://gtid.pro", "https://github.com/a/b/releases/tag/1.5.3", "/demo/monosuko/", "/demo/bee/", "/"]) {
+      expect(isSiteLink(url), url).toBe(true);
+    }
+  });
+  it("rejects http, protocol-relative, relative, script and whitespace links", () => {
+    for (const url of ["", "http://x.dev", "https://", "//evil.dev", "demo/bee/", "javascript:alert(1)", "/demo bee/", "https://a b"]) {
+      expect(isSiteLink(url), url).toBe(false);
+    }
+  });
+});
+
+describe("validateMilestones", () => {
+  const ok: Milestone[] = [
+    { year: 2022, title: "Started", line: "A university" },
+    { year: 2026, title: "Graduated", line: "A university", moment: "graduation" },
+  ];
+
+  it("accepts ascending milestones with one graduation moment", () => {
+    expect(validateMilestones(ok)).toEqual([]);
+    expect(validateMilestones([])).toEqual([]);
+  });
+
+  it("flags years out of order, repeated or outside 2000–2100", () => {
+    const messages = validateMilestones([ok[1], ok[0]]).map((i) => i.message);
+    expect(messages).toContain("years must be in ascending order");
+    expect(validateMilestones([ok[0], { ...ok[0] }]).map((i) => i.message)).toContain("years must be in ascending order");
+    expect(validateMilestones([{ ...ok[0], year: 1999 }]).map((i) => i.message)).toContain("year must be a 4-digit year");
+    expect(validateMilestones([{ ...ok[0], year: 2101 }]).map((i) => i.message)).toContain("year must be a 4-digit year");
+    expect(validateMilestones([{ ...ok[0], year: 2024.5 }]).map((i) => i.message)).toContain("year must be a 4-digit year");
+  });
+
+  it("requires a title and a line", () => {
+    const issues = validateMilestones([{ year: 2024, title: " ", line: "" }]);
+    expect(issues).toContainEqual({ id: "milestone 2024", message: "title is required" });
+    expect(issues).toContainEqual({ id: "milestone 2024", message: "line is required" });
+  });
+
+  it("rejects process claims (copy rule)", () => {
+    const messages = validateMilestones([{ year: 2024, title: "Solo capstone", line: "Built end-to-end" }]).map((i) => i.message);
+    expect(messages).toContain("milestone must describe the result, not the process");
+  });
+
+  it("allows at most one graduation moment and no unknown moments", () => {
+    const two = validateMilestones([{ ...ok[1], year: 2025 }, ok[1]]);
+    expect(two).toContainEqual({ id: "milestones", message: "at most one graduation moment" });
+    const odd = { year: 2024, title: "Bangkit", line: "Mobile", moment: "party" } as unknown as Milestone;
+    expect(validateMilestones([odd]).map((i) => i.message)).toContain('unknown moment "party"');
   });
 });
