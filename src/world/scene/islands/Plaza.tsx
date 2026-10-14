@@ -13,18 +13,18 @@ const LANTERN_GEO = new THREE.BoxGeometry(0.28, 0.28, 0.28);
 const LANTERN_MAT = new THREE.MeshStandardMaterial({ color: "#f1dfb0", emissive: "#f3d58e", emissiveIntensity: 0.6, roughness: 0.6 });
 // The sign's posts stand this far behind its plane, so their front face (0.09 − 0.1) stays behind the backing's front
 // face (0.04): centred on the plane they poked 0.01 past the plank face and covered the W and the S of the lettering.
-const POST_BACK = 0.1;
+const SIGN_POST_BACK = 0.1;
 
 /** The district sign (posts, a dark backing and the plank face), the tree, the lamp posts and the flowers: one batch. */
 function plazaBlocks(): PropBlock[] {
   const { sign } = PLAZA;
   const out: PropBlock[] = [];
-  const along = (s: number) => ({
-    x: sign.x + Math.cos(sign.ry) * s - Math.sin(sign.ry) * POST_BACK,
-    z: sign.z - Math.sin(sign.ry) * s - Math.cos(sign.ry) * POST_BACK,
+  const signPostAt = (s: number) => ({
+    x: sign.x + Math.cos(sign.ry) * s - Math.sin(sign.ry) * SIGN_POST_BACK,
+    z: sign.z - Math.sin(sign.ry) * s - Math.cos(sign.ry) * SIGN_POST_BACK,
   });
   for (const s of [-(sign.w / 2 - 0.1), sign.w / 2 - 0.1]) {
-    const p = along(s);
+    const p = signPostAt(s);
     out.push({ x: p.x, y: (sign.y + sign.h / 2) / 2, z: p.z, c: PALETTE.wood, sx: 0.18, sy: sign.y + sign.h / 2, sz: 0.18, ry: sign.ry });
   }
   out.push({ x: sign.x, y: sign.y, z: sign.z, c: PALETTE.woodDark, sx: sign.w + 0.12, sy: sign.h + 0.12, sz: 0.08, ry: sign.ry });

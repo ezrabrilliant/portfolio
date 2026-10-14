@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { infoBoardRows, metaRows, wrapWords } from "./text";
+import { infoBoardRows, metaRows, miniBoardLines, wrapWords } from "./text";
 
 describe("wrapWords", () => {
   it("wraps on word boundaries without exceeding the limit", () => {
@@ -50,5 +50,15 @@ describe("metaRows", () => {
     expect(metaRows(2025, ["React", "PostgreSQL"])).toEqual(["2025 · React", "PostgreSQL"]);
     expect(metaRows(2024, ["Kotlin", "TensorFlow", "Gemini"])).toEqual(["2024 · Kotlin", "TensorFlow · Gemini"]);
     expect(metaRows(2026, [])).toEqual(["2026"]);
+  });
+});
+
+describe("miniBoardLines", () => {
+  it("puts the project's line above its meta rows", () => {
+    expect(miniBoardLines({ line: "A CRM for a furniture maker.", year: 2025, tags: ["React", "PostgreSQL"] })).toEqual([
+      "A CRM for a furniture maker.",
+      "2025 · React",
+      "PostgreSQL",
+    ]);
   });
 });

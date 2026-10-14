@@ -2,19 +2,16 @@ import type { IslandPlacement } from "@/world/engine/gen/layout";
 import { playSfx } from "@/world/engine/audio/sfx";
 import { Interactable } from "@/world/scene/Interactable";
 import { WorldText } from "@/world/scene/WorldText";
+import { SIGNPOST, SIGNPOST_HIT } from "./boardGeometry";
 import { islandFrame, worldTuple } from "./local";
 import { PALETTE } from "./props";
 import { useHoverLift } from "./useHoverLift";
 
-const POST_H = 2.1;
-const BOARD_Y = POST_H - 0.25;
+// the sign's extents and hit area are shared with the tour-view rules (boardGeometry.ts)
+const { postW: POST_W, postH: POST_H, boardX: BOARD_X, boardY: BOARD_Y, boardW: BOARD_W, boardH: BOARD_H } = SIGNPOST;
+const { arrowX: ARROW_X, arrowSize: ARROW } = SIGNPOST;
+const { cx: HIT_CX, cz: HIT_CZ, hx: HIT_HX, hz: HIT_HZ } = SIGNPOST_HIT;
 const OFF = "#9b938a";
-// Hit area in the sign's local frame: board x -0.85..1.15 plus the arrow tip at 1.27 + 0.36/√2 ≈ 1.53,
-// padded to x -1.0..1.6 and z -0.2..0.4 (centre (0.3, 0.1), half extents 1.3 × 0.3).
-const HIT_CX = 0.3;
-const HIT_CZ = 0.1;
-const HIT_HX = 1.3;
-const HIT_HZ = 0.3;
 
 /**
  * Arrow signpost that opens a project's real site (or its demo path) in a new tab. Greyed out and inactive while `url`
@@ -51,16 +48,16 @@ export function Signpost({
       <group position={islandFrame(placement)}>
         <group position={[at.x, 0, at.z]} rotation={[0, rotationY, 0]} scale={scale}>
           <mesh position={[0, POST_H / 2, 0]} castShadow>
-            <boxGeometry args={[0.16, POST_H, 0.16]} />
+            <boxGeometry args={[POST_W, POST_H, POST_W]} />
             <meshStandardMaterial color={PALETTE.wood} roughness={0.9} />
           </mesh>
           <group ref={lift}>
-            <mesh position={[0.15, BOARD_Y, 0.1]} castShadow>
-              <boxGeometry args={[2.0, 0.5, 0.08]} />
+            <mesh position={[BOARD_X, BOARD_Y, 0.1]} castShadow>
+              <boxGeometry args={[BOARD_W, BOARD_H, 0.08]} />
               <meshStandardMaterial color={wood} roughness={0.85} />
             </mesh>
-            <mesh position={[1.27, BOARD_Y, 0.1]} rotation={[0, 0, Math.PI / 4]} castShadow>
-              <boxGeometry args={[0.36, 0.36, 0.08]} />
+            <mesh position={[ARROW_X, BOARD_Y, 0.1]} rotation={[0, 0, Math.PI / 4]} castShadow>
+              <boxGeometry args={[ARROW, ARROW, 0.08]} />
               <meshStandardMaterial color={wood} roughness={0.85} />
             </mesh>
             <WorldText text={label} position={[0.12, BOARD_Y, 0.16]} size={0.2} color={enabled ? "#3a2a1c" : "#6e6760"} font="ui" anchorX="center" maxWidth={1.9} />

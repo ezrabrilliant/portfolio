@@ -10,9 +10,10 @@ import {
   MINI_SIGN_SCALE, MONOSUKO, ORBIT, PEDULI, PETAK, PLAZA,
 } from "./layouts";
 import { TOUR_FOV, tourStopFor } from "./framing";
+import { INFO_BOARD, SIGNPOST_FACE, infoBoardTop } from "./shared/boardGeometry";
 import { islandFrame } from "./shared/local";
 import { projectById } from "./shared/project";
-import { infoBoardRows, metaRows } from "./shared/text";
+import { infoBoardRows, miniBoardLines } from "./shared/text";
 
 const layout = buildLayout(worldProjects);
 const byId = Object.fromEntries(layout.islands.map((p) => [p.id, p]));
@@ -152,14 +153,11 @@ describe("island prop footprints", () => {
 });
 
 describe("board and sign collision", () => {
-  // InfoBoard: posts 1.0 tall, then the text panel (shared/InfoBoard.tsx); its height grows with the wrapped copy and
-  // the whole board scales on the minis
-  const infoTop = (title: string, lines: readonly string[], scale = 1) => (1.0 + infoBoardRows(title, lines).height) * scale;
+  // InfoBoard: the posts, then the text panel (boardGeometry.ts); its height grows with the wrapped copy and the whole
+  // board scales on the minis
+  const infoTop = (title: string, lines: readonly string[], scale = 1) => infoBoardTop(infoBoardRows(title, lines)) * scale;
   const stats = (id: string) => projectById(id).stats ?? [];
-  const miniLines = (id: string) => {
-    const p = projectById(id);
-    return [p.line, ...metaRows(p.year, p.tags)];
-  };
+  const miniLines = (id: string) => miniBoardLines(projectById(id));
   const g = GTID.board;
   const s = EZRA.screen;
   const mapTop = MAP_BOARD.y + MAP_BOARD.h / 2;
@@ -219,7 +217,20 @@ describe("board and sign collision", () => {
     expect(short).toEqual([]);
   });
 
-  it("scale the mini signposts' post to the same footprint (one column)", () => {
+  it("stop the mini boards' barrier at their scaled panel's top row: no invisible row stands above them", () => {
+    const miniBoards = boards.filter((b) => b.what === "info board" && byId[b.id].kind === "mini");
+    expect(miniBoards).toHaveLength(3);
+    const tall: string[] = [];
+    for (const b of miniBoards) {
+      const mid = along(b, 0);
+      const cx = Math.round(mid.x), cz = Math.round(mid.z);
+      const top = Math.max(-1, ...FOOTPRINTS[b.id].filter(([x, , z]) => x === cx && z === cz).map(([, y]) => y));
+      if (top > Math.floor(b.top)) tall.push(`${b.id} ${b.what}: panel top ${b.top.toFixed(2)}, barrier top row ${top}`);
+    }
+    expect(tall).toEqual([]);
+  });
+
+  it("keep MINI_SIGN_SCALE between half and full size", () => {
     expect(MINI_SIGN_SCALE).toBeGreaterThan(0.5);
     expect(MINI_SIGN_SCALE).toBeLessThanOrEqual(1);
   });
@@ -248,6 +259,9 @@ function projectBox(stop: { camera: Vec3; target: Vec3 }, pts: Vec3[]) {
 }
 
 describe("Web & Apps tour views", () => {
+  type Box = ReturnType<typeof projectBox>;
+  type Stop = ReturnType<typeof tourStopFor>;
+  type Spot = { x: number; z: number; ry: number };
   /** Corners of a vertical panel: centre (x, z) local, width w turned by ry, from y0 to y1 above the grass. */
   const panel = (id: string, c: { x: number; z: number }, w: number, ry: number, y0: number, y1: number, dx = 0): Vec3[] => {
     const [fx, fy, fz] = islandFrame(byId[id]);
@@ -255,55 +269,70 @@ describe("Web & Apps tour views", () => {
     for (const s of [-w / 2 + dx, w / 2 + dx]) for (const y of [y0, y1]) out.push({ x: fx + c.x + s * Math.cos(ry), y: fy + y, z: fz + c.z - s * Math.sin(ry) });
     return out;
   };
-  const overlap = (a: ReturnType<typeof projectBox>, b: ReturnType<typeof projectBox>) =>
+  const overlap = (a: Box, b: Box) =>
     (Math.max(0, Math.min(a.x1, b.x1) - Math.max(a.x0, b.x0)) * Math.max(0, Math.min(a.y1, b.y1) - Math.max(a.y0, b.y0))) /
     ((b.x1 - b.x0) * (b.y1 - b.y0));
+  /** How far a box reaches toward the frame's edge (1 = on the edge). */
+  const reach = (b: Box) => Math.max(-b.x0, b.x1, -b.y0, b.y1);
   const minis = [
     ["pos-monosuko", MONOSUKO],
     ["bee-furniture-crm", BEE],
     ["pedulipasal", PEDULI],
   ] as const;
 
+  const mapBox = (id: string, stop: Stop, m: Spot) =>
+    projectBox(stop, panel(id, m, MAP_BOARD.w, m.ry, MAP_BOARD.y - MAP_BOARD.h / 2, MAP_BOARD.y + MAP_BOARD.h / 2));
+  /** A scaled InfoBoard's panel (boardGeometry.ts): from the post tops to the top edge its rows need. */
+  const infoBox = (id: string, stop: Stop, b: Spot, title: string, lines: readonly string[], scale: number) =>
+    projectBox(stop, panel(id, b, INFO_BOARD.width * scale, b.ry, INFO_BOARD.postH * scale, infoBoardTop(infoBoardRows(title, lines)) * scale));
+  /** A scaled Signpost's face (boardGeometry.ts): the board's left end to the arrow's tip, off-centre on its post. */
+  const signBox = (id: string, stop: Stop, l: Spot, scale: number) => {
+    const f = SIGNPOST_FACE;
+    return projectBox(stop, panel(id, l, (f.x1 - f.x0) * scale, l.ry, f.y0 * scale, f.y1 * scale, ((f.x0 + f.x1) / 2) * scale));
+  };
+
+  /** A mini's screen, info board, link sign and map board as screen-space boxes from its tour stop. */
+  const miniBoxes = (id: string, L: (typeof minis)[number][1]): Record<"screen" | "info board" | "link sign" | "map board", Box> => {
+    const stop = tourStopFor(byId[id]);
+    const p = projectById(id);
+    const scr = L.screen;
+    return {
+      screen: projectBox(stop, panel(id, scr, scr.w, 0, scr.y - scr.h / 2, scr.y + scr.h / 2)),
+      "info board": infoBox(id, stop, L.info, p.title, miniBoardLines(p), MINI_BOARD_SCALE),
+      "link sign": signBox(id, stop, L.link, MINI_SIGN_SCALE),
+      "map board": mapBox(id, stop, L.map),
+    };
+  };
+  /** The plaza's district sign (the plank face, PLAZA.sign) and its map board from the plaza's tour stop. */
+  const plazaBoxes = (): Record<"district sign" | "map board", Box> => {
+    const stop = tourStopFor(byId["web-plaza"]);
+    const g = PLAZA.sign;
+    return {
+      "district sign": projectBox(stop, panel("web-plaza", g, g.w, g.ry, g.y - g.h / 2, g.y + g.h / 2)),
+      "map board": mapBox("web-plaza", stop, PLAZA.map),
+    };
+  };
+
   it("show each mini's screen whole in its stop, with no board in front of it", () => {
     for (const [id, L] of minis) {
-      const stop = tourStopFor(byId[id]);
-      const scr = L.screen;
-      const screen = projectBox(stop, panel(id, scr, scr.w, 0, scr.y - scr.h / 2, scr.y + scr.h / 2));
-      expect(Math.max(-screen.x0, screen.x1, -screen.y0, screen.y1), `${id} screen inside the frame`).toBeLessThan(0.95);
-      const p = projectById(id);
-      const infoH = infoBoardRows(p.title, [p.line, ...metaRows(p.year, p.tags)]).height;
-      const fronts = [
-        { what: "info board", box: projectBox(stop, panel(id, L.info, 2.4 * MINI_BOARD_SCALE, L.info.ry, MINI_BOARD_SCALE, (1 + infoH) * MINI_BOARD_SCALE)) },
-        // Signpost board: x −0.85..1.53 around its post, 0.5 tall at 1.85 (all × scale)
-        { what: "link sign", box: projectBox(stop, panel(id, L.link, 2.38 * MINI_SIGN_SCALE, L.link.ry, 1.6 * MINI_SIGN_SCALE, 2.1 * MINI_SIGN_SCALE, 0.34 * MINI_SIGN_SCALE)) },
-        { what: "map board", box: projectBox(stop, panel(id, L.map, MAP_BOARD.w, L.map.ry, MAP_BOARD.y - MAP_BOARD.h / 2, MAP_BOARD.y + MAP_BOARD.h / 2)) },
-      ];
-      for (const f of fronts) {
-        if (f.box.depth >= screen.depth) continue;
-        expect(overlap(f.box, screen), `${id}: ${f.what} covers the screen`).toBeLessThan(0.01);
+      const { screen, ...fronts } = miniBoxes(id, L);
+      expect(reach(screen), `${id} screen inside the frame`).toBeLessThan(0.95);
+      for (const [what, box] of Object.entries(fronts)) {
+        if (box.depth >= screen.depth) continue;
+        expect(overlap(box, screen), `${id}: ${what} covers the screen`).toBeLessThan(0.01);
       }
     }
   });
 
   it("keep each Web & Apps board and sign in view: none mostly hidden behind another or behind the screen", () => {
-    for (const [id, L] of [["web-plaza", PLAZA], ...minis] as const) {
-      const stop = tourStopFor(byId[id]);
-      const map = projectBox(stop, panel(id, L.map, MAP_BOARD.w, L.map.ry, MAP_BOARD.y - MAP_BOARD.h / 2, MAP_BOARD.y + MAP_BOARD.h / 2));
-      expect(Math.max(-map.x0, map.x1, -map.y0, map.y1), `${id} map board inside the frame`).toBeLessThan(0.98);
-      if (id === "web-plaza") continue;
-      const M = L as (typeof minis)[number][1];
-      const p = projectById(id);
-      const infoH = infoBoardRows(p.title, [p.line, ...metaRows(p.year, p.tags)]).height;
-      const boxes = {
-        "map board": map,
-        "info board": projectBox(stop, panel(id, M.info, 2.4 * MINI_BOARD_SCALE, M.info.ry, MINI_BOARD_SCALE, (1 + infoH) * MINI_BOARD_SCALE)),
-        "link sign": projectBox(stop, panel(id, M.link, 2.38 * MINI_SIGN_SCALE, M.link.ry, 1.6 * MINI_SIGN_SCALE, 2.1 * MINI_SIGN_SCALE, 0.34 * MINI_SIGN_SCALE)),
-        screen: projectBox(stop, panel(id, M.screen, M.screen.w, 0, M.screen.y - M.screen.h / 2, M.screen.y + M.screen.h / 2)),
-      };
-      for (const what of ["map board", "info board", "link sign"] as const) {
+    const views: [string, Record<string, Box>][] = [["web-plaza", plazaBoxes()], ...minis.map(([id, L]): [string, Record<string, Box>] => [id, miniBoxes(id, L)])];
+    for (const [id, boxes] of views) {
+      for (const [what, box] of Object.entries(boxes)) {
+        if (what === "screen") continue;
+        if (what === "map board" || what === "district sign") expect(reach(box), `${id} ${what} inside the frame`).toBeLessThan(0.98);
         for (const [other, b] of Object.entries(boxes)) {
-          if (other === what || b.depth >= boxes[what].depth) continue;
-          expect(overlap(b, boxes[what]), `${id}: the ${other} hides the ${what}`).toBeLessThan(what === "link sign" ? 0.3 : 0.25);
+          if (other === what || b.depth >= box.depth) continue;
+          expect(overlap(b, box), `${id}: the ${other} hides the ${what}`).toBeLessThan(what === "link sign" ? 0.3 : 0.25);
         }
       }
     }

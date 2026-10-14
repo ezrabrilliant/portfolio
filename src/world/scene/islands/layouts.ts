@@ -1,5 +1,8 @@
 import { layoutLines } from "./voxelFont";
+import { INFO_BOARD, infoBoardTop } from "./shared/boardGeometry";
 import { boxCells, postCells, type Cell } from "./shared/local";
+import { projectById } from "./shared/project";
+import { infoBoardRows, miniBoardLines } from "./shared/text";
 
 /**
  * Single source of island prop positions (island-local, fronts face +z).
@@ -9,7 +12,7 @@ import { boxCells, postCells, type Cell } from "./shared/local";
  * Voxel titles stay visible from the tour camera (framing.ts): no board, trunk or chart column stands between them.
  */
 
-export const INFO_HALF_SPAN = 1.0; // InfoBoard posts at ±(2.4 / 2 − 0.2)
+export const INFO_HALF_SPAN = INFO_BOARD.width / 2 - INFO_BOARD.postInset; // InfoBoard posts at ±1.0
 // InfoBoard collision rows: the panel ends ≤ 2.83 above the grass (the hero's wrapped title; layouts.test checks every board)
 const INFO_ROWS = 3;
 
@@ -222,7 +225,12 @@ function titleCells(t: { x: number; z: number; cell: number; lines: readonly str
 
 const trunk = (t: { x: number; z: number; h: number }): Cell[] => boxCells(t.x, t.x, 0, t.h - 1, t.z, t.z);
 const mapCells = (m: { x: number; z: number; ry: number }): Cell[] => boardSpan(m, MAP_HALF_SPAN, m.ry, 2);
-const miniInfo = (b: { x: number; z: number; ry: number }): Cell[] => boardSpan(b, INFO_HALF_SPAN * MINI_BOARD_SCALE, b.ry, INFO_ROWS);
+/** A mini's scaled InfoBoard: posts at ±INFO_HALF_SPAN × scale, barrier rows up to the row its scaled panel top is in. */
+function miniInfo(id: string, b: { x: number; z: number; ry: number }): Cell[] {
+  const p = projectById(id);
+  const top = infoBoardTop(infoBoardRows(p.title, miniBoardLines(p))) * MINI_BOARD_SCALE;
+  return boardSpan(b, INFO_HALF_SPAN * MINI_BOARD_SCALE, b.ry, Math.floor(top) + 1);
+}
 
 export const FOOTPRINTS: Record<string, Cell[]> = {
   hero: [
@@ -283,7 +291,7 @@ export const FOOTPRINTS: Record<string, Cell[]> = {
     ...boxCells(MONOSUKO.stall.x0, MONOSUKO.stall.x1, 0, MONOSUKO.stall.wallRows - 1, MONOSUKO.stall.wallZ, MONOSUKO.stall.wallZ),
     ...boxCells(MONOSUKO.stall.x0, MONOSUKO.stall.x1, 0, 0, MONOSUKO.stall.counterZ, MONOSUKO.stall.counterZ),
     ...postCells(MONOSUKO.table.x, MONOSUKO.table.z, 1),
-    ...miniInfo(MONOSUKO.info),
+    ...miniInfo("pos-monosuko", MONOSUKO.info),
     ...postCells(MONOSUKO.link.x, MONOSUKO.link.z),
     ...mapCells(MONOSUKO.map),
   ],
@@ -293,7 +301,7 @@ export const FOOTPRINTS: Record<string, Cell[]> = {
     ...postCells(BEE.shed.x1 + 0.4, BEE.shed.z1 + 0.4, BEE.shed.rows), // front-right roof post
     ...postCells(BEE.logs.x, BEE.logs.z, 1),
     ...postCells(BEE.monitor.x, BEE.monitor.z),
-    ...miniInfo(BEE.info),
+    ...miniInfo("bee-furniture-crm", BEE.info),
     ...postCells(BEE.link.x, BEE.link.z),
     ...mapCells(BEE.map),
   ],
@@ -304,7 +312,7 @@ export const FOOTPRINTS: Record<string, Cell[]> = {
     ...postCells(PEDULI.scales.x, PEDULI.scales.z, 1),
     ...boxCells(0, 1, 0, 3, 1, 1), // the plinth and the phone on it (x −0.05–1.55, 3.7 tall)
     ...trunk(PEDULI.tree),
-    ...miniInfo(PEDULI.info),
+    ...miniInfo("pedulipasal", PEDULI.info),
     ...postCells(PEDULI.link.x, PEDULI.link.z),
     ...mapCells(PEDULI.map),
   ],

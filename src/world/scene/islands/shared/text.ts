@@ -62,3 +62,8 @@ export function metaRows(year: number, tags: readonly string[], maxChars = BODY_
   if (current) rows.push(current);
   return rows;
 }
+
+/** A mini island's InfoBoard body: the project's one-line description, then its year and tags (metaRows). */
+export function miniBoardLines(p: { line: string; year: number; tags: readonly string[] }): string[] {
+  return [p.line, ...metaRows(p.year, p.tags)];
+}
