@@ -7,8 +7,13 @@ export interface BlendClock {
   id: string | null;
 }
 
-/** Ezra is hidden while the closeup blend's weight is past this (on the way in and on the way out). */
-export const EZRA_HIDE_WEIGHT = 0.5;
+/**
+ * Ezra is hidden while the closeup blend's weight is past this (on the way in and on the way out): about the first
+ * 0.29 s of the 0.8 s glide still shows him. It must stay under the weight where the camera can first reach him: on a
+ * phone at the GTID map board the follow camera's wall pull-in snaps to his head from w ≈ 0.31 (at 0.5 he flickered
+ * there, and on a desktop the near plane sliced him for three frames); the other screens reach him from 0.58 on.
+ */
+export const EZRA_HIDE_WEIGHT = 0.25;
 
 /**
  * The closeup blend's eased weight this frame (0 = the base camera, 1 = the closeup). CloseupCamera writes it, frame
@@ -55,7 +60,7 @@ export function stepBlendClock(
   return closeupWeight(clock.k);
 }
 
-/** Ezra is hidden past EZRA_HIDE_WEIGHT: the camera has moved far enough toward the screen that he would block it. */
+/** Ezra is hidden past EZRA_HIDE_WEIGHT: the camera is on its way to the screen he stands in front of. */
 export function closeupHidesEzra(weight: number): boolean {
   return weight > EZRA_HIDE_WEIGHT;
 }

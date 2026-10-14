@@ -48,8 +48,9 @@ export function Ezra() {
     if (!root.current || !body.current || !legL.current || !legR.current || !kneeL.current || !kneeR.current) return;
     if (!armL.current || !armR.current || !head.current) return;
     // between a fast travel's two puffs he is gone. A closeup's camera glides from behind him to the screen he faces:
-    // he would stand in front of a low screen, so he goes once the glide is past half way (closeupBlend, written by
-    // CloseupCamera earlier this frame) and is back from half way out, instead of blinking out on the glide's first frame
+    // he would stand in front of a low screen, so he goes once the glide's weight passes EZRA_HIDE_WEIGHT (closeupBlend,
+    // written by CloseupCamera earlier this frame) and is back below it on the way out, instead of blinking out on the
+    // glide's first frame
     if (runtime.hidden || closeupHidesEzra(closeupBlend.weight)) {
       root.current.visible = false;
       return;

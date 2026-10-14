@@ -22,3 +22,12 @@ export const HINTS = {
 } as const;
 
 export type HintKey = keyof typeof HINTS.keys;
+
+/**
+ * The key cap shown before the prompt's label (Hud.tsx): Play's E on a keyboard. None on touch, where the prompt reads
+ * like the Use button beside the stick (MobileControls), which shows the same label; none in the tour, where a click (or
+ * Enter on the item Tab focused) uses it.
+ */
+export function promptKey(mode: "tour" | "play", touch: boolean): "E" | null {
+  return mode === "play" && !touch ? "E" : null;
+}

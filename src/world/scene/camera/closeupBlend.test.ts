@@ -87,7 +87,18 @@ describe("travelCutsCloseup", () => {
 });
 
 describe("closeupHidesEzra", () => {
-  it("hides him only past the blend's half way, on the way in and on the way out", () => {
+  it("hides him before the follow camera can reach him: under w 0.31, where on a phone at the GTID board the camera's wall pull-in first snaps to his head (2a-FWB-report, follow-up)", () => {
+    expect(EZRA_HIDE_WEIGHT).toBeLessThan(0.31);
+  });
+
+  it("still shows him for the first 0.25 s of the glide (no blink on its first frame)", () => {
+    const c = clock();
+    let shown = 0;
+    while (!closeupHidesEzra(stepBlendClock(c, open, board, null, DT, false))) shown++;
+    expect(shown * DT).toBeGreaterThanOrEqual(0.25);
+  });
+
+  it("hides him only past EZRA_HIDE_WEIGHT, on the way in and on the way out", () => {
     expect(closeupHidesEzra(0)).toBe(false);
     expect(closeupHidesEzra(EZRA_HIDE_WEIGHT)).toBe(false);
     expect(closeupHidesEzra(EZRA_HIDE_WEIGHT + 0.01)).toBe(true);

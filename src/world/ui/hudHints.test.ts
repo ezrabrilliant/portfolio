@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { CLOSEUP_HUD_PX } from "@/world/engine/camera/closeup";
-import { HINTS, TOUCH_HINT_MAX } from "./hudHints";
+import { HINTS, TOUCH_HINT_MAX, promptKey } from "./hudHints";
 
 describe("HUD hints", () => {
   it("every touch line fits one line on a 360 px phone", () => {
@@ -17,5 +17,20 @@ describe("HUD hints", () => {
 
   it("has a line for every state on both kinds of device", () => {
     expect(Object.keys(HINTS.touch).sort()).toEqual(Object.keys(HINTS.keys).sort());
+  });
+});
+
+describe("promptKey (the key cap before the prompt's label)", () => {
+  it("is Play's E on a keyboard", () => {
+    expect(promptKey("play", false)).toBe("E");
+  });
+
+  it("is none on touch: the prompt reads like the Use button, which shows the same label", () => {
+    expect(promptKey("play", true)).toBeNull();
+    expect(promptKey("tour", true)).toBeNull();
+  });
+
+  it("is none in the tour (a click, or Enter on the focused item)", () => {
+    expect(promptKey("tour", false)).toBeNull();
   });
 });

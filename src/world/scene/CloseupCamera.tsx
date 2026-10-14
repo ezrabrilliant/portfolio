@@ -20,7 +20,7 @@ const MAX_INSET = 0.3;
  * nothing between the camera and the screen (a prop, Ezra) covers it. At weight 0 the camera is the base cameras' again,
  * with its default near plane. A Play fast travel's arrival cuts the blend (closeupBlend.travelCutsCloseup): the glide
  * out from the departure map board must not pull the camera back toward it. The weight is published in closeupBlend
- * for frame code mounted after this one (Ezra hides past half way).
+ * for frame code mounted after this one (Ezra hides past EZRA_HIDE_WEIGHT).
  */
 export function CloseupCamera() {
   const camera = useThree((s) => s.camera) as THREE.PerspectiveCamera;
