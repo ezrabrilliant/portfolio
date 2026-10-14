@@ -10,6 +10,13 @@ export const DEFAULT_PARAMS: CharacterParams = {
   stepHeight: 1, coyoteTime: 0.1, jumpBuffer: 0.12,
 };
 
+/**
+ * How high above his feet Ezra's model reaches in its neutral pose, hair included: scene/Ezra.tsx puts the head's
+ * pivot 1.36 up and its hair tops out 0.65 above that. His collision box stops at DEFAULT_PARAMS.height, so the model
+ * stands ~0.21 taller; the head-clearance rules (scene/islands/layouts) keep visuals clear of this, not of the box.
+ */
+export const MODEL_TOP = 2.01;
+
 export interface CharacterState {
   pos: Vec3; vel: Vec3; onGround: boolean; sinceGround: number; jumpTimer: number;
   lastSafe: Vec3; locked: boolean;

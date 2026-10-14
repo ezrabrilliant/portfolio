@@ -95,13 +95,13 @@ const ROBOT_MAT = {
  * slightly larger slate plate: the thin dark rim makes the white chat read as UI against the pale sky.
  */
 const BUBBLE_GEO = (() => {
-  const { w, h, d } = EZRA.bubbles;
+  const { w, h, d, rim: margin, tail } = EZRA.bubbles;
   const rim = "#5d6872";
   return merge([
     paint(new RoundedBoxGeometry(w, h, d, 2, 0.07).translate(w / 2, 0, 0), "#ffffff"),
-    paint(new RoundedBoxGeometry(w + 0.1, h + 0.1, 0.1, 2, 0.09).translate(w / 2, 0, -0.04), rim),
-    paint(flatBox(0.22, 0.22, 0.12).rotateZ(Math.PI / 4).translate(0.12, -0.42, 0), "#ffffff"),
-    paint(flatBox(0.29, 0.29, 0.08).rotateZ(Math.PI / 4).translate(0.12, -0.42, -0.04), rim),
+    paint(new RoundedBoxGeometry(w + 2 * margin, h + 2 * margin, 0.1, 2, 0.09).translate(w / 2, 0, -0.04), rim),
+    paint(flatBox(0.22, 0.22, 0.12).rotateZ(Math.PI / 4).translate(tail.x, tail.y, 0), "#ffffff"),
+    paint(flatBox(tail.size, tail.size, 0.08).rotateZ(Math.PI / 4).translate(tail.x, tail.y, -0.04), rim),
   ]);
 })();
 const BUBBLE_MAT = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.8 });

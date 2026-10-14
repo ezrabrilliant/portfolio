@@ -29,7 +29,9 @@ function pavilionBlocks(): PropBlock[] {
     out.push({ x, y: 0.06, z, c: PALETTE.stone[1], sy: 0.12 });
   }
   for (const x of [pavilion.x0 - 0.4, pavilion.x1 + 0.4]) for (const z of [pavilion.z0 - 0.4, pavilion.z1 + 0.4]) {
-    out.push({ x, y: 1.6, z, c: PALETTE.wood, sx: 0.2, sy: 3.2, sz: 0.2 });
+    // up to the lower roof slab's underside
+    const top = roof[0].y - roof[0].sy / 2;
+    out.push({ x, y: top / 2, z, c: PALETTE.wood, sx: 0.2, sy: top, sz: 0.2 });
   }
   const cx = (pavilion.x0 + pavilion.x1) / 2;
   const cz = (pavilion.z0 + pavilion.z1) / 2;

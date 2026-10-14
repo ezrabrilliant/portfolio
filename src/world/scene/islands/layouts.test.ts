@@ -1,18 +1,23 @@
 import { describe, expect, it } from "vitest";
 import { buildLayout } from "@/world/engine/gen/layout";
 import { generateIsland } from "@/world/engine/gen/islandGen";
-import { DEFAULT_PARAMS, characterCollides, createCharacter, stepCharacter } from "@/world/engine/physics/character";
+import { DEFAULT_PARAMS, MODEL_TOP, characterCollides, createCharacter } from "@/world/engine/physics/character";
+import { CLOSEUP_HUD_PX, CLOSEUP_NEAR_MARGIN, closeupPanLimit, closeupPose } from "@/world/engine/camera/closeup";
+import { buildWorld } from "@/world/engine/worldBuild";
 import { worldCopy, worldProjects } from "@/config/portfolio";
 import type { Vec3 } from "@/world/engine/types";
-import { PAD_SIZE, SIGN_OFFSET, SIGN_WIDTH, STATION_SIZE, padPair, railEnds } from "@/world/scene/crossings/geometry";
+import { PAD_SIZE, SIGN_OFFSET, SIGN_WIDTH, STATION_SIZE, minecartRail, padPair, railEnds } from "@/world/scene/crossings/geometry";
+import { advanceRide } from "@/world/scene/crossings/ride";
+import { poseFor } from "@/world/scene/ezra/anim";
+import type { Ride } from "@/world/state/runtime";
 import {
-  BEE, BODY_ROWS, EZRA, FOOTPRINTS, GTID, HERO, INFO_HALF_SPAN, MAP_BOARD, MAP_HALF_SPAN, MINI_ANCHOR_CLEARANCE,
-  MINI_BOARD_SCALE, MINI_SIGN_SCALE, MONOSUKO, ORBIT, PEDULI, PETAK, PLAZA, SLIVER, beeRoofPlanks, bubbleSlabs,
-  crownSlabs, footprintOf, reaches, screenSlab, type Slab,
+  BEE, BODY_ROWS, EZRA, FOOTPRINTS, GTID, HERO, INFO_HALF_SPAN, JUMP_RISE, MAP_BOARD, MAP_HALF_SPAN,
+  MINI_ANCHOR_CLEARANCE, MINI_BOARD_SCALE, MINI_SIGN_SCALE, MODEL_OVER, MONOSUKO, ORBIT, PEDULI, PETAK, PLAZA, SLIVER,
+  beeRoofPlanks, bubbleSlabs, crownSlabs, footprintOf, reaches, screenSlab, type Slab,
 } from "./layouts";
 import { TOUR_FOV, portraitStop, tourStopFor } from "./framing";
 import { awningParts } from "./monosuko/awning";
-import { INFO_BOARD, SCREEN_BEZEL, SIGNPOST_FACE, infoBoardTop } from "./shared/boardGeometry";
+import { INFO_BOARD, SCREEN_BEZEL, SIGNPOST, SIGNPOST_FACE, infoBoardTop } from "./shared/boardGeometry";
 import { islandFrame } from "./shared/local";
 import { projectById } from "./shared/project";
 import { infoBoardRows, miniBoardLines } from "./shared/text";
@@ -249,45 +254,52 @@ describe("board and sign collision", () => {
   });
 });
 
+type Spot = { x: number; z: number; ry: number };
+/** An InfoBoard's panel (boardGeometry.ts) as a slab: from its post tops to the top edge its rows need. */
+function infoPanel(at: Spot, title: string, lines: readonly string[], scale: number): Slab {
+  const y0 = INFO_BOARD.postH * scale;
+  const y1 = infoBoardTop(infoBoardRows(title, lines)) * scale;
+  return { x: at.x, y: (y0 + y1) / 2, z: at.z, sx: INFO_BOARD.width * scale, sy: y1 - y0, sz: 0, ry: at.ry };
+}
+/** A mini's InfoBoard panel, scaled by MINI_BOARD_SCALE. */
+function miniInfoPanel(id: string, at: Spot): Slab {
+  const p = projectById(id);
+  return infoPanel(at, p.title, miniBoardLines(p), MINI_BOARD_SCALE);
+}
+/** A map board's bezel (shared/MapBoard.tsx: a LiveScreen MAP_BOARD.y up, turned by ry). */
+function mapPanel(m: Spot): Slab {
+  const back = SCREEN_BEZEL.depth / 2;
+  const s = screenSlab({ x: m.x, y: MAP_BOARD.y, z: m.z, w: MAP_BOARD.w, h: MAP_BOARD.h });
+  return { ...s, x: m.x - Math.sin(m.ry) * back, z: m.z - Math.cos(m.ry) * back, ry: m.ry };
+}
+/** The plaza's district sign: its plank face (PLAZA.sign). */
+function districtSign(): Slab {
+  const g = PLAZA.sign;
+  return { x: g.x, y: g.y, z: g.z, sx: g.w, sy: g.h, sz: 0, ry: g.ry };
+}
+
 /*
- * Overhead: Ezra's box is 1.8 tall and a jump lifts it ~1.46 more, so on the grass his head reaches ~3.27. Wherever he
- * can stand under a roof, screen, crown or bubble whose underside is lower, a barrier row must stop his head at that
- * underside, or at the first row above his body (BODY_ROWS) when the visual hangs lower than that. He can also step
- * onto a one-row barrier (stepHeight 1): from that ledge the same holds one row up, and he must not stand inside a prop.
+ * Overhead: Ezra's model stands MODEL_TOP tall, its hair MODEL_OVER above his 1.8 collision box, and a jump lifts him
+ * up to JUMP_RISE more, so on the grass his hair reaches ~3.51. Wherever he can stand under a roof, screen, crown or
+ * bubble, its underside must clear his standing hair, and a barrier row must stop the box low enough that the hair
+ * stays under it in a jump. He can also step onto a one-row barrier (stepHeight 1): from that ledge the same holds one
+ * row up, and his model must not stand inside a prop. A minecart rider keeps his model clear of them too.
  */
 describe("overhead visuals on the Web & Apps islands and Ezra Bot", () => {
-  type Spot = { x: number; z: number; ry: number };
   type Visual = { what: string; slab: Slab };
   const H = DEFAULT_PARAMS.height;
   const HALF = DEFAULT_PARAMS.width / 2;
-
-  /** An InfoBoard's panel (boardGeometry.ts) as a slab: from its post tops to the top edge its rows need. */
-  const infoPanel = (at: Spot, title: string, lines: readonly string[], scale: number): Slab => {
-    const y0 = INFO_BOARD.postH * scale;
-    const y1 = infoBoardTop(infoBoardRows(title, lines)) * scale;
-    return { x: at.x, y: (y0 + y1) / 2, z: at.z, sx: INFO_BOARD.width * scale, sy: y1 - y0, sz: 0, ry: at.ry };
-  };
-  /** A map board's bezel (shared/MapBoard.tsx: a LiveScreen MAP_BOARD.y up, turned by ry). */
-  const mapPanel = (m: Spot): Slab => {
-    const back = SCREEN_BEZEL.depth / 2;
-    const s = screenSlab({ x: m.x, y: MAP_BOARD.y, z: m.z, w: MAP_BOARD.w, h: MAP_BOARD.h });
-    return { ...s, x: m.x - Math.sin(m.ry) * back, z: m.z - Math.cos(m.ry) * back, ry: m.ry };
-  };
-  const miniInfo = (id: string, at: Spot): Visual => {
-    const p = projectById(id);
-    return { what: "info board", slab: infoPanel(at, p.title, miniBoardLines(p), MINI_BOARD_SCALE) };
-  };
   const pv = PEDULI.pavilion;
   const grill = MONOSUKO.grill;
   const robot = EZRA.robot;
   /**
    * Everything on these islands that Ezra's head could rise into. Signposts and lamps stay out: their faces and lanterns
-   * end within SLIVER above BODY_ROWS (a full-size sign face at 2.1, a lamp cap at 1.98), where no barrier row can sit.
+   * end within SLIVER above BODY_ROWS (a full-size sign face at 2.1, a lamp cap at 1.98), posts he walks into.
    */
   const visuals: Record<string, Visual[]> = {
     "web-plaza": [
       ...crownSlabs(PLAZA.tree).map((slab) => ({ what: "tree crown", slab })),
-      { what: "district sign", slab: { x: PLAZA.sign.x, y: PLAZA.sign.y, z: PLAZA.sign.z, sx: PLAZA.sign.w, sy: PLAZA.sign.h, sz: 0, ry: PLAZA.sign.ry } },
+      { what: "district sign", slab: districtSign() },
       { what: "map board", slab: mapPanel(PLAZA.map) },
     ],
     "pos-monosuko": [
@@ -296,19 +308,19 @@ describe("overhead visuals on the Web & Apps islands and Ezra Bot", () => {
       { what: "badge", slab: { x: MONOSUKO.logo.x, y: MONOSUKO.logo.y, z: MONOSUKO.logo.z, sx: 2 * MONOSUKO.logo.r, sy: 2 * MONOSUKO.logo.r, sz: BADGE_DEPTH } },
       // on the counter top, its row 0's top
       { what: "grill", slab: { x: grill.x, y: (1 + grill.top) / 2, z: grill.z, sx: grill.w, sy: grill.top - 1, sz: grill.d } },
-      miniInfo("pos-monosuko", MONOSUKO.info),
+      { what: "info board", slab: miniInfoPanel("pos-monosuko", MONOSUKO.info) },
       { what: "map board", slab: mapPanel(MONOSUKO.map) },
     ],
     "bee-furniture-crm": [
       ...beeRoofPlanks().map((slab) => ({ what: "shed roof", slab })),
       { what: "screen", slab: screenSlab(BEE.screen) },
-      miniInfo("bee-furniture-crm", BEE.info),
+      { what: "info board", slab: miniInfoPanel("bee-furniture-crm", BEE.info) },
       { what: "map board", slab: mapPanel(BEE.map) },
     ],
     pedulipasal: [
       ...PEDULI.roof.map((s) => ({ what: "pavilion roof", slab: { ...s, x: (pv.x0 + pv.x1) / 2, z: (pv.z0 + pv.z1) / 2 } })),
       ...crownSlabs(PEDULI.tree).map((slab) => ({ what: "tree crown", slab })),
-      miniInfo("pedulipasal", PEDULI.info),
+      { what: "info board", slab: miniInfoPanel("pedulipasal", PEDULI.info) },
       { what: "map board", slab: mapPanel(PEDULI.map) },
     ],
     "ezra-bot": [
@@ -320,23 +332,12 @@ describe("overhead visuals on the Web & Apps islands and Ezra Bot", () => {
     ],
   };
 
-  /** A jump's rise on open ground through the real physics: ≈ 1.46 at its 120 Hz substeps (jumpSpeed² / 2g = 1.50). */
-  const JUMP = (() => {
-    const s = createCharacter({ x: 0.5, y: 0, z: 0.5 });
-    let top = 0;
-    for (let f = 0; f < 90; f++) {
-      stepCharacter(s, { moveX: 0, moveZ: 0, run: false, jump: f === 0 }, 1 / 60, { isSolid: (_x, y) => y < 0, killY: -10 });
-      top = Math.max(top, s.pos.y);
-    }
-    return top;
-  })();
-
   /** Samples per block: Ezra's box (half 0.3) sits flush on a cell edge (k + 0.5) with its centre on this grid. */
   const STEP = 10;
 
   /**
    * Every spot Ezra can stand on, reached from the island's crossing heads: walking, dropping off an edge, and stepping
-   * (or jumping, which rises < 2) one row up onto a barrier column. Each with the height his head rises to in a jump:
+   * (or jumping, which rises < 2) one row up onto a barrier column. Each with the height his box rises to in a jump:
    * the lowest barrier row over his box above his body, or the jump's top.
    */
   function footing(id: string) {
@@ -400,51 +401,58 @@ describe("overhead visuals on the Web & Apps islands and Ezra Bot", () => {
           if (r > y + 6) break;
         }
       }
-      return { px, pz, y, peak: Math.min(y + H + JUMP, ceiling) };
+      return { px, pz, y, box: Math.min(y + H + JUMP_RISE, ceiling) };
     });
   }
 
-  /** Where Ezra's head rises into a visual, or a ledge stands him inside one: "<island>: <what> at (cell)" → how far. */
+  /**
+   * Where Ezra's hair stands or rises into a visual, or a ledge stands his model inside one:
+   * "<island>: <what> at (cell)" → how far.
+   */
   function gaps(id: string): Map<string, number> {
     const found = new Map<string, number>();
     const note = (key: string, by: number) => found.set(key, Math.max(found.get(key) ?? 0, by));
-    for (const { px, pz, y, peak } of footing(id)) {
+    for (const { px, pz, y, box } of footing(id)) {
+      const hair = box + MODEL_OVER;
       for (const { what, slab } of visuals[id]) {
         const f = footprintOf(slab);
         if (!reaches(f, px, pz, HALF - SLIVER)) continue;
         const at = `(${Math.round(px)},${Math.round(pz)})${y > 0 ? ` on a ledge ${y} up` : ""}`;
-        if (y > 0 && f.y0 < y + H && f.y1 > y) note(`${id}: stands inside the ${what} at ${at}`, Math.min(f.y1, y + H) - Math.max(f.y0, y));
-        if (f.y1 <= y + BODY_ROWS + SLIVER || f.y0 >= peak) continue;
-        const over = peak - Math.max(f.y0, y + BODY_ROWS);
-        if (over > 1e-9) note(`${id}: head rises into the ${what} at ${at}`, over);
+        if (y > 0 && f.y0 < y + MODEL_TOP && f.y1 > y) note(`${id}: stands inside the ${what} at ${at}`, Math.min(f.y1, y + MODEL_TOP) - Math.max(f.y0, y));
+        if (f.y1 <= y + BODY_ROWS + SLIVER) continue; // ends within his body's rows: a wall or a board he walks into
+        if (f.y0 < y + MODEL_TOP) note(`${id}: hair stands in the ${what} at ${at}`, y + MODEL_TOP - f.y0);
+        if (hair > f.y0 + 1e-9) note(`${id}: hair rises into the ${what} at ${at}`, hair - f.y0);
       }
     }
     return found;
   }
 
   /**
-   * Gaps no barrier closes without breaking a placement rule above (their ceiling cell lies in a crossing's clearance
-   * ring or over its furniture), or that wait on a scheduled visual change. Listed by the cell Ezra's box is centred
-   * in, with how far his head rises in, so a new gap, a deeper one or a closed one all show up here.
+   * Gaps no barrier closes without breaking a placement rule above: their ceiling cell lies in a crossing's clearance
+   * ring or over its furniture, and the visual itself would have to move. Listed by the cell Ezra's box is centred in,
+   * with how far his hair stands or rises in, so a new gap, a deeper one or a closed one all show up here.
    */
   const OPEN = [
-    { id: "web-plaza", what: "tree crown", at: ["(-3,-2)", "(-3,-1)", "(-4,-1)", "(-4,-2)"], upTo: 0.27 }, // corner block over (−3, −2), 1.55 from the minecart anchor
-    { id: "pos-monosuko", what: "screen", at: ["(2,-2)", "(-2,-2)"], upTo: 1.27 }, // ends over (±2, −2): 1.62 / 1.12 from the bridge anchors, (−2, −2) on a rope post
-    { id: "bee-furniture-crm", what: "shed roof", at: ["(-2,0)"], upTo: 0.69 }, // front-left eave over (−2, 0), 1.14 from the POS bridge anchor
-    { id: "ezra-bot", what: "chat bubbles", at: ["(3,0)", "(3,1)", "(4,0)", "(4,1)"], upTo: 1.27 }, // right half over the minecart station
-    // the lower slab overhangs its barrier cells by 0.2–0.3, 3.20 up: raising the roof ~0.15 is scheduled
-    { id: "pedulipasal", what: "pavilion roof", at: ["(-1,0)", "(-1,-1)", "(-1,-2)", "(-1,-3)", "(0,0)", "(1,0)", "(2,0)", "(0,-3)", "(1,-3)", "(2,-3)", "(3,-3)"], upTo: 0.07 },
+    // the crown's corner block (3.0 up) over (−3, −2), 1.55 from the minecart anchor
+    { id: "web-plaza", what: "hair rises into the tree crown", at: ["(-3,-2)", "(-3,-1)", "(-4,-1)", "(-4,-2)"], upTo: 0.52 },
+    // the screen's ends (x ±1.5–1.78, 1.86 up) over (±2, −2): 1.62 / 1.12 from the bridge anchors, (−2, −2) on a rope post
+    { id: "pos-monosuko", what: "hair stands in the screen", at: ["(2,-2)", "(-2,-2)"], upTo: 0.16 },
+    { id: "pos-monosuko", what: "hair rises into the screen", at: ["(2,-2)", "(-2,-2)"], upTo: 1.66 },
+    // the front-left eave (2.59 up) over (−2, 0), 1.14 from the POS bridge anchor
+    { id: "bee-furniture-crm", what: "hair rises into the shed roof", at: ["(-2,0)"], upTo: 0.94 },
+    // the bubbles' right half (2.35 up) over the minecart station (no barrier over its platform)
+    { id: "ezra-bot", what: "hair rises into the chat bubbles", at: ["(3,0)", "(3,1)", "(4,0)", "(4,1)", "(5,0)", "(5,1)"], upTo: 1.17 },
   ];
 
-  it("never let a jump put Ezra's head into what hangs overhead, nor a ledge stand him inside a prop", () => {
+  it("never let Ezra's hair stand or rise into what hangs overhead, nor a ledge stand him inside a prop", () => {
     const found = new Map(OVERHEAD_ISLANDS.flatMap((id) => [...gaps(id)]));
-    const open = new Map<string, number>(OPEN.flatMap((g) => g.at.map((c) => [`${g.id}: head rises into the ${g.what} at ${c}`, g.upTo])));
+    const open = new Map<string, number>(OPEN.flatMap((g) => g.at.map((c) => [`${g.id}: ${g.what} at ${c}`, g.upTo])));
     const unexpected = [...found].filter(([k, by]) => !(by <= (open.get(k) ?? -1))).map(([k, by]) => `${k} by ${by.toFixed(2)}`);
     expect(unexpected).toEqual([]);
     expect([...open.keys()].filter((k) => !found.has(k)), "closed: drop it from OPEN").toEqual([]);
   });
 
-  it("hang every ceiling-only barrier column under the visual it caps, from its underside's row up to its top", () => {
+  it("hang every ceiling-only barrier column under the visual it caps, from the row that stops his hair under it to its top", () => {
     const loose: string[] = [];
     for (const id of OVERHEAD_ISLANDS) {
       const ground = new Set(groundCells(id).map(([x, , z]) => `${x},${z}`));
@@ -452,12 +460,54 @@ describe("overhead visuals on the Web & Apps islands and Ezra Bot", () => {
         if (ground.has(`${x},${z}`)) continue;
         const capped = visuals[id].some(({ slab }) => {
           const f = footprintOf(slab);
-          return reaches(f, x, z, 0.5 - SLIVER) && y >= Math.max(BODY_ROWS, Math.floor(f.y0)) && y < f.y1;
+          const lo = Math.max(BODY_ROWS, Math.floor(f.y0 - MODEL_OVER));
+          return f.y0 < MODEL_TOP + JUMP_RISE && reaches(f, x, z, 0.5 - SLIVER) && y >= lo && y < f.y1;
         });
         if (!capped) loose.push(`${id} (${x},${y},${z})`);
       }
     }
     expect(loose).toEqual([]);
+  });
+
+  // A minecart rider (crossings/ride.ts), seated in the ride pose as the cart reaches a station and on the hop out to
+  // the stand-off point, over the real rail: his model from its feet to its hair, its box shrunk by SLIVER
+  const terrain = buildWorld(layout, []).grid;
+  const RIDE = poseFor("ride", 0, 0, { standUp: 0, reduced: true });
+  const HOP = poseFor("jump", 0, 0, { standUp: 0, reduced: true });
+  function riders(id: string) {
+    const out: { lx: number; lz: number; y0: number }[] = [];
+    const p = byId[id];
+    for (const c of layout.crossings) {
+      if (c.kind !== "minecart" || (c.from !== id && c.to !== id)) continue;
+      const ends = railEnds(c, byId[c.from], byId[c.to]);
+      const reverse = c.from === id;
+      const ride: Ride = { kind: "rail", t: 0, duration: 4, rail: minecartRail(ends, terrain.isSolid), reverse, exit: { ...(reverse ? ends.standA : ends.standB) }, exitHeading: 0 };
+      const rider = createCharacter({ x: 0, y: 0, z: 0 });
+      for (let f = 0; f < 600; f++) {
+        const done = advanceRide(ride, rider, 1 / 60);
+        const lx = rider.pos.x - (p.origin.x + 0.5), lz = rider.pos.z - (p.origin.z + 0.5);
+        const y0 = rider.pos.y - (p.origin.y + 1) + (ride.kind === "rail" ? RIDE.bodyY : HOP.bodyY);
+        if (Math.hypot(lx, lz) <= p.radius * 1.25) out.push({ lx, lz, y0 });
+        if (done) break;
+      }
+    }
+    return out;
+  }
+
+  it("keep a minecart rider's model clear of every visual at the stations on these islands, seated or hopping out", () => {
+    const hits = new Set<string>();
+    let samples = 0;
+    for (const id of OVERHEAD_ISLANDS) {
+      for (const r of riders(id)) {
+        samples++;
+        for (const { what, slab } of visuals[id]) {
+          const f = footprintOf(slab);
+          if (reaches(f, r.lx, r.lz, HALF - SLIVER) && f.y0 < r.y0 + MODEL_TOP && f.y1 > r.y0) hits.add(`${id}: ${what} at (${r.lx.toFixed(1)}, ${r.lz.toFixed(1)})`);
+        }
+      }
+    }
+    expect(samples).toBeGreaterThan(0);
+    expect([...hits]).toEqual([]);
   });
 });
 
@@ -606,5 +656,282 @@ describe("Web & Apps tour views", () => {
         }
       }
     }
+  });
+});
+
+/*
+ * Map boards (shared/MapBoard.tsx) stand low near each island's arrival point. From either tour view of their stop they
+ * must not cover what the stop shows, the island's screen, its info board, its link sign or a bounce pad, beyond a
+ * sliver; and the line from their closeup camera (desktop and phone) to the face must be clear of the island's props.
+ */
+describe("map boards in the tour views and their closeups (all nine islands)", () => {
+  type Pt = { x: number; y: number };
+  type Quad = Vec3[];
+  const MAPS: Record<string, Spot> = {
+    hero: HERO.map, gtid: GTID.map, "petak-umpet": PETAK.map, "orbit-store": ORBIT.map, "ezra-bot": EZRA.map,
+    "web-plaza": PLAZA.map, "pos-monosuko": MONOSUKO.map, "bee-furniture-crm": BEE.map, pedulipasal: PEDULI.map,
+  };
+  /** shared/MapBoard.tsx's post: this wide, this far behind the face, up into the panel. */
+  const MAP_POST = { w: 0.12, back: 0.2 };
+  /** The share of an item's area (in the view) a map board in front of it may cover: a sliver along an edge. */
+  const MAP_COVER = 0.01;
+
+  /**
+   * An upright rectangle's corners in order, in world space: centre (x, z) island-local, `w` wide along its turn ry,
+   * from y0 to y1 above the grass, slid `dx` along its width and `back` behind its face.
+   */
+  const upright = (id: string, c: { x: number; z: number }, ry: number, w: number, y0: number, y1: number, dx = 0, back = 0): Quad => {
+    const [fx, fy, fz] = islandFrame(byId[id]);
+    const at = (s: number, y: number) => ({
+      x: fx + c.x + Math.cos(ry) * s - Math.sin(ry) * back,
+      y: fy + y,
+      z: fz + c.z - Math.sin(ry) * s - Math.cos(ry) * back,
+    });
+    return [at(dx - w / 2, y0), at(dx + w / 2, y0), at(dx + w / 2, y1), at(dx - w / 2, y1)];
+  };
+  const slabQuad = (id: string, s: Slab): Quad => upright(id, s, s.ry ?? 0, s.sx, s.y - s.sy / 2, s.y + s.sy / 2);
+  const signQuad = (id: string, l: Spot, scale: number): Quad => {
+    const f = SIGNPOST_FACE;
+    return upright(id, l, l.ry, (f.x1 - f.x0) * scale, f.y0 * scale, f.y1 * scale, ((f.x0 + f.x1) / 2) * scale);
+  };
+  /** A bounce pad's top: a PAD_SIZE square turned to face its pair, its plate ~0.1 up (crossings/BouncePad.tsx). */
+  const padQuads = (id: string): Quad[] =>
+    layout.crossings.flatMap((c) => {
+      if (c.kind !== "bouncePads" || (c.from !== id && c.to !== id)) return [];
+      const pads = padPair(c, byId[c.from], byId[c.to]);
+      const pad = c.from === id ? pads.a : pads.b;
+      const yaw = Math.atan2(pads.b.x - pads.a.x, pads.b.z - pads.a.z);
+      const h = PAD_SIZE / 2;
+      return [[[-h, -h], [h, -h], [h, h], [-h, h]].map(([u, v]) => ({
+        x: pad.x + u * Math.cos(yaw) + v * Math.sin(yaw),
+        y: pad.y + 0.1,
+        z: pad.z - u * Math.sin(yaw) + v * Math.cos(yaw),
+      }))];
+    });
+  const stats = (id: string) => projectById(id).stats ?? [];
+  const priceBoard = (): Quad => {
+    const g = GTID.board; // Gtid.tsx PriceBoard: a frame 0.16 larger than the face, its centre 0.4 under the face's
+    const cy = g.y + g.h / 2 - 0.4;
+    return upright("gtid", g, g.ry, g.w + 0.16, cy - (g.h + 0.16) / 2, cy + (g.h + 0.16) / 2);
+  };
+  const botScreen = (): Quad => {
+    const s = EZRA.screen; // EzraBot.tsx SCREEN_GEO: a frame 0.14 larger than the face, its centre 0.2 under the face's
+    const cy = s.y + s.h / 2 - 0.2;
+    return upright("ezra-bot", s, s.ry, s.w + 0.14, cy - (s.h + 0.14) / 2, cy + (s.h + 0.14) / 2);
+  };
+  /** What each island's map board must leave in view. */
+  const items = (id: string): { what: string; quad: Quad }[] => {
+    const pads = padQuads(id).map((quad) => ({ what: "bounce pad", quad }));
+    const mini = (L: typeof MONOSUKO | typeof BEE | typeof PEDULI) => [
+      { what: "screen", quad: slabQuad(id, screenSlab(L.screen)) },
+      { what: "info board", quad: slabQuad(id, miniInfoPanel(id, L.info)) },
+      { what: "link sign", quad: signQuad(id, L.link, MINI_SIGN_SCALE) },
+    ];
+    const full = (at: Spot, title: string) => ({ what: "info board", quad: slabQuad(id, infoPanel(at, title, stats(id), 1)) });
+    switch (id) {
+      case "hero": return [{ what: "info board", quad: slabQuad(id, infoPanel(HERO.info, worldCopy.location, [worldCopy.heroLine], 1)) }];
+      case "gtid": return [{ what: "screen", quad: priceBoard() }, full(GTID.info, "gtid.pro"), { what: "link sign", quad: signQuad(id, GTID.link, 1) }];
+      case "petak-umpet": return [full(PETAK.info, "Roblox"), { what: "link sign", quad: signQuad(id, PETAK.link, 1) }];
+      case "orbit-store": return [full(ORBIT.info, "Orbit Store"), { what: "link sign", quad: signQuad(id, ORBIT.link, 1) }, ...pads];
+      case "ezra-bot": return [{ what: "screen", quad: botScreen() }, full(EZRA.info, EZRA.info.title), { what: "link sign", quad: signQuad(id, EZRA.link, 1) }, ...pads];
+      case "web-plaza": return [{ what: "district sign", quad: slabQuad(id, districtSign()) }];
+      case "pos-monosuko": return mini(MONOSUKO);
+      case "bee-furniture-crm": return mini(BEE);
+      case "pedulipasal": return mini(PEDULI);
+      default: throw new Error(`no items for ${id}`);
+    }
+  };
+  /** The map board's bezel and the post below it. */
+  const mapQuads = (id: string): Quad[] => {
+    const m = MAPS[id];
+    const w = MAP_BOARD.w + 2 * SCREEN_BEZEL.rim;
+    const h = MAP_BOARD.h + 2 * SCREEN_BEZEL.rim;
+    const bottom = MAP_BOARD.y - h / 2;
+    return [upright(id, m, m.ry, w, bottom, bottom + h), upright(id, m, m.ry, MAP_POST.w, 0, bottom, 0, MAP_POST.back)];
+  };
+
+  /** A stop's view basis: forward, right and up unit vectors, and the half-height slope of the frame. */
+  const basis = (stop: { camera: Vec3; target: Vec3 }) => {
+    const f = { x: stop.target.x - stop.camera.x, y: stop.target.y - stop.camera.y, z: stop.target.z - stop.camera.z };
+    const fl = Math.hypot(f.x, f.y, f.z);
+    f.x /= fl; f.y /= fl; f.z /= fl;
+    const rl = Math.hypot(f.z, f.x);
+    const r = { x: -f.z / rl, y: 0, z: f.x / rl };
+    const u = { x: r.y * f.z - r.z * f.y, y: r.z * f.x - r.x * f.z, z: r.x * f.y - r.y * f.x };
+    return { f, r, u, t: Math.tan(((TOUR_FOV / 2) * Math.PI) / 180) };
+  };
+  /** A world point seen from a stop: in half frame heights (the aspect cancels in area shares), with its depth. */
+  const seen = (stop: { camera: Vec3; target: Vec3 }, q: Vec3) => {
+    const { f, r, u, t } = basis(stop);
+    const v = { x: q.x - stop.camera.x, y: q.y - stop.camera.y, z: q.z - stop.camera.z };
+    const depth = v.x * f.x + v.y * f.y + v.z * f.z;
+    return { x: (v.x * r.x + v.z * r.z) / (depth * t), y: (v.x * u.x + v.y * u.y + v.z * u.z) / (depth * t), depth };
+  };
+  /** The depth at which the camera ray through view point p meets the plane of the flat quad q (corners in order). */
+  const rayDepth = (stop: { camera: Vec3; target: Vec3 }, p: Pt, q: Quad) => {
+    const { f, r, u, t } = basis(stop);
+    const d = { x: f.x + (p.x * r.x + p.y * u.x) * t, y: f.y + p.y * u.y * t, z: f.z + (p.x * r.z + p.y * u.z) * t };
+    const e1 = { x: q[1].x - q[0].x, y: q[1].y - q[0].y, z: q[1].z - q[0].z };
+    const e2 = { x: q[3].x - q[0].x, y: q[3].y - q[0].y, z: q[3].z - q[0].z };
+    const n = { x: e1.y * e2.z - e1.z * e2.y, y: e1.z * e2.x - e1.x * e2.z, z: e1.x * e2.y - e1.y * e2.x };
+    const c = stop.camera;
+    return (n.x * (q[0].x - c.x) + n.y * (q[0].y - c.y) + n.z * (q[0].z - c.z)) / (n.x * d.x + n.y * d.y + n.z * d.z);
+  };
+  const area = (poly: Pt[]) => Math.abs(poly.reduce((s, p, i) => s + p.x * poly[(i + 1) % poly.length].y - poly[(i + 1) % poly.length].x * p.y, 0)) / 2;
+  /** The part of polygon `subject` inside the convex polygon `clip` (Sutherland–Hodgman). */
+  const clipTo = (subject: Pt[], clip: Pt[]): Pt[] => {
+    const signed = clip.reduce((s, p, i) => s + p.x * clip[(i + 1) % clip.length].y - clip[(i + 1) % clip.length].x * p.y, 0);
+    const c = signed < 0 ? [...clip].reverse() : clip;
+    let out = subject;
+    for (let i = 0; i < c.length && out.length; i++) {
+      const a = c[i], b = c[(i + 1) % c.length];
+      const side = (p: Pt) => (b.x - a.x) * (p.y - a.y) - (b.y - a.y) * (p.x - a.x);
+      const input = out;
+      out = [];
+      for (let j = 0; j < input.length; j++) {
+        const p = input[j], q = input[(j + 1) % input.length];
+        const sp = side(p), sq = side(q);
+        const cut = () => ({ x: p.x + ((q.x - p.x) * sp) / (sp - sq), y: p.y + ((q.y - p.y) * sp) / (sp - sq) });
+        if (sq >= 0) {
+          if (sp < 0) out.push(cut());
+          out.push(q);
+        } else if (sp >= 0) out.push(cut());
+      }
+    }
+    return out;
+  };
+  const centroid = (poly: Pt[]) => ({ x: poly.reduce((s, p) => s + p.x, 0) / poly.length, y: poly.reduce((s, p) => s + p.y, 0) / poly.length });
+
+  /**
+   * The share of each item a map board covers in the desktop and portrait views of its stop: where the two overlap in
+   * the view, whichever the camera ray through the overlap meets first is in front (two flat panels that stand close
+   * and turned differently can't be ordered by their average depth).
+   */
+  const coverage = () =>
+    layout.islands.flatMap((p) => {
+      const desktop = tourStopFor(p);
+      return ([["desktop", desktop], ["portrait", portraitStop(p, desktop)]] as const).flatMap(([view, stop]) => {
+        const map = mapQuads(p.id);
+        return items(p.id).map(({ what, quad }) => {
+          const item = quad.map((pt) => seen(stop, pt));
+          const covered = map.reduce((sum, piece) => {
+            const both = clipTo(item, piece.map((pt) => seen(stop, pt)));
+            if (both.length < 3) return sum;
+            const c = centroid(both);
+            return rayDepth(stop, c, piece) < rayDepth(stop, c, quad) ? sum + area(both) : sum;
+          }, 0);
+          return { id: p.id, view, what, share: covered / area(item) };
+        });
+      });
+    });
+
+  it("keep every map board off its island's screen, info board, link sign and bounce pads in both tour views", () => {
+    const covered = coverage().filter((c) => c.share > MAP_COVER).map((c) => `${c.id} (${c.view}): the map board covers ${(c.share * 100).toFixed(0)}% of the ${c.what}`);
+    expect(covered).toEqual([]);
+  });
+
+  /** A board's barrier columns (layouts.ts boardSpan: its centre line sampled every half block). */
+  const spanColumns = (c: { x: number; z: number }, half: number, ry: number) => {
+    const n = Math.ceil((2 * half) / 0.5);
+    const out: string[] = [];
+    for (let i = 0; i <= n; i++) {
+      const s = -half + (2 * half * i) / n;
+      out.push(`${Math.round(c.x + s * Math.cos(ry))},${Math.round(c.z - s * Math.sin(ry))}`);
+    }
+    return out;
+  };
+  /**
+   * The thin panels on an island other than its map board (boards, signs and screens on posts), with the barrier
+   * columns they stand in: a closeup line is tested against the panels themselves, other props against their cells.
+   */
+  const panelsOf = (id: string): { quad: Quad; columns: string[] }[] => {
+    const info = (at: Spot, title: string, lines: readonly string[], scale = 1) => ({
+      quad: slabQuad(id, infoPanel(at, title, lines, scale)),
+      columns: spanColumns(at, INFO_HALF_SPAN * scale, at.ry),
+    });
+    const link = (l: Spot, scale = 1) => [
+      { quad: signQuad(id, l, scale), columns: [`${Math.round(l.x)},${Math.round(l.z)}`] },
+      { quad: upright(id, l, l.ry, SIGNPOST.postW * scale, 0, SIGNPOST.postH * scale), columns: [] },
+    ];
+    const g = GTID.board, s = EZRA.screen, sign = PETAK.sign;
+    const mini = (L: typeof MONOSUKO | typeof BEE | typeof PEDULI) => {
+      const pr = projectById(id);
+      return [info(L.info, pr.title, miniBoardLines(pr), MINI_BOARD_SCALE), ...link(L.link, MINI_SIGN_SCALE)];
+    };
+    switch (id) {
+      case "hero": return [info(HERO.info, worldCopy.location, [worldCopy.heroLine])];
+      case "gtid": return [{ quad: priceBoard(), columns: spanColumns(g, g.w / 2 - 0.3, g.ry) }, info(GTID.info, "gtid.pro", stats(id)), ...link(GTID.link)];
+      case "petak-umpet": return [
+        // PetakUmpet.tsx: the title sign's panel from SIGN_BOTTOM (0.55) up
+        { quad: upright(id, sign, sign.ry, sign.w, 0.55, 0.55 + sign.h), columns: spanColumns(sign, sign.w / 2 - 0.3, sign.ry) },
+        info(PETAK.info, "Roblox", stats(id)), ...link(PETAK.link),
+      ];
+      case "orbit-store": return [info(ORBIT.info, "Orbit Store", stats(id)), ...link(ORBIT.link)];
+      case "ezra-bot": return [{ quad: botScreen(), columns: spanColumns(s, s.w / 2 - 0.25, s.ry) }, info(EZRA.info, EZRA.info.title, stats(id)), ...link(EZRA.link)];
+      case "web-plaza": return [{ quad: slabQuad(id, districtSign()), columns: spanColumns(PLAZA.sign, PLAZA.sign.w / 2 - 0.1, PLAZA.sign.ry) }];
+      case "pos-monosuko": return mini(MONOSUKO);
+      case "bee-furniture-crm": return mini(BEE);
+      case "pedulipasal": return mini(PEDULI);
+      default: throw new Error(`no panels for ${id}`);
+    }
+  };
+  /** Whether the segment a→b crosses the planar quad q (its corners in order). */
+  const crosses = (a: Vec3, b: Vec3, q: Quad): boolean => {
+    const e1 = { x: q[1].x - q[0].x, y: q[1].y - q[0].y, z: q[1].z - q[0].z };
+    const e2 = { x: q[3].x - q[0].x, y: q[3].y - q[0].y, z: q[3].z - q[0].z };
+    const n = { x: e1.y * e2.z - e1.z * e2.y, y: e1.z * e2.x - e1.x * e2.z, z: e1.x * e2.y - e1.y * e2.x };
+    const d = { x: b.x - a.x, y: b.y - a.y, z: b.z - a.z };
+    const den = n.x * d.x + n.y * d.y + n.z * d.z;
+    if (Math.abs(den) < 1e-12) return false;
+    const t = (n.x * (q[0].x - a.x) + n.y * (q[0].y - a.y) + n.z * (q[0].z - a.z)) / den;
+    if (t < 0 || t > 1) return false;
+    const r = { x: a.x + d.x * t - q[0].x, y: a.y + d.y * t - q[0].y, z: a.z + d.z * t - q[0].z };
+    const u = (r.x * e1.x + r.y * e1.y + r.z * e1.z) / (e1.x ** 2 + e1.y ** 2 + e1.z ** 2);
+    const v = (r.x * e2.x + r.y * e2.y + r.z * e2.z) / (e2.x ** 2 + e2.y ** 2 + e2.z ** 2);
+    return u >= 0 && u <= 1 && v >= 0 && v <= 1;
+  };
+
+  it("keep the line from each map board's closeup camera to its face clear of the island's props, on desktop and phone", () => {
+    const blocked = new Set<string>();
+    for (const p of layout.islands) {
+      const m = MAPS[p.id];
+      const [fx, fy, fz] = islandFrame(p);
+      const panels = panelsOf(p.id);
+      const boardColumns = new Set([...spanColumns(m, MAP_HALF_SPAN, m.ry), ...panels.flatMap((b) => b.columns)]);
+      // the other props' visible columns: every row of a column that stands on the grass and holds no board
+      const ground = new Set(groundCells(p.id).map(([x, , z]) => `${x},${z}`));
+      const props = new Set(FOOTPRINTS[p.id].filter(([x, , z]) => ground.has(`${x},${z}`) && !boardColumns.has(`${x},${z}`)).map((c) => c.join(",")));
+      const centre = { x: fx + m.x, y: fy + MAP_BOARD.y, z: fz + m.z };
+      const normal = { x: Math.sin(m.ry), y: 0, z: Math.cos(m.ry) };
+      const face = [...upright(p.id, m, m.ry, MAP_BOARD.w, MAP_BOARD.y - MAP_BOARD.h / 2, MAP_BOARD.y + MAP_BOARD.h / 2), centre];
+      for (const [w, h] of [[1280, 720], [520, 940]]) {
+        const aspect = w / h;
+        const inset = CLOSEUP_HUD_PX / h;
+        const limit = closeupPanLimit(MAP_BOARD, aspect, TOUR_FOV, inset);
+        for (const pan of [-limit, 0, limit]) {
+          const { camera } = closeupPose(centre, normal, MAP_BOARD, aspect, TOUR_FOV, undefined, { inset, pan });
+          for (const q of face) {
+            const len = Math.hypot(q.x - camera.x, q.y - camera.y, q.z - camera.z);
+            // up to the near plane, CLOSEUP_NEAR_MARGIN in front of the face
+            const end = (len - CLOSEUP_NEAR_MARGIN) / len;
+            const near = { x: camera.x + (q.x - camera.x) * end, y: camera.y + (q.y - camera.y) * end, z: camera.z + (q.z - camera.z) * end };
+            if (panels.some((b) => crosses(camera, near, b.quad))) blocked.add(`${p.id} (${w}x${h}): a board between the closeup camera and the map board`);
+            for (let d = 0; d <= len - CLOSEUP_NEAR_MARGIN; d += 0.02) {
+              const t = d / len;
+              const cell = [
+                Math.floor(camera.x + (q.x - camera.x) * t - fx + 0.5),
+                Math.floor(camera.y + (q.y - camera.y) * t - fy),
+                Math.floor(camera.z + (q.z - camera.z) * t - fz + 0.5),
+              ].join(",");
+              if (props.has(cell)) {
+                blocked.add(`${p.id} (${w}x${h}): prop cell (${cell}) between the closeup camera and the map board`);
+                break;
+              }
+            }
+          }
+        }
+      }
+    }
+    expect([...blocked]).toEqual([]);
   });
 });

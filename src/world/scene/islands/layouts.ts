@@ -1,4 +1,4 @@
-import { DEFAULT_PARAMS } from "@/world/engine/physics/character";
+import { DEFAULT_PARAMS, MODEL_TOP } from "@/world/engine/physics/character";
 import { layoutLines } from "./voxelFont";
 import { INFO_BOARD, SCREEN_BEZEL, infoBoardTop } from "./shared/boardGeometry";
 import { boxCells, postCells, type Cell } from "./shared/local";
@@ -16,10 +16,14 @@ import { infoBoardRows, miniBoardLines } from "./shared/text";
 
 /**
  * Ezra's reach (engine/physics/character.ts): on the grass his 1.8-tall box fills rows 0–1 (BODY_ROWS), and a jump
- * (jumpSpeed² / 2·gravity ≈ 1.5) lifts his head into row 3 (REACH_ROW). Rows from BODY_ROWS up never stop him walking.
+ * rises JUMP_RISE (jumpSpeed² / 2·gravity, the most any frame rate reaches; the 120 Hz substeps peak at ~1.46), lifting
+ * the box into row 3 (REACH_ROW). Rows from BODY_ROWS up never stop him walking. His model's hair stands MODEL_OVER
+ * above the box, so a barrier row stops the box at its bottom and the hair that much higher.
  */
 export const BODY_ROWS = Math.ceil(DEFAULT_PARAMS.height);
-export const REACH_ROW = Math.floor(DEFAULT_PARAMS.height + DEFAULT_PARAMS.jumpSpeed ** 2 / (2 * DEFAULT_PARAMS.gravity));
+export const JUMP_RISE = DEFAULT_PARAMS.jumpSpeed ** 2 / (2 * DEFAULT_PARAMS.gravity);
+export const REACH_ROW = Math.floor(DEFAULT_PARAMS.height + JUMP_RISE);
+export const MODEL_OVER = MODEL_TOP - DEFAULT_PARAMS.height;
 /**
  * How far a visual may brush into the edge of Ezra's 0.6-wide box (his head is 0.54 wide) before it counts as in his
  * way: an overhang reaching less than this into a cell needs no barrier there.
@@ -145,17 +149,19 @@ export const ORBIT = {
 export const EZRA = {
   // feet centre; its torso is w × d (the head as deep), arms and face plates aside
   robot: { x: -1.2, z: 0.2, w: 1.5, d: 1.0 },
-  // forward and tighter (pitch 1.2) so the tour camera reads the replies; w 3.8 fits one 60 px canvas line. Each
-  // bubble's left edge is at x, its plate d deep
-  bubbles: { x: 0.5, z: 0.6, ys: [4.8, 3.6, 2.4], w: 3.8, h: 0.9, d: 0.16 },
+  // forward and tighter (pitch 1.2) so the tour camera reads the replies; w 3.8 fits one 60 px canvas line. The lowest
+  // tail tip ends 2.225 up: over Ezra's hair standing (2.01) and when a barrier row stops his jump (2.21). Each
+  // bubble's left edge is at x, its plate d deep inside a slate rim `rim` wider all round; its tail (a square `size`
+  // turned 45°) hangs from (tail.x, tail.y) off the bubble's left edge and centre
+  bubbles: { x: 0.5, z: 0.6, ys: [5.25, 4.05, 2.85], w: 3.8, h: 0.9, d: 0.16, rim: 0.05, tail: { x: 0.12, y: -0.42, size: 0.29 } },
   // low and in front, so from the tour camera it sits under the chat bubbles instead of over the newest one
   screen: { x: 1.8, z: 3.0, w: 2.6, h: 1.0, y: 1.0, ry: -0.2 },
   // front-left, below the bounce pad at (-5, -2) in the tour view so the pad stays visible
   info: { x: -3.5, z: 4.0, ry: 0.3, title: "Discord" },
   // right of the screen board, clear of its corner
   link: { x: 3.9, z: 4.3, ry: -0.35 },
-  // beside the bounce pad from Orbit, left of the robot
-  map: { x: -5.7, z: -0.5, ry: 0 },
+  // in front of the bounce pad from Orbit, left of the robot: at (−5.7, −0.5) it hid the pad from both tour cameras
+  map: { x: -6, z: 0.75, ry: -0.6 },
 } as const;
 
 /* ---------- Web & Apps district (plaza + three radius-4 minis) ---------- */
@@ -215,7 +221,8 @@ export const MONOSUKO = {
   table: { x: 0.9, z: 1.9 },
   info: { x: -0.75, z: 2.25, ry: -0.6 },
   link: { x: 0.5, z: -0.45, ry: -0.3 },
-  map: { x: -1.75, z: 0.5, ry: 0 },
+  // 0.25 forward of (−1.75, 0.5): there the info board crossed the phone closeup's line to the board
+  map: { x: -1.75, z: 0.75, ry: -0.15 },
   stand: { x: 0, z: 0 },
 } as const;
 
@@ -231,23 +238,27 @@ export const BEE = {
   logs: { x: -2, z: -1 },
   // the stand's column stands under the screen centre (its cell is (2, 0))
   monitor: { x: 1.8, z: 0 },
-  screen: { x: 1.8, y: 2.9, z: 0.15, w: 3.4, h: 2.125 },
+  // raised so its bezel (2.26 up) clears Ezra's hair standing under it (2.01) and when a barrier row stops his jump (2.21)
+  screen: { x: 1.8, y: 3.4, z: 0.15, w: 3.4, h: 2.125 },
   // figure-eight flight over the shed roof (3.2 at the back): centre, half-widths along x / z, bob height
   bee: { x: -0.6, y: 3.6, z: -1.4, ax: 1.2, az: 0.8, ay: 0.25 },
   info: { x: 0, z: 2, ry: -0.6 },
   link: { x: -1.5, z: -0.5, ry: -0.3 },
-  map: { x: -1, z: 1, ry: -0.6 },
-  stand: { x: 1, z: 0 },
+  // 0.25 forward of (−1, 1): there its top edge cut into the "Try the CRM" sign in the desktop tour view
+  map: { x: -1, z: 1.25, ry: -0.6 },
+  // in front of the screen, facing it
+  stand: { x: 2, z: 1 },
 } as const;
 
 // PeduliPasal: one bridge, landing on the west-back (~(-2.4, -1.8)). The pavilion stands at the back right, the phone
 // on its plinth in front of it.
 export const PEDULI = {
   pavilion: { x0: 0, x1: 2, z0: -2, z1: -1 },
-  // the flat roof, centred on the pavilion: a lower slab overhanging the posts, a smaller one on top
+  // the flat roof, centred on the pavilion: a lower slab overhanging the posts (its underside 3.53 up, over Ezra's
+  // hair at a jump's top, ~3.51), a smaller one on top
   roof: [
-    { y: 3.31, sx: 3.6, sy: 0.22, sz: 2.6 },
-    { y: 3.52, sx: 3.0, sy: 0.2, sz: 2.0 },
+    { y: 3.64, sx: 3.6, sy: 0.22, sz: 2.6 },
+    { y: 3.85, sx: 3.0, sy: 0.2, sz: 2.0 },
   ],
   shelf: { x: 1, z: -2.1, w: 2.6, h: 2.2 },
   // left of the phone's sight lines, its table's back edge just clear of the book spines: at (1, −1.1) the phone hid it
@@ -257,12 +268,14 @@ export const PEDULI = {
   // in front of the body centre, high enough that the front props stay under it in the tour view
   phone: { x: 0.75, z: 0.9, w: 1.42, h: 2.9, plinth: 0.8 },
   screen: { x: 0.75, y: 2.25, z: 0.99, w: 1.25, h: 2.708 },
-  // trunk 4 tall: the crown (4–6 up) clears the pavilion roof (3.2–3.6)
+  // trunk 4 tall: the crown (4–6 up) clears the pavilion roof (3.53–3.95)
   tree: { x: 3, z: 0, h: 4, seed: 59 },
-  // x −1: at −0.75 the board's top corner covered the phone's FAB and chips in the tour view
-  info: { x: -1, z: 1.75, ry: -0.3 },
+  // x −1: at −0.75 the board's top corner covered the phone's FAB and chips in the tour view. 0.25 forward and turned
+  // 0.15 more than (−1, 1.75, −0.3), so the map board beside it neither covers it nor stands in its closeup's way
+  info: { x: -1, z: 2, ry: -0.45 },
   link: { x: -2.5, z: -0.5, ry: -0.3 },
-  map: { x: -2, z: 1, ry: -0.6 },
+  // by the bridge head, 0.25 forward of (−2, 1), where its top edge cut into the "Get the APK" sign in the desktop view
+  map: { x: -2, z: 1.25, ry: -0.6 },
   stand: { x: 1, z: 2 },
 } as const;
 
@@ -280,10 +293,14 @@ export function beeRoofPlanks(): Slab[] {
   });
 }
 
-/** Ezra Bot's chat bubbles (their plates; the rim and the tail stay within SLIVER and the plate's rows) as slabs. */
+/** Ezra Bot's chat bubbles as slabs: each plate in its rim, and its tail (the turned square's box, its tip exact). */
 export function bubbleSlabs(): Slab[] {
   const b = EZRA.bubbles;
-  return b.ys.map((y) => ({ x: b.x + b.w / 2, y, z: b.z, sx: b.w, sy: b.h, sz: b.d }));
+  const tail = b.tail.size * Math.SQRT2;
+  return b.ys.flatMap((y) => [
+    { x: b.x + b.w / 2, y, z: b.z, sx: b.w + 2 * b.rim, sy: b.h + 2 * b.rim, sz: b.d },
+    { x: b.x + b.tail.x, y: y + b.tail.y, z: b.z, sx: tail, sy: tail, sz: b.d },
+  ]);
 }
 
 const rot = (dx: number, ry: number) => ({ x: dx * Math.cos(ry), z: -dx * Math.sin(ry) });
@@ -329,16 +346,18 @@ function miniInfo(id: string, b: { x: number; z: number; ry: number }): Cell[] {
 }
 
 /**
- * Ceiling cells under overhead slabs, so no jump puts Ezra's head through them: in each cell a slab reaches more than
- * SLIVER into, the rows from the first one his head would rise into it (never his body's rows) up to the highest a jump
- * from the grass lifts it to (REACH_ROW), as the board barriers rise to their panel's top row. Cells in `keepClear`
- * stay open: they lie in a crossing's clearance ring (layouts.test lists the gap each one leaves).
+ * Ceiling cells under overhead slabs, so no jump puts Ezra's hair through them: in each cell a slab reaches more than
+ * SLIVER into, the rows from the highest one that still stops his hair (MODEL_OVER above the box) under the slab, but
+ * never his body's rows, up to the highest row a jump from the grass lifts the box to (REACH_ROW), as the board barriers
+ * rise to their panel's top row. A slab above the hair's whole jump needs none. Cells in `keepClear` stay open: they lie
+ * in a crossing's clearance ring or over its station (layouts.test lists the gap each one leaves).
  */
 function capCells(slabs: readonly Slab[], keepClear: readonly (readonly [number, number])[] = []): Cell[] {
   const out: Cell[] = [];
   for (const s of slabs) {
     const f = footprintOf(s);
-    const lo = Math.max(BODY_ROWS, Math.floor(f.y0));
+    if (f.y0 >= MODEL_TOP + JUMP_RISE) continue;
+    const lo = Math.max(BODY_ROWS, Math.floor(f.y0 - MODEL_OVER));
     const hi = Math.min(REACH_ROW, Math.ceil(f.y1) - 1);
     const r = f.hx + f.hz;
     for (let x = Math.floor(f.cx - r); x <= Math.ceil(f.cx + r); x++) {
@@ -427,7 +446,8 @@ export const FOOTPRINTS: Record<string, Cell[]> = {
       ...PLAZA.lamps.flatMap((l) => postCells(l.x, l.z)),
       ...mapCells(PLAZA.map),
     ],
-    // the crown's lowest layer is 3.0 up; its corner (−3, −2) lies in the minecart's 2-block ring
+    // the crown's lowest layer is 3.0 up: rows 2–3 under it keep the hair below it. Its corner (−3, −2) lies in the
+    // minecart's 2-block ring (a 4-tall trunk would lift the crown out of reach, but cut its top off the desktop view)
     capCells(crownSlabs(PLAZA.tree), [[-3, -2]]),
   ),
   "pos-monosuko": [
