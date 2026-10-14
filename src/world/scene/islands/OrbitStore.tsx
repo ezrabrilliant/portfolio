@@ -10,6 +10,7 @@ import { ORBIT } from "./layouts";
 import { CANVAS_FONTS } from "./shared/canvasFonts";
 import { disposeObject } from "./shared/dispose";
 import { InfoBoard } from "./shared/InfoBoard";
+import { MapBoard } from "./shared/MapBoard";
 import { Signpost } from "./shared/Signpost";
 import { PropBlocks } from "./shared/PropBlocks";
 import { PALETTE, type PropBlock } from "./shared/props";
@@ -185,6 +186,7 @@ export function OrbitStoreIsland({ placement }: { placement: IslandPlacement }) 
       />
       <InfoBoard placement={placement} at={ORBIT.info} rotationY={ORBIT.info.ry} title="Orbit Store" lines={project.stats ?? []} />
       <Signpost id="orbit-link" placement={placement} at={ORBIT.link} rotationY={ORBIT.link.ry} label="Visit Orbit Store" url={project.links.demo} />
+      <MapBoard placement={placement} at={ORBIT.map} />
     </>
   );
 }

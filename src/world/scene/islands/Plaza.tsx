@@ -4,6 +4,7 @@ import type { IslandPlacement } from "@/world/engine/gen/layout";
 import { worldCopy } from "@/config/portfolio";
 import { WorldText } from "@/world/scene/WorldText";
 import { PLAZA } from "./layouts";
+import { MapBoard } from "./shared/MapBoard";
 import { PropBlocks } from "./shared/PropBlocks";
 import { islandFrame } from "./shared/local";
 import { PALETTE, treeBlocks, type PropBlock } from "./shared/props";
@@ -74,6 +75,7 @@ export function PlazaIsland({ placement }: { placement: IslandPlacement }) {
           <WorldText text="Three projects ahead" position={[0, sign.y - 0.33, textZ]} size={0.15} color="#5a4130" font="ui" />
         </group>
       </group>
+      <MapBoard placement={placement} at={PLAZA.map} />
     </>
   );
 }

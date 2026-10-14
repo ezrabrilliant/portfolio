@@ -11,6 +11,7 @@ import { useWorld } from "@/world/state/store";
 import { PETAK } from "./layouts";
 import { CANVAS_FONTS } from "./shared/canvasFonts";
 import { InfoBoard } from "./shared/InfoBoard";
+import { MapBoard } from "./shared/MapBoard";
 import { Signpost } from "./shared/Signpost";
 import { PropBlocks } from "./shared/PropBlocks";
 import { PALETTE, pickColor, treeBlocks, type PropBlock } from "./shared/props";
@@ -502,6 +503,7 @@ export function PetakUmpetIsland({ placement }: { placement: IslandPlacement }) 
       <HidingKid placement={placement} />
       <InfoBoard placement={placement} at={PETAK.info} rotationY={PETAK.info.ry} title="Roblox" lines={project.stats ?? []} />
       <Signpost id="petak-link" placement={placement} at={PETAK.link} rotationY={PETAK.link.ry} label="Play on Roblox" url={project.links.roblox} />
+      <MapBoard placement={placement} at={PETAK.map} />
     </>
   );
 }

@@ -8,6 +8,7 @@ import { LiveScreen } from "@/world/scene/screens/LiveScreen";
 import { crmApp } from "@/world/scene/screens/crm";
 import { BEE, MINI_BOARD_SCALE, MINI_SIGN_SCALE } from "./layouts";
 import { InfoBoard } from "./shared/InfoBoard";
+import { MapBoard } from "./shared/MapBoard";
 import { PropBlocks } from "./shared/PropBlocks";
 import { Signpost } from "./shared/Signpost";
 import { islandFrame } from "./shared/local";
@@ -155,6 +156,7 @@ export function BeeCrmIsland({ placement }: { placement: IslandPlacement }) {
         lines={miniBoardLines(project)}
       />
       <Signpost id="bee-crm-link" placement={placement} at={BEE.link} rotationY={BEE.link.ry} scale={MINI_SIGN_SCALE} label="Try the CRM" url={project.links.demo} />
+      <MapBoard placement={placement} at={BEE.map} />
     </>
   );
 }

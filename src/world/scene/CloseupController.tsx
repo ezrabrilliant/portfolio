@@ -17,19 +17,22 @@ export { closeCloseup, openCloseup } from "./closeupState";
 /** A press that moves less than this (CSS px) before release is a click, as in InteractionController. */
 const CLICK_SLOP = 6;
 
-/** A key event aimed at the HUD (Enter on the focused Back button): the HUD's, never the screen's. */
-function fromHud(t: EventTarget | null): boolean {
-  return typeof Element !== "undefined" && t instanceof Element && t.closest(".hud") !== null;
+/**
+ * A key event aimed at an interactive element (Enter on the HUD's focused Back button, arrows or Enter on a link of the
+ * SEO mirror that Tab reached): that element's, never the screen's.
+ */
+function fromControl(t: EventTarget | null): boolean {
+  return typeof Element !== "undefined" && t instanceof Element && t.closest("a, button, input, select, textarea, .hud") !== null;
 }
 
 /**
  * Input while a closeup is open (spec §6): a primary click on the face goes to the program (one beside it closes the
  * closeup; right and middle clicks do nothing), a sideways drag pans a screen wider than a portrait viewport (closeupPan;
  * a press that moves less than CLICK_SLOP and never panned is still a tap), the cursor shows where the face is, keys the
- * screen uses (CloseupTarget.key) reach nothing else (keys aimed at the HUD and keys still held from before the open are
- * never offered to it), Space does not jump in Play, opening in Play stops Ezra, and walking that starts after the open (keys or
- * stick, Play; input already held while opening does not count) or scrolling the page more than CLOSEUP_SCROLL_EXIT px
- * (Tour) closes it. Esc is handled by useModeTransitions / useTabCycling, the Back button by the HUD.
+ * screen uses (CloseupTarget.key) reach nothing else (keys aimed at the HUD or another link, button or field, and keys
+ * still held from before the open, are never offered to it), Space does not jump in Play, opening in Play stops Ezra,
+ * and walking that starts after the open (keys or stick, Play; input already held while opening does not count) or
+ * scrolling the page more than CLOSEUP_SCROLL_EXIT px (Tour) closes it. Esc is handled by useModeTransitions / useTabCycling, the Back button by the HUD.
  */
 export function CloseupController() {
   const camera = useThree((s) => s.camera);
@@ -142,10 +145,11 @@ export function CloseupController() {
     const onKey = (e: KeyboardEvent) => {
       if (!runtime.closeup || e.code === "Escape" || isTypingTarget(e.target)) return;
       if (e.ctrlKey || e.metaKey || e.altKey) return;
-      // offered to the screen: not keys aimed at the HUD (Enter on Back activates Back), nor the auto-repeat of a key
-      // still held from before the open (released at the open, it waits for its key-up; a non-repeat keydown of it is a
-      // new press after a lost key-up, as the keyboard counts it)
-      const offer = !fromHud(e.target) && !(e.repeat && sharedKeyboard.isWaiting(e.code));
+      // offered to the screen: not keys aimed at an interactive element (Enter on Back activates Back; a focused mirror
+      // link keeps its Enter and arrows), nor the auto-repeat of a key still held from before the open (released at the
+      // open, it waits for its key-up; a non-repeat keydown of it is a new press after a lost key-up, as the keyboard
+      // counts it)
+      const offer = !fromControl(e.target) && !(e.repeat && sharedKeyboard.isWaiting(e.code));
       const target = offer ? runtime.closeups.get(runtime.closeup.id) : undefined;
       if (target?.key?.(e.code)) {
         // the screen used it (a map board's arrows): Ezra must not walk, the tour must not switch to Play

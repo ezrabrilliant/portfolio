@@ -7,6 +7,7 @@ import { useWorld } from "@/world/state/store";
 import { HERO } from "./layouts";
 import { VoxelTitle } from "./VoxelTitle";
 import { InfoBoard } from "./shared/InfoBoard";
+import { MapBoard } from "./shared/MapBoard";
 import { PropBlocks } from "./shared/PropBlocks";
 import { islandFrame } from "./shared/local";
 import { PALETTE, treeBlocks, type PropBlock } from "./shared/props";
@@ -90,6 +91,7 @@ export function HeroIsland({ placement }: { placement: IslandPlacement }) {
       </group>
       <InfoBoard placement={placement} at={HERO.info} rotationY={HERO.info.ry} title={worldCopy.location} lines={[worldCopy.heroLine]} />
       <VoxelTitle id="hero-title" placement={placement} at={HERO.title} lines={HERO.title.lines} cell={HERO.title.cell} color="#4a3626" />
+      <MapBoard placement={placement} at={HERO.map} />
     </>
   );
 }

@@ -9,6 +9,7 @@ import { LiveScreen } from "@/world/scene/screens/LiveScreen";
 import { chatApp } from "@/world/scene/screens/chat";
 import { MINI_BOARD_SCALE, MINI_SIGN_SCALE, PEDULI } from "./layouts";
 import { InfoBoard } from "./shared/InfoBoard";
+import { MapBoard } from "./shared/MapBoard";
 import { PropBlocks } from "./shared/PropBlocks";
 import { Signpost } from "./shared/Signpost";
 import { islandFrame } from "./shared/local";
@@ -118,6 +119,7 @@ export function PeduliPasalIsland({ placement }: { placement: IslandPlacement })
         lines={miniBoardLines(project)}
       />
       <Signpost id="pedulipasal-link" placement={placement} at={PEDULI.link} rotationY={PEDULI.link.ry} scale={MINI_SIGN_SCALE} label="Get the APK" url={project.links.demo} />
+      <MapBoard placement={placement} at={PEDULI.map} />
     </>
   );
 }

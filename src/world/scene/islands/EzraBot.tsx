@@ -9,6 +9,7 @@ import { Interactable } from "@/world/scene/Interactable";
 import { useWorld } from "@/world/state/store";
 import { EZRA } from "./layouts";
 import { InfoBoard } from "./shared/InfoBoard";
+import { MapBoard } from "./shared/MapBoard";
 import { Signpost } from "./shared/Signpost";
 import { PALETTE } from "./shared/props";
 import { islandFrame, worldTuple } from "./shared/local";
@@ -245,6 +246,7 @@ export function EzraBotIsland({ placement }: { placement: IslandPlacement }) {
       />
       <InfoBoard placement={placement} at={EZRA.info} rotationY={EZRA.info.ry} title="Discord" lines={project.stats ?? []} />
       <Signpost id="ezra-link" placement={placement} at={EZRA.link} rotationY={EZRA.link.ry} label="Add to Discord" url={project.links.discord} />
+      <MapBoard placement={placement} at={EZRA.map} />
     </>
   );
 }

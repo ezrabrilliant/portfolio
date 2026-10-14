@@ -8,6 +8,7 @@ import { useWorld } from "@/world/state/store";
 import { GTID } from "./layouts";
 import { VoxelTitle } from "./VoxelTitle";
 import { InfoBoard } from "./shared/InfoBoard";
+import { MapBoard } from "./shared/MapBoard";
 import { Signpost } from "./shared/Signpost";
 import { PropBlocks } from "./shared/PropBlocks";
 import { PALETTE, type PropBlock } from "./shared/props";
@@ -166,6 +167,7 @@ export function GtidIsland({ placement }: { placement: IslandPlacement }) {
       <VoxelTitle id="gtid-title" placement={placement} at={GTID.title} lines={GTID.title.lines} cell={GTID.title.cell} color={PALETTE.orange} />
       <InfoBoard placement={placement} at={GTID.info} rotationY={GTID.info.ry} title="gtid.pro" lines={project.stats ?? []} />
       <Signpost id="gtid-link" placement={placement} at={GTID.link} rotationY={GTID.link.ry} label="Visit gtid.pro" url={project.links.demo} />
+      <MapBoard placement={placement} at={GTID.map} />
     </>
   );
 }

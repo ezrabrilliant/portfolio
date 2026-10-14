@@ -8,6 +8,7 @@ import { posApp } from "@/world/scene/screens/pos";
 import { MINI_BOARD_SCALE, MINI_SIGN_SCALE, MONOSUKO } from "./layouts";
 import { awningParts } from "./monosuko/awning";
 import { InfoBoard } from "./shared/InfoBoard";
+import { MapBoard } from "./shared/MapBoard";
 import { PropBlocks } from "./shared/PropBlocks";
 import { Signpost } from "./shared/Signpost";
 import { islandFrame } from "./shared/local";
@@ -148,6 +149,7 @@ export function PosMonosukoIsland({ placement }: { placement: IslandPlacement })
         lines={miniBoardLines(project)}
       />
       <Signpost id="pos-monosuko-link" placement={placement} at={MONOSUKO.link} rotationY={MONOSUKO.link.ry} scale={MINI_SIGN_SCALE} label="Try the POS" url={project.links.demo} />
+      <MapBoard placement={placement} at={MONOSUKO.map} />
     </>
   );
 }

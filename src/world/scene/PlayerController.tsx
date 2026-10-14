@@ -11,6 +11,7 @@ import { axisFromKeys, cameraRelative, sharedKeyboard } from "@/world/input/keyb
 import { consumeTouch, touchInput } from "@/world/input/touch";
 import { advanceRide, rideHeading } from "./crossings/ride";
 import { cutsStandUp, holdDropInput, islandUnder } from "./modes";
+import { arrivalSpot, stepTravel, travelFade } from "./travel";
 
 const TAU = Math.PI * 2;
 function dampAngle(a: number, b: number, lambda: number, dt: number): number {
@@ -66,6 +67,12 @@ export function PlayerController() {
         tmp.fade = 0;
         setFade(0);
       }
+      // the same for a fast travel: Ezra shows again where he is
+      if (runtime.travel) {
+        runtime.travel = null;
+        runtime.hidden = false;
+        setFade(0);
+      }
       return;
     }
 
@@ -87,6 +94,39 @@ export function PlayerController() {
         drainJump();
         return;
       }
+    }
+
+    // fast travel from a map board (travel.ts): puff away, fade, move to a landing column, puff back; no input meanwhile
+    const tr = runtime.travel;
+    if (tr) {
+      drainJump();
+      runtime.moving = false;
+      runtime.speed = 0;
+      const event = stepTravel(tr, dt);
+      if (event === "vanish") {
+        runtime.particles.burst({ x: p.pos.x, y: p.pos.y + 0.6, z: p.pos.z }, "dust", { count: 18 });
+        playSfx("poof");
+        runtime.hidden = true;
+      } else if (event === "arrive") {
+        const island = runtime.islandById(tr.to);
+        const spot = arrivalSpot(built.grid.isSolid, island, runtime.tourPath?.stops.find((s) => s.id === tr.to));
+        Object.assign(p.pos, spot.pos);
+        Object.assign(p.lastSafe, spot.pos);
+        p.vel.x = p.vel.y = p.vel.z = 0;
+        p.onGround = true;
+        p.sinceGround = 0;
+        p.locked = false;
+        runtime.heading = spot.heading;
+        runtime.landTimer = 0.14;
+        useWorld.getState().setActiveIsland(island.id);
+        runtime.particles.burst({ x: p.pos.x, y: p.pos.y + 0.6, z: p.pos.z }, "dust", { count: 18 });
+        playSfx("poof");
+        runtime.hidden = false;
+      } else if (event === "done") {
+        runtime.travel = null;
+      }
+      setFade(runtime.travel ? travelFade(tr) : 0);
+      return;
     }
 
     if (runtime.ride) {
