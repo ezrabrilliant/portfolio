@@ -1,7 +1,9 @@
+import { createFollowCam, updateFollowCam } from "@/world/engine/camera/followCam";
 import type { TourStop } from "@/world/engine/camera/tourPath";
 import type { IslandPlacement } from "@/world/engine/gen/layout";
 import type { CharacterInput } from "@/world/engine/physics/character";
 import type { IsSolid, Vec3 } from "@/world/engine/types";
+import { pullIn } from "./camera/pullIn";
 
 export type EnterKind = "standUp" | "drop";
 
@@ -20,14 +22,16 @@ export function dropStart(p: IslandPlacement, column?: { x: number; z: number })
 /**
  * Where a drop onto island `p` lands: the centre of the cell nearest `aim` with grass floor under it and its four
  * neighbours (no rim landings) and nothing solid from the floor up past the drop start, so Ezra falls past no prop
- * and stands on open ground. Given the camera's `eye`, it first only takes cells the eye can see Ezra standing on
- * (no solid block between the eye and his chest), so he never lands hidden behind a house; when the eye sees no such
- * cell, any cell. Falls back to the centre column if no cell qualifies.
+ * and stands on open ground. Given the camera's `eye`, it prefers, in order: cells the eye can see Ezra standing on
+ * (no solid block between the eye and his chest) where the follow camera starting toward the eye also has a clear line
+ * to him (followLineClear), so he never lands hidden behind a house nor with a board between him and the Play camera;
+ * then cells the eye can see; then, when the eye sees no free cell (a camera still far away or mid-flight), cells with
+ * that clear line; then any cell. Falls back to the centre column if no cell qualifies.
  */
 export function landingColumn(isSolid: IsSolid, p: IslandPlacement, aim: { x: number; z: number }, eye?: Vec3): { x: number; z: number } {
   const { x: ox, y: floor, z: oz } = p.origin;
   const reach = Math.ceil(p.radius * 1.25) + 1; // the island generator's extent
-  const pick = (seen: Vec3 | undefined) => {
+  const pick = (seen: Vec3 | undefined, follow: Vec3 | undefined) => {
     let best: { x: number; z: number } | null = null;
     let bestD = Infinity;
     for (let x = ox - reach; x <= ox + reach; x++) {
@@ -39,13 +43,48 @@ export function landingColumn(isSolid: IsSolid, p: IslandPlacement, aim: { x: nu
         for (let y = floor + 1; clear && y <= floor + DROP + 2; y++) clear = !isSolid(x, y, z);
         if (!clear) continue;
         if (seen && !sees(isSolid, seen, x + 0.5, floor + 1 + CHEST, z + 0.5)) continue;
+        if (follow && !followLineClear(isSolid, { x: x + 0.5, y: floor + 1, z: z + 0.5 }, follow)) continue;
         best = { x: x + 0.5, z: z + 0.5 };
         bestD = d;
       }
     }
     return best;
   };
-  return (eye && pick(eye)) || pick(undefined) || { x: ox + 0.5, z: oz + 0.5 };
+  const tiered = eye && (pick(eye, eye) || pick(eye, undefined) || pick(undefined, eye));
+  return tiered || pick(undefined, undefined) || { x: ox + 0.5, z: oz + 0.5 };
+}
+
+/** The follow camera as Play starts (PlayCamera's createFollowCam): its default pitch and distance. */
+const ENTRY_CAM = createFollowCam();
+const NO_ORBIT = { orbitX: 0, orbitY: 0, zoom: 0 };
+/**
+ * Yaw and pitch offsets (radians) the line must also be clear at: the tour camera sits a hair off its stop from one
+ * page load to the next (scroll rounding), and a line that only grazes a board then flips between clear and blocked.
+ * Once pullIn has pulled the camera in front of a board, it stays there.
+ */
+const LINE_MARGIN = [
+  [0, 0],
+  [0.05, 0],
+  [-0.05, 0],
+  [0, 0.05],
+  [0, -0.05],
+] as const;
+
+/**
+ * True when the follow camera at its entry pitch and distance, on the side of `eye`, has a clear line to Ezra standing
+ * at `feet`, with a margin (LINE_MARGIN): no solid block between his head and the camera, so pullIn leaves the camera
+ * where it belongs instead of clamping it into the back of his head (an info board 1.5 out did that to a drop at 1.24).
+ * Play starts with the camera toward the tour camera (PlayCamera's entry yaw), and a fast travel cuts it behind Ezra,
+ * who faces away from that camera: both are the `eye` side.
+ */
+export function followLineClear(isSolid: IsSolid, feet: Vec3, eye: { x: number; z: number }): boolean {
+  const yaw = Math.atan2(eye.x - feet.x, eye.z - feet.z);
+  return LINE_MARGIN.every(([dYaw, dPitch]) => {
+    const cam = { ...ENTRY_CAM, yaw: yaw + dYaw, pitch: ENTRY_CAM.pitch + dPitch };
+    const { position, lookAt } = updateFollowCam(cam, feet, 0, false, 0, NO_ORBIT);
+    const at = pullIn(lookAt, position, isSolid);
+    return at.x === position.x && at.y === position.y && at.z === position.z;
+  });
 }
 
 /** Chest height above the feet: what the camera must see for Ezra to read as standing there. */

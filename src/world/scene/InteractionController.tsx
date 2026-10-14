@@ -71,8 +71,9 @@ export function InteractionController() {
     const s = useWorld.getState();
     if (s.mode !== "play") return;
     if (runtime.hoverId) runtime.hoverId = null;
-    if (runtime.closeup) {
-      // the closeup has the input: no E prompt or interaction behind it (Ezra stays where he is)
+    if (runtime.closeup || runtime.travel) {
+      // the closeup has the input: no E prompt or interaction behind it (Ezra stays where he is); a fast travel neither
+      // (an E between the puffs would reopen the departure board, or open the destination's screen mid-arrival)
       sharedKeyboard.consume("KeyE");
       consumeTouch("interact");
       if (runtime.focusId !== null) {

@@ -49,6 +49,13 @@ describe("closeupState", () => {
     expect(closeupPan.offset).toBe(0);
   });
 
+  it("takes the keys back from a focused HUD button (it would get a map board's arrows and Enter)", () => {
+    const button = { closest: (s: string) => (s === ".hud" ? {} : null), blur: vi.fn() };
+    vi.stubGlobal("document", { activeElement: button });
+    openCloseup("pos-screen");
+    expect(button.blur).toHaveBeenCalledOnce();
+  });
+
   it("ignores ids without a registered target", () => {
     openCloseup("nope");
     expect(runtime.closeup).toBeNull();

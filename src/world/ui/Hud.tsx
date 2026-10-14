@@ -1,4 +1,5 @@
 import { useState, useSyncExternalStore } from "react";
+import type { MouseEvent } from "react";
 import { playSfx } from "@/world/engine/audio/sfx";
 import { useWorld } from "@/world/state/store";
 import { runtime } from "@/world/state/runtime";
@@ -30,6 +31,13 @@ function onViewportChange(cb: () => void) {
   };
 }
 
+/**
+ * A mouse press on a HUD button does not move the focus there (its click still fires; Tab still focuses it): a
+ * clicked Play/Tour button kept the focus, and in a closeup a map board's arrows and Enter then went to it (Enter
+ * pressed "Tour").
+ */
+const keepFocus = (e: MouseEvent) => e.preventDefault();
+
 export function Hud() {
   const [touch] = useState(() => typeof window !== "undefined" && window.matchMedia("(pointer: coarse)").matches);
   const mode = useWorld((s) => s.mode);
@@ -54,7 +62,7 @@ export function Hud() {
       <div className="hud-bar" role="group" aria-label="World controls">
         {/* closeup: back to the world (Esc, a click beside the screen, scrolling or walking also go back) */}
         {closeupId && (
-          <button type="button" className="hud-btn" onClick={closeCloseup}>
+          <button type="button" className="hud-btn" onMouseDown={keepFocus} onClick={closeCloseup}>
             <span aria-hidden="true">← </span>Back
           </button>
         )}
@@ -63,6 +71,7 @@ export function Hud() {
           type="button"
           className={mode === "play" ? "hud-btn hud-btn--on" : "hud-btn"}
           disabled={!ready}
+          onMouseDown={keepFocus}
           onClick={() => setMode(mode === "play" ? "tour" : "play")}
         >
           {mode === "play" ? "Tour" : "Play"}
@@ -70,6 +79,7 @@ export function Hud() {
         <button
           type="button"
           className={muted ? "hud-btn" : "hud-btn hud-btn--on"}
+          onMouseDown={keepFocus}
           onClick={() => {
             toggleMuted();
             if (muted) playSfx("click");

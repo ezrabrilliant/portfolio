@@ -75,8 +75,25 @@ export function islandOutline(p: IslandPlacement): { u: number; v: number }[] {
   return hull(corners);
 }
 
-/** Builds the map from the live layout: islands in tour order (others after), their outlines, crossings and hit regions. */
+/** Everything on a map but its own island: the same for every board of one layout. */
+type MapBase = Omit<MapModel, "here"> & { index: Map<string, number> };
+const bases = new WeakMap<WorldLayout, MapBase>();
+
+/**
+ * Builds the map from the live layout: islands in tour order (others after), their outlines, crossings and hit regions.
+ * The islands, names and links depend only on the layout, so they are built once per layout and shared by every board
+ * (nine boards regenerate each island's outline once, not nine times); only `here` differs. Treat them as read-only.
+ */
 export function buildMapModel(layout: WorldLayout, here: string): MapModel {
+  let base = bases.get(layout);
+  if (!base) {
+    base = mapBase(layout);
+    bases.set(layout, base);
+  }
+  return { islands: base.islands, links: base.links, scale: base.scale, here: Math.max(0, base.index.get(here) ?? 0) };
+}
+
+function mapBase(layout: WorldLayout): MapBase {
   const ordered = [
     ...layout.tourOrder.map((id) => layout.islands.find((i) => i.id === id)).filter((p): p is IslandPlacement => !!p),
     ...layout.islands.filter((p) => !layout.tourOrder.includes(p.id)),
@@ -145,7 +162,7 @@ export function buildMapModel(layout: WorldLayout, here: string): MapModel {
   const links = layout.crossings
     .filter((c) => index.has(c.from) && index.has(c.to))
     .map((c): MapLink => ({ kind: c.kind, a: toCanvas(projectTopDown(c.a)), b: toCanvas(projectTopDown(c.b)) }));
-  return { islands, links, here: Math.max(0, index.get(here) ?? 0), scale };
+  return { islands, links, scale, index };
 }
 
 /** Every hit region on the map: one per island (action "go", arg = island index), then the three buttons. */

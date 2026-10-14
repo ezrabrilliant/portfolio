@@ -1,5 +1,13 @@
 import { describe, expect, it, vi } from "vitest";
+
+// a pass-through spy: counts how often the map regenerates an island's shape
+vi.mock("@/world/engine/gen/islandGen", async (original) => {
+  const m = await original<typeof import("@/world/engine/gen/islandGen")>();
+  return { ...m, generateIsland: vi.fn(m.generateIsland) };
+});
+
 import { worldProjects } from "@/config/portfolio";
+import { generateIsland } from "@/world/engine/gen/islandGen";
 import { buildLayout } from "@/world/engine/gen/layout";
 import { islandTitle } from "@/world/scene/islands/shared/project";
 import { hitAt } from "../types";
@@ -63,6 +71,18 @@ describe("map model", () => {
 
   it("marks the board's own island as here, for every island", () => {
     for (const [i, id] of layout.tourOrder.entries()) expect(buildMapModel(layout, id).here).toBe(i);
+  });
+
+  it("builds the islands once per layout: every board shares them and only `here` differs", () => {
+    const fresh = buildLayout(worldProjects);
+    vi.mocked(generateIsland).mockClear();
+    const boards = fresh.tourOrder.map((id) => buildMapModel(fresh, id));
+    expect(vi.mocked(generateIsland)).toHaveBeenCalledTimes(fresh.islands.length);
+    for (const b of boards) {
+      expect(b.islands).toBe(boards[0].islands);
+      expect(b.links).toBe(boards[0].links);
+    }
+    expect(boards.map((b) => b.here)).toEqual(fresh.tourOrder.map((_, i) => i));
   });
 
   it("draws one line per crossing, with its kind", () => {

@@ -9,6 +9,7 @@ import { orbitInput } from "@/world/input/orbit";
 import { followGate } from "./camera/followGate";
 import type { FollowGate } from "./camera/followGate";
 import { pullIn } from "./camera/pullIn";
+import { isTeleport, yawBehind } from "./camera/teleport";
 
 /** Seconds over which the entering (tour) look direction eases onto Ezra, instead of snapping on the first frame. */
 const LOOK_BLEND = 0.9;
@@ -134,10 +135,14 @@ export function PlayCamera() {
         if (track.swingT >= SWING) track.swinging = false;
       }
     }
-    // a respawn teleports Ezra while the screen is faded out: cut the camera there instead of
-    // sweeping it up from the void (entering Play still blends in from the tour camera)
-    const teleported = !entering && Math.hypot(p.x - track.prev.x, p.y - track.prev.y, p.z - track.prev.z) > 4;
-    if (teleported) track.lookT = LOOK_BLEND;
+    // a respawn or a fast travel teleports Ezra while the screen is faded out: cut the camera there instead of
+    // sweeping it up from the void (entering Play still blends in from the tour camera), and behind his new heading
+    // instead of at the angle it had where he left (a travel faces him away from the destination's tour camera)
+    const teleported = !entering && isTeleport(track.prev, p);
+    if (teleported) {
+      track.lookT = LOOK_BLEND;
+      cam.yaw = yawBehind(runtime.heading);
+    }
     track.prev.set(p.x, p.y, p.z);
     track.active = true;
     // movement is camera-relative, so trailing strafe/backpedal headings would feed back into the

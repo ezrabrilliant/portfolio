@@ -1,5 +1,6 @@
 import { runtime } from "@/world/state/runtime";
 import { useWorld } from "@/world/state/store";
+import { releaseHudFocus } from "./closeupFocus";
 
 /** Tour: scrolling the page more than this many px since a closeup opened closes it (spec §6 exits). */
 export const CLOSEUP_SCROLL_EXIT = 24;
@@ -25,6 +26,8 @@ export function openCloseup(id: string): void {
   openedAtScroll = pageScroll();
   // the hover (outline, cursor) belongs to the world behind the closeup
   runtime.hoverId = null;
+  // a HUD button holding the focus would take the screen's keys (a map board's arrows, Enter): Tab still reaches Back
+  releaseHudFocus();
   const s = useWorld.getState();
   s.setHovered(null);
   s.setCloseup(id);

@@ -6,7 +6,7 @@ import { buildLayout } from "@/world/engine/gen/layout";
 import type { IslandPlacement } from "@/world/engine/gen/layout";
 import type { IsSolid } from "@/world/engine/types";
 import { defaultTourStop, islandTop } from "./islands/types";
-import { cutsStandUp, dropStart, enterKind, islandUnder, landingColumn, watchPoint } from "./modes";
+import { cutsStandUp, dropStart, enterKind, followLineClear, islandUnder, landingColumn, watchPoint } from "./modes";
 import { tourVia } from "./tour/tourMath";
 import { buildTourTrack, nearestTrackProgress, stopAt } from "./tour/tourMotion";
 
@@ -102,6 +102,59 @@ describe("landingColumn", () => {
     it("ignores the camera when it can see no free cell at all", () => {
       const walled = landingColumn(island(house), p, behind, { x: p.origin.x + 0.5, y: p.origin.y + 3, z: p.origin.z + 0.5 });
       expect(walled).toEqual({ x: p.origin.x + 0.5, z: p.origin.z - 1.5 });
+    });
+  });
+
+  describe("with a clear line for the Play camera (followLineClear)", () => {
+    const { x: ox, y: oy, z: oz } = p.origin;
+    const centreFeet = { x: ox + 0.5, y: oy + 1, z: oz + 0.5 };
+    // a steep tour camera in front (+z): it sees over a board, the low follow camera does not
+    const eye = { x: ox + 0.5, y: oy + 120, z: oz + 20 };
+    // a board 11 wide and 3 rows tall in the row in front of the centre cell: the follow line from the centre passes
+    // it 1.58–1.95 up, and from each of the next three cells back still below its top (3)
+    const board: Array<[number, number, number]> = [];
+    for (let x = -5; x <= 5; x++) for (let y = 1; y <= 3; y++) board.push([ox + x, oy + y, oz + 1]);
+
+    it("is clear on open grass, and blocked by a board between Ezra's head and the camera", () => {
+      expect(followLineClear(island(), centreFeet, eye)).toBe(true);
+      expect(followLineClear(island(board), centreFeet, eye)).toBe(false);
+      // the same board on his other side is behind the camera's line
+      expect(followLineClear(island(board), centreFeet, { x: eye.x, z: oz - 20 })).toBe(true);
+    });
+
+    it("lands on the nearest seen cell whose camera line is clear: in front of the board, not right behind it", () => {
+      // the tour camera alone would take the centre (it sees him over the board)
+      expect(landingColumn(island(board), p, centreFeet, eye)).toEqual({ x: ox + 0.5, z: oz + 2.5 });
+      expect(landingColumn(island(), p, centreFeet, eye)).toEqual({ x: ox + 0.5, z: oz + 0.5 });
+    });
+
+    it("keeps the camera line clear even when the tour camera sees no free cell (still far off or mid-flight)", () => {
+      // the eye is sealed in a block far in front: it sees nothing, but the Play camera still starts toward it
+      const sealed = { x: ox + 0.5, y: oy + 3.5, z: oz + 30.5 };
+      const solid = island([...board, [ox, oy + 3, oz + 30]]);
+      // without the clear-line rule the nearest free cell (the centre) would win, its line blocked by the board
+      expect(followLineClear(solid, centreFeet, sealed)).toBe(false);
+      const c = landingColumn(solid, p, centreFeet, sealed);
+      expect(c).toEqual({ x: ox + 0.5, z: oz + 2.5 });
+      expect(followLineClear(solid, { x: c.x, y: oy + 1, z: c.z }, sealed)).toBe(true);
+    });
+
+    it("still lands where the tour camera sees him when no such cell has a clear line", () => {
+      // a slab 3–5 above the grass over the front (z ≥ 2): every camera line toward +z from rows 0 and −1 ends in
+      // it, while an eye almost overhead sees those rows over it; a tall wall in row −2 hides the rest from the eye
+      const ground = island();
+      const slab: IsSolid = (x, y, z) => {
+        const bx = Math.floor(x), by = Math.floor(y), bz = Math.floor(z);
+        if (ground(x, y, z)) return true;
+        if (Math.abs(bx - ox) > 12) return false;
+        return (by >= oy + 4 && by <= oy + 5 && bz >= oz + 2) || (by >= oy + 1 && by <= oy + 25 && bz === oz - 2);
+      };
+      const high = { x: ox + 0.5, y: oy + 60, z: oz + 15 };
+      const aim = { x: ox + 0.5, z: oz + 1.5 }; // nearest free cell: z 1, which that eye cannot see
+      expect(landingColumn(slab, p, aim)).toEqual(aim);
+      const c = landingColumn(slab, p, aim, high);
+      expect(c).toEqual({ x: ox + 0.5, z: oz + 0.5 });
+      expect(followLineClear(slab, { x: c.x, y: oy + 1, z: c.z }, high)).toBe(false);
     });
   });
 });
