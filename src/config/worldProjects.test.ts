@@ -13,10 +13,10 @@ describe("worldProjects content for the star islands", () => {
     expect(byId["orbit-store"].stats).toEqual(["2,200+ orders", "890+ buyers"]);
     expect(byId["ezra-bot"].stats).toEqual(["1,000+ members"]);
   });
-  it("has the signpost links (Orbit's Discord link is filled in by Ezra later)", () => {
+  it("has the signpost links", () => {
     expect(byId.gtid.links.demo).toBe("https://gtid.pro");
     expect(byId["petak-umpet"].links.roblox).toBe("https://www.roblox.com/games/91179701802837/Petak-Umpet");
-    expect(Object.prototype.hasOwnProperty.call(byId["orbit-store"].links, "discord")).toBe(true);
+    expect(byId["orbit-store"].links).toEqual({ demo: "https://orbit.ezrabrilliant.com" });
     expect(byId["ezra-bot"].links.discord).toBe("https://discord.com/oauth2/authorize?client_id=1127105994766426122");
   });
 });

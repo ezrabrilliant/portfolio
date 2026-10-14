@@ -530,7 +530,7 @@ export const worldProjects: WorldProject[] = [
     tags: ["Discord.js", "Midtrans", "QRIS"],
     district: "discord",
     tier: "star",
-    links: { discord: "" }, // Ezra fills the server invite later; the signpost stays inactive while empty
+    links: { demo: "https://orbit.ezrabrilliant.com" },
     island: { accent: "#3D62F8" },
   },
   {
