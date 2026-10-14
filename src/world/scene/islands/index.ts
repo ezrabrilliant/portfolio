@@ -12,6 +12,7 @@ import { EzraBotIsland } from "./EzraBot";
 import { PlazaIsland } from "./Plaza";
 import { PosMonosukoIsland } from "./PosMonosuko";
 import { BeeCrmIsland } from "./BeeCrm";
+import { PeduliPasalIsland } from "./PeduliPasal";
 
 /** Every island shares one tour framing (framing.ts) and stamps its FOOTPRINTS cells as barrier collision. */
 const island = (id: string, Component: FC<{ placement: IslandPlacement }>): IslandModule => ({
@@ -20,10 +21,6 @@ const island = (id: string, Component: FC<{ placement: IslandPlacement }>): Isla
   tourStop: tourStopFor,
   stamp: (grid, p) => stampCells(grid, p, FOOTPRINTS[id]),
 });
-
-/** Terrain only: a Web & Apps island before its hand-built module replaces this one (no props, no collision). */
-const Bare: FC<{ placement: IslandPlacement }> = () => null;
-const bare = (id: string): IslandModule => ({ id, Component: Bare, tourStop: tourStopFor });
 
 /** The island registry: the hero, the four stars, the Web & Apps plaza and its three minis. */
 export const ISLANDS: Record<string, IslandModule> = {
@@ -35,5 +32,5 @@ export const ISLANDS: Record<string, IslandModule> = {
   [WEB_PLAZA_ID]: island(WEB_PLAZA_ID, PlazaIsland),
   "pos-monosuko": island("pos-monosuko", PosMonosukoIsland),
   "bee-furniture-crm": island("bee-furniture-crm", BeeCrmIsland),
-  pedulipasal: bare("pedulipasal"),
+  pedulipasal: island("pedulipasal", PeduliPasalIsland),
 };

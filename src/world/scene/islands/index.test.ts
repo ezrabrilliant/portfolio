@@ -8,8 +8,6 @@ import { FRAMING, tourStopFor } from "./framing";
 import { FOOTPRINTS } from "./layouts";
 
 const WEB = [WEB_PLAZA_ID, "pos-monosuko", "bee-furniture-crm", "pedulipasal"];
-/** The Web & Apps islands whose module has landed (C2–C4 add one each; C4 replaces this file). */
-const DRESSED = [WEB_PLAZA_ID, "pos-monosuko", "bee-furniture-crm"];
 
 describe("island registry", () => {
   const layout = buildLayout(worldProjects);
@@ -27,18 +25,15 @@ describe("island registry", () => {
     }
   });
 
-  it("stamps a dressed Web & Apps island's FOOTPRINTS as barriers and keeps the others bare", () => {
+  it("dresses the Web & Apps islands: a component of their own and their FOOTPRINTS stamped as barriers", () => {
     for (const id of WEB) {
       const p = layout.islands.find((i) => i.id === id)!;
-      if (!DRESSED.includes(id)) {
-        expect(ISLANDS[id].stamp, id).toBeUndefined();
-        expect(ISLANDS[id].Component({ placement: p }), id).toBeNull();
-        continue;
-      }
       const grid = new VoxelGrid();
       ISLANDS[id].stamp?.(grid, p);
       expect(FOOTPRINTS[id].length, id).toBeGreaterThan(0);
       for (const [x, y, z] of FOOTPRINTS[id]) expect(grid.get(p.origin.x + x, p.origin.y + 1 + y, p.origin.z + z), `${id} (${x},${y},${z})`).toBe(blockId("barrier"));
     }
+    const components = WEB.map((id) => ISLANDS[id].Component);
+    expect(new Set(components).size).toBe(WEB.length);
   });
 });

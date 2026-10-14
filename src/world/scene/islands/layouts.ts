@@ -186,7 +186,9 @@ export const BEE = {
 export const PEDULI = {
   pavilion: { x0: 0, x1: 2, z0: -2, z1: -1 },
   shelf: { x: 1, z: -2.1, w: 2.6, h: 2.2 },
-  scales: { x: 1, z: -1.1 },
+  // left of the phone's sight lines, its table's back edge just clear of the book spines: at (1, −1.1) the phone hid it
+  // from both tour cameras. x 0.5 keeps its barrier in cell (1, −1) (postCells rounds up), the post column takes cell 0
+  scales: { x: 0.5, z: -1.4 },
   // a stone plinth (x −0.05–1.55, cells 0..1 of row 1) with the phone body standing on it; the screen face sits 0.09
   // in front of the body centre, high enough that the front props stay under it in the tour view
   phone: { x: 0.75, z: 0.9, w: 1.42, h: 2.9, plinth: 0.8 },
