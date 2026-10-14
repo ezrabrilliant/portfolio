@@ -37,7 +37,7 @@ const CONVERSATIONS: readonly Conversation[] = [
         who: "bot",
         text:
           "Article 362: Whoever takes property belonging to another with the intent of unlawfully owning it is " +
-          "punishable by up to 5 years in prison or a fine of up to Rp900,000.",
+          "punishable by up to 5 years in prison or a fine of up to Rp 900,000.",
       },
       { who: "user", text: "What if it happened at night, by two people?" },
       {

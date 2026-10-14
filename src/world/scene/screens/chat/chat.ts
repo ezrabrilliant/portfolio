@@ -120,9 +120,20 @@ export function actChat(s: ChatState, action: string, _arg: number | undefined, 
   return action === "advance" ? advanceChat(s, t) : s;
 }
 
-/** Idle demo: the next exchange once the last answer has been readable for READ_PAUSE seconds. */
+/** Clock time the latest answer has been readable for READ_PAUSE (after its loading line and typing). */
+function readUntil(s: ChatState): number {
+  for (let i = s.lines.length - 1; i >= 0; i--) {
+    if (s.lines[i].who === "bot") return doneAt(s.lines[i]) + READ_PAUSE;
+  }
+  return -Infinity;
+}
+
+/**
+ * Idle demo: the next exchange once the last answer has been readable for READ_PAUSE seconds. The read window is
+ * checked from the lines themselves as well as `next`, so an answer a visitor's tap started also gets its full read.
+ */
 export function autoChat(s: ChatState, t: number): ChatState | null {
-  if (t < s.next || answering(s, t)) return null;
+  if (t < s.next || answering(s, t) || t < readUntil(s)) return null;
   const next = advanceChat(s, t);
   const last = lastLine(next);
   return { ...next, next: (last ? doneAt(last) : t) + READ_PAUSE };

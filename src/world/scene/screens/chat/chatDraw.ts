@@ -113,7 +113,9 @@ function messages(g: CanvasRenderingContext2D, s: ChatState, t: number) {
   g.font = font(400, 9);
   const laid = visibleLines(s, t).map(({ line, text }) => {
     const rows = wrapText(g, text, BUBBLE_MAX - 16);
-    const bw = Math.min(BUBBLE_MAX, Math.max(...rows.map((r) => g.measureText(r).width)) + 16);
+    // whitespace-only text wraps to no rows: width 0, not Math.max()'s -Infinity
+    const widest = rows.length > 0 ? Math.max(...rows.map((r) => g.measureText(r).width)) : 0;
+    const bw = Math.min(BUBBLE_MAX, widest + 16);
     return { line, rows, bw, bh: rows.length * ROW + 12 };
   });
   if (laid.length === 0) return;

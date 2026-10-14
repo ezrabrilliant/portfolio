@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { formatRupiah } from "../format";
 import {
   INITIAL_READ,
   LOADING_SECONDS,
@@ -21,11 +22,13 @@ import { CHAT_STRINGS } from "./strings";
 const NOW = new Date(2026, 9, 14, 9, 5, 30); // 09:05:30 local
 const [HIT_AND_RUN, THEFT] = CHAT_STRINGS.conversations;
 
-/** Clock time just after the newest line has fully appeared. */
-const settled = (s: ChatState) => {
+/** Clock time the newest line has fully appeared (an answer: completely typed). */
+const doneTyping = (s: ChatState) => {
   const last = s.lines[s.lines.length - 1];
-  return last.at + last.text.length / TYPE_RATE + 0.01;
+  return last.at + last.text.length / TYPE_RATE;
 };
+/** Clock time just after the newest line has fully appeared. */
+const settled = (s: ChatState) => doneTyping(s) + 0.01;
 
 describe("chat messages", () => {
   it("opens with the first conversation's exchange already on screen, fully typed", () => {
@@ -74,6 +77,21 @@ describe("chat messages", () => {
     const s = advanceChat(initChat(NOW), 29); // question at 09:05:59, answer at 09:06:00.1
     expect(s.lines.map((l) => l.stamp)).toEqual(["09.05", "09.06"]);
   });
+
+  it("the stamp clock wraps past midnight", () => {
+    expect(clockStamp(new Date(2026, 9, 14, 23, 59, 0).getTime(), 120)).toBe("00.01");
+  });
+
+  it("ignores actions it does not know", () => {
+    const s = initChat(NOW);
+    expect(actChat(s, "unknown", undefined, 10)).toBe(s);
+  });
+
+  it("writes rupiah as the rest of the site does ('Rp 900,000')", () => {
+    const said = CHAT_STRINGS.conversations.flatMap((c) => c.script.map((l) => l.text)).join(" ");
+    expect(said).toContain(formatRupiah(900000));
+    expect(said).not.toMatch(/Rp\d/);
+  });
 });
 
 describe("chat conversations", () => {
@@ -107,6 +125,23 @@ describe("chat demo and redraws", () => {
     expect(s1.next).toBeCloseTo(settled(s1) - 0.01 + READ_PAUSE, 9);
     expect(autoChat(s1, s1.next - 0.05)).toBeNull();
     expect(autoChat(s1, s1.next)?.lines).toHaveLength(4);
+  });
+
+  it("after a visitor's tap the demo still waits until that answer has been readable for READ_PAUSE", () => {
+    // tap through to the hit-and-run answer (the longest); taps leave the demo's own `next` behind
+    let s = actChat(initChat(NOW), "advance", undefined, 2);
+    s = actChat(s, "advance", undefined, settled(s));
+    const th = settled(s);
+    s = actChat(s, "advance", undefined, th);
+    expect(topicTitle(s)).toBe("Hit-and-run");
+    const done = doneTyping(s);
+    // LiveScreen lets the demo run again DEMO_PAUSE (7 s) after the tap: the answer is typed by then, not yet read
+    expect(done).toBeLessThan(th + 7);
+    expect(autoChat(s, th + 7)).toBeNull();
+    expect(autoChat(s, done + READ_PAUSE - 0.05)).toBeNull();
+    const d = autoChat(s, done + READ_PAUSE);
+    if (!d) throw new Error("no demo step once the answer has been read");
+    expect(topicTitle(d)).toBe("Motorcycle theft");
   });
 
   it("is busy while loading or typing and idle once the answer is complete", () => {
