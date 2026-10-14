@@ -12,13 +12,22 @@ import { Signpost } from "./shared/Signpost";
 import { islandFrame } from "./shared/local";
 import { PALETTE, type PropBlock } from "./shared/props";
 import { projectById } from "./shared/project";
-import { metaRows } from "./shared/text";
+import { miniBoardLines } from "./shared/text";
 
 const POS_GREEN = "#1f7a4d";
 const AWNING_WHITE = "#efede6";
 const GRILL_TOP = 1.36; // chicken pieces on the grate, on the counter top (1.0)
+/**
+ * The awning: six 0.1-thick stripes on the back posts, `len` long and centred at z, sloping down `tilt` toward the front
+ * from `top` (its top at the back edge), with a short valance. Nothing may stand between a tour camera and the screen,
+ * whose top edge (bezel) is 4.14 up at z −2.12. The phone camera looks down steeply (the sight line from that edge
+ * climbs ~0.62 per block toward it), so the front edge is only ~0.5 in front of the screen and as high as the badge
+ * allows: its top meets the badge's bottom, which stands as high as the desktop frame allows. The front valance clears
+ * the phone's sight line by ~0.07; a deeper or lower awning (the first one reached z +0.2) hid two-thirds of the screen.
+ */
+const AWNING = { z: -2.1, len: 1.0, top: 5.0, tilt: 0.25, valance: 0.1 } as const;
 
-/** Stone floor, plank back wall, posts, counter, the green-and-white awning, the grill, the logo post, table and stools. */
+/** Stone floor, plank back wall, back posts, counter, the green-and-white awning, the grill, the logo post, table and stools. */
 function stallBlocks(): PropBlock[] {
   const { stall, grill, logo, table } = MONOSUKO;
   const out: PropBlock[] = [];
@@ -28,13 +37,19 @@ function stallBlocks(): PropBlock[] {
   for (let x = stall.x0; x <= stall.x1; x++) for (let row = 0; row < stall.wallRows; row++) {
     out.push({ x, y: row + 0.5, z: stall.wallZ - 0.3, c: PALETTE.plank[0], sz: 0.2 });
   }
-  for (const x of [stall.x0 - 0.4, stall.x1 + 0.4]) for (const z of [stall.wallZ - 0.3, stall.counterZ + 0.4]) {
-    out.push({ x, y: 2.2, z, c: PALETTE.wood, sx: 0.2, sy: 4.4, sz: 0.2 });
+  // the posts stand at the back corners, behind the screen's plane: a front post crossed the screen in the tour views
+  for (const x of [stall.x0 - 0.4, stall.x1 + 0.4]) {
+    out.push({ x, y: 2.425, z: stall.wallZ - 0.3, c: PALETTE.wood, sx: 0.2, sy: 4.85, sz: 0.2 });
   }
   out.push({ x: 0, y: 0.44, z: stall.counterZ + 0.05, c: PALETTE.plank[1], sx: 3.0, sy: 0.88, sz: 0.7 }); // counter
   out.push({ x: 0, y: 0.94, z: stall.counterZ + 0.05, c: PALETTE.wood, sx: 3.3, sy: 0.12, sz: 0.9 }); // counter top
+  const { z, len, top, tilt, valance } = AWNING;
+  const drop = (len / 2) * Math.sin(tilt) + 0.05 * Math.cos(tilt); // from the back top edge (or the centre) down a half
+  const front = { y: top - 2 * drop, z: z + (len / 2) * Math.cos(tilt) }; // the front edge's bottom
   for (let i = 0; i < 6; i++) {
-    out.push({ x: -1.5 + i * 0.6, y: 4.5, z: -1.2, c: i % 2 ? AWNING_WHITE : POS_GREEN, sx: 0.6, sy: 0.1, sz: 2.8, rx: 0.16 });
+    const c = i % 2 ? AWNING_WHITE : POS_GREEN;
+    out.push({ x: -1.5 + i * 0.6, y: top - drop, z, c, sx: 0.6, sy: 0.1, sz: len, rx: tilt });
+    out.push({ x: -1.5 + i * 0.6, y: front.y - valance / 2 + 0.02, z: front.z, c, sx: 0.6, sy: valance, sz: 0.05 });
   }
   // a tabletop charcoal grill with chicken pieces on the counter's right end
   out.push({ x: grill.x, y: 1.15, z: grill.z, c: "#4a4d52", sx: 0.7, sy: 0.3, sz: 0.45 });
@@ -137,7 +152,7 @@ export function PosMonosukoIsland({ placement }: { placement: IslandPlacement })
         rotationY={MONOSUKO.info.ry}
         scale={MINI_BOARD_SCALE}
         title={project.title}
-        lines={[project.line, ...metaRows(project.year, project.tags)]}
+        lines={miniBoardLines(project)}
       />
       <Signpost id="pos-monosuko-link" placement={placement} at={MONOSUKO.link} rotationY={MONOSUKO.link.ry} scale={MINI_SIGN_SCALE} label="Try the POS" url={project.links.demo} />
     </>
