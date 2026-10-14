@@ -1,4 +1,5 @@
 import { useEffect, useMemo } from "react";
+import { milestones } from "@/config/portfolio";
 import { buildWorld } from "@/world/engine/worldBuild";
 import type { BuiltWorld } from "@/world/engine/worldBuild";
 import type { VoxelGrid } from "@/world/engine/voxel/grid";
@@ -27,12 +28,19 @@ import { BouncePad } from "./crossings/BouncePad";
 import { Minecart } from "./crossings/Minecart";
 import { SteppingStones } from "./crossings/SteppingStones";
 import { stampCrossings } from "./crossings/stamp";
+import { Milestones } from "./milestones/Milestones";
+import { stampMilestones } from "./milestones/stamp";
 
 function build(): BuiltWorld {
   const stamps: Array<(grid: VoxelGrid) => void> = runtime.layout.islands.map(
     (p) => (grid: VoxelGrid) => ISLANDS[p.id]?.stamp?.(grid, p),
   );
-  const built = buildWorld(runtime.layout, [...stamps, (grid: VoxelGrid) => stampCrossings(grid, runtime.layout)]);
+  const built = buildWorld(runtime.layout, [
+    ...stamps,
+    (grid: VoxelGrid) => stampCrossings(grid, runtime.layout),
+    // after the crossings: the pillars and the floating stone never take a bridge or stepping-stone cell
+    (grid: VoxelGrid) => stampMilestones(grid, runtime.layout, milestones.map((m) => m.year)),
+  ]);
   runtime.built = built;
   // Ezra sits on the hero island's rim on the side of the hero's tour camera, clear of stamped props (so this runs
   // after the island and crossing stamps); seated, he turns his head toward that camera (seat.viewerHeading)
@@ -89,6 +97,7 @@ export function World() {
         const M = ISLANDS[p.id];
         return M ? <M.Component key={`island-${p.id}`} placement={p} /> : null;
       })}
+      <Milestones />
       <ParticlesRenderer />
       <InteractionController />
       <CloseupController />

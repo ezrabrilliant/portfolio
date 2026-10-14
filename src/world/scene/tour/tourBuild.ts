@@ -3,6 +3,7 @@ import type { TourPath, TourStop } from "@/world/engine/camera/tourPath";
 import type { IslandPlacement, WorldLayout } from "@/world/engine/gen/layout";
 import type { Vec3 } from "@/world/engine/types";
 import { portraitStop } from "../islands/framing";
+import { tourTravelWeights } from "../milestones/placement";
 import { tourVia } from "./tourMath";
 
 /** Half-width of the band around a square aspect in which the current class holds. */
@@ -35,7 +36,9 @@ export function buildTour(layout: WorldLayout, stopOf: (p: IslandPlacement) => T
   });
   const base = islands.map(stopOf);
   const via = tourVia(layout);
-  if (!portrait) return buildTourPath(base, via);
+  // the camera lingers a little on the milestone bridge (spec §7.1)
+  const travel = tourTravelWeights(layout);
+  if (!portrait) return buildTourPath(base, via, travel);
   const stops = base.map((s, i) => portraitStop(islands[i], s));
   const moved = via.map((vs, i) => {
     const a = base[i].camera, b = base[i + 1].camera;
@@ -47,7 +50,7 @@ export function buildTour(layout: WorldLayout, stopOf: (p: IslandPlacement) => T
       return { x: v.x + da.x + (db.x - da.x) * t, y: v.y + da.y + (db.y - da.y) * t, z: v.z + da.z + (db.z - da.z) * t };
     });
   });
-  return buildTourPath(stops, moved);
+  return buildTourPath(stops, moved, travel);
 }
 
 const sub = (p: Vec3, q: Vec3): Vec3 => ({ x: p.x - q.x, y: p.y - q.y, z: p.z - q.z });

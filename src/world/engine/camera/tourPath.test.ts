@@ -20,6 +20,16 @@ describe("buildTourPath", () => {
   it("needs at least two stops", () => {
     expect(() => buildTourPath([stops[0]])).toThrow();
   });
+
+  it("gives a leg with a heavier travel weight a bigger share of the scroll, keeping the others' proportions", () => {
+    const slow = buildTourPath(stops, via, [1.3]);
+    expect(slow.travel).toEqual([1.3, 1]);
+    expect(path.travel).toEqual([1, 1]);
+    expect(slow.totalWeight).toBeCloseTo(path.totalWeight + 0.3, 9);
+    const legShare = (p: typeof path, i: number) => stopProgress(p, i + 1) - stopProgress(p, i);
+    expect(legShare(slow, 0) / legShare(slow, 1)).toBeGreaterThan(legShare(path, 0) / legShare(path, 1));
+    expect(() => buildTourPath(stops, via, [0])).toThrow();
+  });
 });
 
 describe("samplePath", () => {

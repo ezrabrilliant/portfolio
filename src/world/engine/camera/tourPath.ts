@@ -3,7 +3,8 @@ import type { Vec3 } from "@/world/engine/types";
 
 export interface TourStop { id: string; camera: Vec3; target: Vec3; dwell: number }
 export interface TourSample { camera: Vec3; target: Vec3; chapter: number; chapterProgress: number }
-export interface TourPath { stops: TourStop[]; via: Vec3[][]; totalWeight: number; controls: Vec3[]; stopIndex: number[] }
+/** `travel[i]`: scroll weight of the flight from stop i to stop i + 1 (TRAVEL_WEIGHT unless the caller lingers there). */
+export interface TourPath { stops: TourStop[]; via: Vec3[][]; totalWeight: number; controls: Vec3[]; stopIndex: number[]; travel: number[] }
 
 export const TRAVEL_WEIGHT = 1;
 const DELTA = 0.15;   // half-width of a dwell window, in control-point segments
@@ -13,9 +14,11 @@ interface Zone { kind: "dwell" | "travel"; index: number; w0: number; w1: number
 const clamp01 = (v: number) => (v < 0 ? 0 : v > 1 ? 1 : v);
 const lerp3 = (a: Vec3, b: Vec3, t: number): Vec3 => ({ x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t, z: a.z + (b.z - a.z) * t });
 
-export function buildTourPath(stops: TourStop[], via: Vec3[][] = []): TourPath {
+export function buildTourPath(stops: TourStop[], via: Vec3[][] = [], travel: readonly number[] = []): TourPath {
   if (stops.length < 2) throw new Error("tour path needs at least two stops");
   if (stops.some((s) => !(s.dwell > 0))) throw new Error("every tour stop needs a dwell weight > 0");
+  const legs = stops.slice(1).map((_, i) => travel[i] ?? TRAVEL_WEIGHT);
+  if (legs.some((w) => !(w > 0))) throw new Error("every travel weight must be > 0");
   const controls: Vec3[] = [];
   const stopIndex: number[] = [];
   stops.forEach((s, i) => {
@@ -23,8 +26,8 @@ export function buildTourPath(stops: TourStop[], via: Vec3[][] = []): TourPath {
     controls.push(s.camera);
     if (i < stops.length - 1) for (const v of via[i] ?? []) controls.push(v);
   });
-  const totalWeight = stops.reduce((sum, s) => sum + s.dwell, 0) + (stops.length - 1) * TRAVEL_WEIGHT;
-  return { stops, via, totalWeight, controls, stopIndex };
+  const totalWeight = stops.reduce((sum, s) => sum + s.dwell, 0) + legs.reduce((sum, w) => sum + w, 0);
+  return { stops, via, totalWeight, controls, stopIndex, travel: legs };
 }
 
 function zones(path: TourPath): Zone[] {
@@ -38,8 +41,8 @@ function zones(path: TourPath): Zone[] {
     out.push({ kind: "dwell", index: i, w0: w, w1: w + stops[i].dwell, c0: lo, c1: hi });
     w += stops[i].dwell;
     if (i < n - 1) {
-      out.push({ kind: "travel", index: i, w0: w, w1: w + TRAVEL_WEIGHT, c0: k[i] + DELTA, c1: k[i + 1] - DELTA });
-      w += TRAVEL_WEIGHT;
+      out.push({ kind: "travel", index: i, w0: w, w1: w + path.travel[i], c0: k[i] + DELTA, c1: k[i + 1] - DELTA });
+      w += path.travel[i];
     }
   }
   return out;

@@ -6,6 +6,7 @@ import type { TourStop } from "@/world/engine/camera/tourPath";
 import type { Vec3 } from "@/world/engine/types";
 import { portraitStop, tourStopFor } from "../islands/framing";
 import { defaultTourStop } from "../islands/types";
+import { tourTravelWeights } from "../milestones/placement";
 import { buildTour, isPortrait } from "./tourBuild";
 import { stopProgresses, tourVia } from "./tourMath";
 
@@ -23,6 +24,7 @@ describe("tour build", () => {
       const path = buildTour(layout, stopOf, false);
       expect(path.stops).toEqual(layout.tourOrder.map((id) => stopOf(island(id))));
       expect(path.via).toEqual(tourVia(layout));
+      expect(path.travel).toEqual(tourTravelWeights(layout));
     });
 
     it(`${name}: portrait re-frames every stop and moves each via with its leg's stops`, () => {
