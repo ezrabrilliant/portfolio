@@ -21,7 +21,7 @@ const islandStops: TourStop[] = layout.tourOrder.map((id) => tourStopFor(island(
 const FPS = 60;
 const DT = 1 / FPS;
 // one viewport of scroll per second: the scrollable range is (stops × 140vh − 100vh)
-const VIEWPORT_PER_S = 1 / (trackHeightPx(5, 1) - 1);
+const VIEWPORT_PER_S = 1 / (trackHeightPx(layout.tourOrder.length, 1) - 1);
 
 type Pose = (p: number, cam: Vec3, look: Vec3) => void;
 type Follow = (f: { x: number; v: number }, target: number) => void;

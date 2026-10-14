@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { worldProjects } from "@/config/portfolio";
 import { buildLayout } from "@/world/engine/gen/layout";
+import { runtime } from "@/world/state/runtime";
 import { buildTourPath, stopProgress } from "@/world/engine/camera/tourPath";
 import {
   chapterAt,
@@ -30,7 +31,7 @@ describe("scroll ↔ progress", () => {
 describe("stable scroll measure", () => {
   it("is the default for both conversions and falls back to the innerHeight geometry without a track", () => {
     const m = scrollMeasure();
-    expect(m.trackPx).toBe(trackHeightPx(5, m.viewportH));
+    expect(m.trackPx).toBe(trackHeightPx(runtime.layout.tourOrder.length, m.viewportH));
     expect(refreshScrollMeasure()).toBe(false); // no DOM track to read
     expect(progressToScroll(0.5)).toBe(progressToScroll(0.5, m));
     expect(scrollToProgress(progressToScroll(0.37))).toBeCloseTo(0.37, 9);
@@ -71,22 +72,24 @@ describe("stable scroll measure from the page", () => {
     vi.resetModules();
     const t = await import("./tourMath");
     expect(t.refreshScrollMeasure()).toBe(false);
-    expect(t.scrollMeasure()).toEqual({ trackPx: 7000, viewportH: 1000 });
+    expect(t.scrollMeasure()).toEqual({ trackPx: 12600, viewportH: 1000 }); // 9 tour stops × 140 vh
   });
 });
 
 describe("tourVia", () => {
   const layout = buildLayout(worldProjects);
-  it("gives one via list per consecutive pair, sized by crossing kind", () => {
+  it("gives one via list per consecutive pair, sized by crossing kind (none along the Web & Apps chain)", () => {
     const via = tourVia(layout);
     expect(via).toHaveLength(layout.tourOrder.length - 1);
     const expected = { bridge: 1, bouncePads: 3, minecart: 4 } as const;
+    const district = (id: string) => layout.islands.find((q) => q.id === id)!.district;
     layout.tourOrder.slice(0, -1).forEach((from, i) => {
       const to = layout.tourOrder[i + 1];
       const c = layout.crossings.find((x) => x.from === from && x.to === to);
       expect(c).toBeDefined();
-      expect(via[i]).toHaveLength(expected[c!.kind]);
+      expect(via[i], `${from} → ${to}`).toHaveLength(district(from) === "web" ? 0 : expected[c!.kind]);
     });
+    expect(via.map((v) => v.length)).toEqual([1, 1, 4, 3, 4, 0, 0, 0]);
   });
   it("keeps via cameras above the crossing they follow", () => {
     const via = tourVia(layout);

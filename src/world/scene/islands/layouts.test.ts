@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildLayout } from "@/world/engine/gen/layout";
+import { STAR_TOUR, buildLayout } from "@/world/engine/gen/layout";
 import { characterCollides } from "@/world/engine/physics/character";
 import { worldCopy, worldProjects } from "@/config/portfolio";
 import { PAD_SIZE, SIGN_OFFSET, SIGN_WIDTH, STATION_SIZE, padPair, railEnds } from "@/world/scene/crossings/geometry";
@@ -14,13 +14,18 @@ const toLocal = (id: string, v: { x: number; z: number }) => ({
   z: v.z - (byId[id].origin.z + 0.5),
 });
 
+// islands with hand-built props; the Web & Apps islands join as their modules land (terrain only until then)
+const dressed = layout.tourOrder.filter((id) => FOOTPRINTS[id] !== undefined);
+const footprint = (id: string) => FOOTPRINTS[id] ?? [];
+
 describe("island prop footprints", () => {
-  it("exist for every tour island", () => {
-    for (const id of layout.tourOrder) expect(FOOTPRINTS[id]?.length ?? 0).toBeGreaterThan(0);
+  it("exist for the hero and every star island", () => {
+    for (const id of STAR_TOUR) expect(FOOTPRINTS[id]?.length ?? 0).toBeGreaterThan(0);
+    expect(dressed).toEqual(expect.arrayContaining([...STAR_TOUR]));
   });
 
   it("stay on the island (inside 78% of the radius, the narrowest rim after noise)", () => {
-    for (const id of layout.tourOrder) {
+    for (const id of dressed) {
       const r = byId[id].radius * 0.78;
       for (const [x, , z] of FOOTPRINTS[id]) expect(Math.hypot(x, z), `${id} (${x},${z})`).toBeLessThanOrEqual(r);
     }
@@ -30,7 +35,7 @@ describe("island prop footprints", () => {
     for (const c of layout.crossings) {
       for (const [id, anchor] of [[c.from, c.a], [c.to, c.b]] as const) {
         const a = toLocal(id, anchor);
-        for (const [x, , z] of FOOTPRINTS[id]) {
+        for (const [x, , z] of footprint(id)) {
           expect(Math.hypot(x - a.x, z - a.z), `${id} (${x},${z}) vs ${c.kind}`).toBeGreaterThanOrEqual(2);
         }
       }
@@ -63,7 +68,7 @@ describe("island prop footprints", () => {
     }
     expect(furniture.length).toBeGreaterThan(0);
     for (const f of furniture) {
-      for (const [x, , z] of FOOTPRINTS[f.id]) {
+      for (const [x, , z] of footprint(f.id)) {
         // gap between the cell's square and the furniture's square; negative = they overlap
         const gap = Math.max(Math.abs(x - f.x), Math.abs(z - f.z)) - 0.5 - f.half;
         expect(gap, `${f.id} (${x},${z}) vs ${f.what}`).toBeGreaterThanOrEqual(0);

@@ -36,36 +36,40 @@ function ndc(cam: Vec3, look: Vec3, p: Vec3): { x: number; y: number } {
 }
 
 describe("cartTourTable", () => {
-  const c = layout.crossings.find((x) => x.kind === "minecart")!;
-  const leg = layout.tourOrder.indexOf(c.from);
-  const e = railEnds(c, island(c.from), island(c.to));
-  const rail = minecartRail(e, buildWorld(layout).grid.isSolid);
+  const grid = buildWorld(layout).grid;
+  // Petak Umpet → Orbit Store and Ezra Bot → the Web & Apps plaza
+  for (const c of layout.crossings.filter((x) => x.kind === "minecart")) {
+    const leg = layout.tourOrder.indexOf(c.from);
+    const e = railEnds(c, island(c.from), island(c.to));
+    const rail = minecartRail(e, grid.isSolid);
+    const tag = `${c.from} → ${c.to}`;
 
-  for (const [name, stops] of Object.entries(fixtures)) {
-    const path = buildTourPath(stops, tourVia(layout));
-    const table = cartTourTable(path, leg, rail);
+    for (const [name, stops] of Object.entries(fixtures)) {
+      const path = buildTourPath(stops, tourVia(layout));
+      const table = cartTourTable(path, leg, rail);
 
-    it(`parks at the stations and only rolls forward (${name})`, () => {
-      expect(sampleTable(table, 0)).toBe(0);
-      expect(sampleTable(table, 1)).toBe(1);
-      expect(sampleTable(table, -0.5)).toBe(0);
-      expect(sampleTable(table, 1.5)).toBe(1);
-      for (let i = 1; i < table.length; i++) expect(table[i]).toBeGreaterThanOrEqual(table[i - 1]);
-    });
+      it(`parks at the stations and only rolls forward (${tag}, ${name})`, () => {
+        expect(sampleTable(table, 0)).toBe(0);
+        expect(sampleTable(table, 1)).toBe(1);
+        expect(sampleTable(table, -0.5)).toBe(0);
+        expect(sampleTable(table, 1.5)).toBe(1);
+        for (let i = 1; i < table.length; i++) expect(table[i]).toBeGreaterThanOrEqual(table[i - 1]);
+      });
 
-    it(`keeps the cart in the tour camera's frame across the whole leg (${name})`, () => {
-      const track = trackFor(path);
-      const a = stopProgress(path, leg);
-      const b = stopProgress(path, leg + 1);
-      const cam = { x: 0, y: 0, z: 0 };
-      const look = { x: 0, y: 0, z: 0 };
-      for (let k = 0; k <= 100; k++) {
-        const f = k / 100;
-        sampleTrack(track, a + (b - a) * f, cam, look);
-        const n = ndc(cam, look, railPoint(rail, sampleTable(table, f)));
-        expect(Math.abs(n.x)).toBeLessThan(0.9);
-        expect(Math.abs(n.y)).toBeLessThan(0.9);
-      }
-    });
+      it(`keeps the cart in the tour camera's frame across the whole leg (${tag}, ${name})`, () => {
+        const track = trackFor(path);
+        const a = stopProgress(path, leg);
+        const b = stopProgress(path, leg + 1);
+        const cam = { x: 0, y: 0, z: 0 };
+        const look = { x: 0, y: 0, z: 0 };
+        for (let k = 0; k <= 100; k++) {
+          const f = k / 100;
+          sampleTrack(track, a + (b - a) * f, cam, look);
+          const n = ndc(cam, look, railPoint(rail, sampleTable(table, f)));
+          expect(Math.abs(n.x)).toBeLessThan(0.9);
+          expect(Math.abs(n.y)).toBeLessThan(0.9);
+        }
+      });
+    }
   }
 });

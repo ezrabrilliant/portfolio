@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { buildLayout } from "@/world/engine/gen/layout";
+import { CHAIN_DIR, STAR_TOUR, WEB_PLAZA_ID, buildLayout } from "@/world/engine/gen/layout";
 import { worldProjects } from "@/config/portfolio";
 import type { TourStop } from "@/world/engine/camera/tourPath";
 import type { Vec3 } from "@/world/engine/types";
 import { islandFrame } from "./shared/local";
-import { PORTRAIT_ASPECT, PORTRAIT_MIN_PITCH, PORTRAIT_YAW, TOUR_FOV, portraitFitPoints, portraitStop, tourStopFor } from "./framing";
+import { FRAMING, PORTRAIT_ASPECT, PORTRAIT_MIN_PITCH, PORTRAIT_YAW, TOUR_FOV, portraitFitPoints, portraitStop, tourStopFor } from "./framing";
 import { defaultTourStop } from "./types";
 
 const layout = buildLayout(worldProjects);
@@ -43,6 +43,42 @@ describe("tour framing", () => {
   });
   it("throws for an island without framing", () => {
     expect(() => tourStopFor({ ...layout.islands[0], id: "nope" })).toThrow("No framing for island nope");
+  });
+});
+
+describe("the Web & Apps district continues the tour to the right", () => {
+  /** Horizontal unit forward of a camera → target heading and its screen-right (−f.z, f.x). */
+  const axes = (cam: readonly number[], target: readonly number[]) => {
+    const fx = target[0] - cam[0], fz = target[2] - cam[2];
+    const l = Math.hypot(fx, fz);
+    return { f: { x: fx / l, z: fz / l }, r: { x: -fz / l, z: fx / l } };
+  };
+
+  it("lays the chain along the star framings' screen-right (the engine's CHAIN_DIR, within 3°)", () => {
+    let x = 0, z = 0;
+    for (const id of STAR_TOUR) {
+      const { r } = axes(FRAMING[id].cam, FRAMING[id].target);
+      x += r.x;
+      z += r.z;
+    }
+    const off = Math.atan2(CHAIN_DIR.z, CHAIN_DIR.x) - Math.atan2(z, x);
+    expect(Math.abs((off * 180) / Math.PI)).toBeLessThan(3);
+  });
+
+  it("moves the tour camera right from Ezra Bot to PeduliPasal, never mostly toward the viewer", () => {
+    const ids = layout.tourOrder.slice(layout.tourOrder.indexOf("ezra-bot"));
+    expect(ids).toEqual(["ezra-bot", WEB_PLAZA_ID, "pos-monosuko", "bee-furniture-crm", "pedulipasal"]);
+    const stop = (id: string) => tourStopFor(layout.islands.find((i) => i.id === id)!);
+    for (let i = 0; i + 1 < ids.length; i++) {
+      const a = stop(ids[i]), b = stop(ids[i + 1]);
+      const { f, r } = axes([a.camera.x, 0, a.camera.z], [a.target.x, 0, a.target.z]);
+      const dx = b.camera.x - a.camera.x, dz = b.camera.z - a.camera.z;
+      const move = Math.hypot(dx, dz);
+      const right = dx * r.x + dz * r.z;
+      const toward = -(dx * f.x + dz * f.z);
+      expect(right, `${ids[i]} → ${ids[i + 1]}`).toBeGreaterThan(0.5 * move);
+      expect(toward, `${ids[i]} → ${ids[i + 1]}`).toBeLessThanOrEqual(0.4 * move);
+    }
   });
 });
 

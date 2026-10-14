@@ -12,7 +12,7 @@ type V = readonly [number, number, number];
  * with its props, and InfoBoard / Signpost text stays ≥ ~13 px tall. Closer is bigger text but crops the island.
  */
 export const FRAMING: Record<string, { cam: V; target: V; dwell: number }> = {
-  hero: { cam: [-4.8, 7.3, 16.1], target: [-1.8, 1, -1], dwell: 1.2 },
+  hero: { cam: [-4.8, 7.3, 16.1], target: [-1.8, 1, -1], dwell: 1.4 }, // 1.4: with nine stops, 1.2 eased off too abruptly
   gtid: { cam: [-4.8, 8.7, 16.1], target: [-1.8, 2.4, -1], dwell: 1 }, // raised 1.4: the Diamond Lock floats ~8 above the grass
   "petak-umpet": { cam: [-4.9, 6.4, 16.8], target: [-1.8, 0.5, -1], dwell: 1 },
   "orbit-store": { cam: [-6.7, 6.4, 13.3], target: [-1.5, 1.5, -1], dwell: 1 },

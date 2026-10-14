@@ -131,6 +131,53 @@ describe("minecartRail", () => {
   }
 });
 
+describe("every minecart in the world", () => {
+  const layout = buildLayout(worldProjects);
+  const world = buildWorld(layout);
+  const byId = (id: string) => layout.islands.find((i) => i.id === id)!;
+  const carts = layout.crossings.filter((x) => x.kind === "minecart");
+
+  it("links Petak Umpet → Orbit Store and Ezra Bot → the Web & Apps plaza", () => {
+    expect(carts.map((c) => `${c.from}>${c.to}`)).toEqual(["petak-umpet>orbit-store", "ezra-bot>web-plaza"]);
+  });
+
+  it("rides 26–34 blocks from Ezra Bot down to the plaza, never steeper than Petak Umpet → Orbit Store", () => {
+    const [orbit, web] = carts.map((c) => minecartRail(railEnds(c, byId(c.from), byId(c.to)), world.grid.isSolid));
+    const steepest = (rail: typeof web) => {
+      let max = 0;
+      let prev = railPoint(rail, 0);
+      for (let i = 1; i <= 200; i++) {
+        const p = railPoint(rail, i / 200);
+        max = Math.max(max, Math.abs(Math.atan2(p.y - prev.y, Math.hypot(p.x - prev.x, p.z - prev.z))));
+        prev = p;
+      }
+      return max;
+    };
+    expect(railLength(web)).toBeGreaterThanOrEqual(26);
+    expect(railLength(web)).toBeLessThanOrEqual(34);
+    expect(steepest(web)).toBeLessThanOrEqual(steepest(orbit));
+  });
+
+  for (const c of carts) {
+    const rail = minecartRail(railEnds(c, byId(c.from), byId(c.to)), world.grid.isSolid);
+    it(`runs in open air and never steeper than a voxel rail ramp (${c.from} → ${c.to})`, () => {
+      let prev = railPoint(rail, 0);
+      for (let i = 0; i <= 400; i++) {
+        const p = railPoint(rail, i / 400);
+        const t = railTangent(rail, i / 400);
+        const h = Math.hypot(t.x, t.z) || 1;
+        for (const side of [-0.6, 0, 0.6]) {
+          const x = Math.floor(p.x - (t.z / h) * side);
+          const z = Math.floor(p.z + (t.x / h) * side);
+          for (let y = Math.floor(p.y - 0.1); y <= Math.floor(p.y + 0.35 + 1.8); y++) expect(world.grid.isSolid(x, y, z)).toBe(false);
+        }
+        if (i > 0) expect(Math.abs(Math.atan2(p.y - prev.y, Math.hypot(p.x - prev.x, p.z - prev.z)))).toBeLessThanOrEqual(Math.PI / 4);
+        prev = p;
+      }
+    });
+  }
+});
+
 describe("bridgeDeck on the stamped world", () => {
   const layout = buildLayout(worldProjects);
   const world = buildWorld(layout, [(g) => stampCrossings(g, layout)]);

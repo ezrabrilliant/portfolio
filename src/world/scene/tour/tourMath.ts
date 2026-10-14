@@ -2,8 +2,8 @@ import { stopProgress } from "@/world/engine/camera/tourPath";
 import type { TourPath } from "@/world/engine/camera/tourPath";
 import { buildRail, railPoint } from "@/world/engine/traversal/rail";
 import { positionAt, solveLaunch } from "@/world/engine/traversal/ballistic";
-import { TOUR_ORDER } from "@/world/engine/gen/layout";
 import type { WorldLayout } from "@/world/engine/gen/layout";
+import { runtime } from "@/world/state/runtime";
 import type { Vec3 } from "@/world/engine/types";
 import { VIEW_F } from "../islands/types";
 
@@ -43,7 +43,7 @@ export function scrollMeasure(): ScrollMeasure {
   if (cached) return cached;
   // no scroll track in the page (tests, no-WebGL fallback): the same geometry from innerHeight
   const vh = typeof window !== "undefined" ? window.innerHeight : 1000;
-  return { trackPx: trackHeightPx(TOUR_ORDER.length, vh), viewportH: vh };
+  return { trackPx: trackHeightPx(runtime.layout.tourOrder.length, vh), viewportH: vh };
 }
 
 /** Re-read the measure (after a resize). True when the scroll range changed. */
@@ -111,6 +111,10 @@ export function tourVia(layout: WorldLayout): Vec3[][] {
     } else if (c.kind === "bouncePads") {
       const { vel, time } = solveLaunch(c.a, c.b, 30, 3);
       out.push([0.3, 0.5, 0.7].map((f) => watch(positionAt(c.a, vel, 30, time * f), 6, 15)));
+    } else if (layout.islands.find((q) => q.id === from)?.district === "web") {
+      // the Web & Apps chain: short bridges between small islands; a via behind them would pull the camera back
+      // and forth between stops that are only ~14 blocks apart, so the camera flies straight from stop to stop
+      out.push([]);
     } else {
       const mid = { x: (c.a.x + c.b.x) / 2, y: (c.a.y + c.b.y) / 2, z: (c.a.z + c.b.z) / 2 };
       out.push([watch(mid, 9, 18)]);
