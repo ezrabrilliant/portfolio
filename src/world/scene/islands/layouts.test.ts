@@ -1,4 +1,6 @@
 import { describe, expect, it } from "vitest";
+import * as THREE from "three";
+import { OBB } from "three/examples/jsm/math/OBB.js";
 import { buildLayout } from "@/world/engine/gen/layout";
 import { generateIsland } from "@/world/engine/gen/islandGen";
 import { DEFAULT_PARAMS, MODEL_TOP, characterCollides, createCharacter } from "@/world/engine/physics/character";
@@ -14,13 +16,19 @@ import type { Ride } from "@/world/state/runtime";
 import {
   BEE, BODY_ROWS, EZRA, FOOTPRINTS, GTID, HERO, INFO_HALF_SPAN, JUMP_RISE, MAP_BOARD, MAP_HALF_SPAN,
   MINI_ANCHOR_CLEARANCE, MINI_BOARD_SCALE, MINI_SIGN_SCALE, MODEL_OVER, MODEL_REACH, MONOSUKO, ORBIT, PEDULI, PETAK, PLAZA, SLIVER,
-  MAP_POST, beeRoofPlanks, bubbleSlabs, crownSlabs, footprintOf, infoSlab, mapSlabs, reaches, screenSlab, signSlabs, slabCells,
+  MAP_POST, beeRoofPlanks, bubbleSlabs, crownSlabs, footprintOf, infoPostSlabs, infoSlab, mapSlabs, reaches, screenSlab, signSlabs,
+  slabCells,
   type Slab,
 } from "./layouts";
 import { TOUR_FOV, portraitStop, tourStopFor } from "./framing";
+import { shedBlocks } from "./bee/blocks";
 import { awningParts } from "./monosuko/awning";
+import { stallBlocks } from "./monosuko/blocks";
+import { pavilionBlocks, phoneBody } from "./peduli/blocks";
+import { plazaPropBlocks } from "./plaza/blocks";
 import { INFO_BOARD, SCREEN_BEZEL, SIGNPOST, SIGNPOST_FACE, infoBoardTop } from "./shared/boardGeometry";
 import { islandFrame } from "./shared/local";
+import { treeBlocks, type PropBlock } from "./shared/props";
 import { projectById } from "./shared/project";
 import { infoBoardRows, miniBoardLines } from "./shared/text";
 
@@ -266,6 +274,68 @@ function miniInfoPanel(id: string, at: Spot): Slab {
   const p = projectById(id);
   return infoSlab(at, p.title, miniBoardLines(p), MINI_BOARD_SCALE);
 }
+/** A box as shared/PropBlocks.tsx draws a block: centred at (x, y, z), 1 × 1 × 1 unless sized, turned rx, ry, rz. */
+type Box = Pick<PropBlock, "x" | "y" | "z" | "sx" | "sy" | "sz" | "rx" | "ry" | "rz">;
+/** Floor tiles and paving reach this high at most: walked on, never in a board's way. */
+const FLOOR_TOP = 0.13;
+const solidBlocks = (what: string, blocks: readonly PropBlock[]) =>
+  blocks.filter((b) => b.y + (b.sy ?? 1) / 2 > FLOOR_TOP).map((box) => ({ what, box: box as Box }));
+const treeSolids = (t: { x: number; z: number; h: number; seed: number }) => solidBlocks("tree", treeBlocks(t.x, t.z, t.h, t.seed));
+/** EzraBot.tsx ROBOT: legs and torso up to 1.82, the head from 2.34 to its antenna ball (3.94), its face plates proud. */
+const ROBOT_BOXES: Box[] = [
+  { x: EZRA.robot.x, y: 0.91, z: EZRA.robot.z + ROBOT_FACE / 2, sx: EZRA.robot.w, sy: 1.82, sz: EZRA.robot.d + ROBOT_FACE },
+  { x: EZRA.robot.x, y: 3.14, z: EZRA.robot.z + ROBOT_FACE / 2, sx: EZRA.robot.w, sy: 1.6, sz: EZRA.robot.d + ROBOT_FACE },
+];
+/**
+ * The solid props each island draws, as boxes: on the Web & Apps islands every block bar the floors (the stall and
+ * counter, the shed walls and bench, the plinth, shelf and pavilion posts, the trees and lamps) and the phone's body; the
+ * trees and the robot on the star islands. Boards and signs may neither stand in them nor hide behind them.
+ */
+const SOLIDS: Record<string, { what: string; box: Box }[]> = {
+  hero: treeSolids(HERO.tree),
+  "petak-umpet": PETAK.trees.flatMap(treeSolids),
+  "ezra-bot": ROBOT_BOXES.map((box) => ({ what: "robot", box })),
+  "web-plaza": solidBlocks("plaza prop", plazaPropBlocks()),
+  "pos-monosuko": solidBlocks("stall", stallBlocks()),
+  "bee-furniture-crm": solidBlocks("shed", shedBlocks()),
+  pedulipasal: [...solidBlocks("pavilion", pavilionBlocks()), { what: "phone", box: phoneBody() }],
+};
+const turnOf = (b: Box) => new THREE.Quaternion().setFromEuler(new THREE.Euler(b.rx ?? 0, b.ry ?? 0, b.rz ?? 0));
+/** A box (or a board's slab) as an oriented box, grown `grow` on every side. */
+const obbOf = (b: Box, grow = 0) =>
+  new OBB(
+    new THREE.Vector3(b.x, b.y, b.z),
+    new THREE.Vector3((b.sx ?? 1) / 2 + grow, (b.sy ?? 1) / 2 + grow, (b.sz ?? 1) / 2 + grow),
+    new THREE.Matrix3().setFromMatrix4(new THREE.Matrix4().makeRotationFromQuaternion(turnOf(b))),
+  );
+/** A box's six faces in island-local space: each face's corners in order, its centre and outward normal. */
+function facesOf(b: Box) {
+  const q = turnOf(b);
+  const half = [(b.sx ?? 1) / 2, (b.sy ?? 1) / 2, (b.sz ?? 1) / 2];
+  const at = (v: number[]) => new THREE.Vector3(v[0] * half[0], v[1] * half[1], v[2] * half[2]).applyQuaternion(q).add(new THREE.Vector3(b.x, b.y, b.z));
+  const out: { corners: THREE.Vector3[]; centre: THREE.Vector3; normal: THREE.Vector3 }[] = [];
+  for (let axis = 0; axis < 3; axis++) {
+    const [u, v] = [(axis + 1) % 3, (axis + 2) % 3];
+    for (const side of [-1, 1]) {
+      const corner = (a: number, c: number) => {
+        const w = [0, 0, 0];
+        w[axis] = side;
+        w[u] = a;
+        w[v] = c;
+        return at(w);
+      };
+      const n = [0, 0, 0];
+      n[axis] = side;
+      out.push({
+        corners: [corner(-1, -1), corner(1, -1), corner(1, 1), corner(-1, 1)],
+        centre: at(n),
+        normal: new THREE.Vector3(n[0], n[1], n[2]).applyQuaternion(q),
+      });
+    }
+  }
+  return out;
+}
+
 /** The plaza's district sign: its plank face (PLAZA.sign). */
 function districtSign(): Slab {
   const g = PLAZA.sign;
@@ -295,40 +365,43 @@ describe("what Ezra could walk or jump into, on every island", () => {
   const s = EZRA.screen;
   const sign = PETAK.sign;
   const ds = PLAZA.sign;
+  /** An InfoBoard: its panel and its two posts. */
+  const infoBoard = (at: Spot, panel: Slab, scale: number): Visual[] =>
+    [panel, ...infoPostSlabs(at, scale)].map((slab) => ({ what: "info board", slab }));
   const mini = (id: string, L: typeof MONOSUKO | typeof BEE | typeof PEDULI): Visual[] => [
-    { what: "info board", slab: miniInfoPanel(id, L.info) },
+    ...infoBoard(L.info, miniInfoPanel(id, L.info), MINI_BOARD_SCALE),
     ...signSlabs(L.link, MINI_SIGN_SCALE).map((slab) => ({ what: "link sign", slab })),
     ...mapSlabs(L.map).map((slab) => ({ what: "map board", slab })),
   ];
   /** Every board, sign and screen on posts: the panels, faces and frames as drawn. */
   const BOARDS: Record<string, Visual[]> = {
     hero: [
-      { what: "info board", slab: infoSlab(HERO.info, worldCopy.location, [worldCopy.heroLine], 1) },
+      ...infoBoard(HERO.info, infoSlab(HERO.info, worldCopy.location, [worldCopy.heroLine], 1), 1),
       ...mapSlabs(HERO.map).map((slab) => ({ what: "map board", slab })),
     ],
     gtid: [
       // Gtid.tsx PriceBoard: a frame 0.16 larger than the face and 0.12 deep, its centre 0.4 under the face's
       { what: "price board", slab: frame(g, g.w + 0.16, g.h + 0.16, g.y + g.h / 2 - 0.4, 0.12) },
-      { what: "info board", slab: infoSlab(GTID.info, GTID.info.title, stats("gtid"), 1) },
+      ...infoBoard(GTID.info, infoSlab(GTID.info, GTID.info.title, stats("gtid"), 1), 1),
       ...signSlabs(GTID.link).map((slab) => ({ what: "link sign", slab })),
       ...mapSlabs(GTID.map).map((slab) => ({ what: "map board", slab })),
     ],
     "petak-umpet": [
       // PetakUmpet.tsx: the title sign's panel from SIGN_BOTTOM (0.55) up, 0.1 deep
       { what: "title sign", slab: frame(sign, sign.w, sign.h, 0.55 + sign.h / 2, 0.1) },
-      { what: "info board", slab: infoSlab(PETAK.info, PETAK.info.title, stats("petak-umpet"), 1) },
+      ...infoBoard(PETAK.info, infoSlab(PETAK.info, PETAK.info.title, stats("petak-umpet"), 1), 1),
       ...signSlabs(PETAK.link).map((slab) => ({ what: "link sign", slab })),
       ...mapSlabs(PETAK.map).map((slab) => ({ what: "map board", slab })),
     ],
     "orbit-store": [
-      { what: "info board", slab: infoSlab(ORBIT.info, ORBIT.info.title, stats("orbit-store"), 1) },
+      ...infoBoard(ORBIT.info, infoSlab(ORBIT.info, ORBIT.info.title, stats("orbit-store"), 1), 1),
       ...signSlabs(ORBIT.link).map((slab) => ({ what: "link sign", slab })),
       ...mapSlabs(ORBIT.map).map((slab) => ({ what: "map board", slab })),
     ],
     "ezra-bot": [
       // EzraBot.tsx SCREEN_GEO: a frame 0.14 larger than the face and 0.1 deep, its centre 0.2 under the face's
       { what: "screen board", slab: frame(s, s.w + 0.14, s.h + 0.14, s.y + s.h / 2 - 0.2, 0.1) },
-      { what: "info board", slab: infoSlab(EZRA.info, EZRA.info.title, stats("ezra-bot"), 1) },
+      ...infoBoard(EZRA.info, infoSlab(EZRA.info, EZRA.info.title, stats("ezra-bot"), 1), 1),
       ...signSlabs(EZRA.link).map((slab) => ({ what: "link sign", slab })),
       ...mapSlabs(EZRA.map).map((slab) => ({ what: "map board", slab })),
     ],
@@ -465,12 +538,30 @@ describe("what Ezra could walk or jump into, on every island", () => {
           if ((L.overheadOnly && !over) || !reaches(f, px, pz, L.half)) continue;
           const y0 = y + L.y0, y1 = y + L.y1;
           if (f.y0 < y1 && f.y1 > y0) note(`${id}: stands in the ${what} at ${at}`, Math.min(f.y1, y1) - Math.max(f.y0, y0));
-          else if (f.y0 >= y1 && f.y0 < y1 + lift) note(`${id}: rises into the ${what} at ${at}`, y1 + lift - f.y0);
+          // a jump carries the model's top on up past the visual's underside, whether or not it already stands in it
+          if (lift > 0 && f.y0 < y1 + lift && f.y1 > y0) note(`${id}: rises into the ${what} at ${at}`, y1 + lift - f.y0);
         }
       }
     }
     return found;
   }
+
+  /** How far a board or sign keeps from a drawn prop: a sliver of air between them, never a corner sunk in it. */
+  const PROP_GAP = 0.02;
+
+  it("never stand a board or sign in a drawn prop: the Web & Apps islands' blocks and phone, the trees, the robot", () => {
+    const sunk = new Set<string>();
+    for (const id of layout.tourOrder) {
+      for (const { what, slab } of BOARDS[id]) {
+        const board = obbOf(slab, PROP_GAP);
+        for (const solid of SOLIDS[id] ?? []) {
+          const b = solid.box;
+          if (board.intersectsOBB(obbOf(b))) sunk.add(`${id}: the ${what} stands in the ${solid.what} block at (${b.x.toFixed(2)}, ${b.y.toFixed(2)}, ${b.z.toFixed(2)})`);
+        }
+      }
+    }
+    expect([...sunk]).toEqual([]);
+  });
 
   /**
    * Gaps no barrier closes without breaking a placement rule above: their ceiling cell lies in a crossing's clearance
@@ -480,8 +571,10 @@ describe("what Ezra could walk or jump into, on every island", () => {
   const OPEN: { id: string; what: string; at: string[]; upTo: number }[] = [
     // the crown's corner block (3.0 up) over (−3, −2), 1.55 from the minecart anchor
     { id: "web-plaza", what: "rises into the tree crown", at: ["(-3,-2)", "(-3,-1)", "(-4,-1)", "(-4,-2)"], upTo: 0.6 },
-    // the screen's ends (x ±1.5–1.78, 1.86 up) over (±2, −2): 1.62 / 1.12 from the bridge anchors, (−2, −2) on a rope post
+    // the screen's ends (x ±1.5–1.78, 1.86 up) over (±2, −2): 1.62 / 1.12 from the bridge anchors, (−2, −2) on a rope post.
+    // Standing there the model's top is 0.24 into the bezel's end, and a jump carries it 1.74 in
     { id: "pos-monosuko", what: "stands in the screen", at: ["(2,-2)", "(-2,-2)"], upTo: 0.24 },
+    { id: "pos-monosuko", what: "rises into the screen", at: ["(2,-2)", "(-2,-2)"], upTo: 1.74 },
     // the front-left eave (2.59 up) over (−2, 0), 1.14 from the POS bridge anchor
     { id: "bee-furniture-crm", what: "rises into the shed roof", at: ["(-2,0)"], upTo: 1.02 },
     // the bubbles' right half (2.35 up) over the minecart station (no barrier over its platform)
@@ -856,12 +949,13 @@ describe("map boards in the tour views and their closeups (all nine islands)", (
    * where the two overlap in the view, whichever the camera ray through the overlap meets first is in front (two flat
    * panels that stand close and turned differently can't be ordered by their average depth).
    */
-  const coverage = (front: (id: string) => Quad[] | undefined = mapQuads, shown: typeof items = items) =>
+  type View = { camera: Vec3; target: Vec3 };
+  const coverage = (front: (id: string, stop: View) => Quad[] | undefined = mapQuads, shown: typeof items = items) =>
     layout.islands.flatMap((p) => {
-      const pieces = front(p.id);
-      if (!pieces) return [];
       const desktop = tourStopFor(p);
       return ([["desktop", desktop], ["portrait", portraitStop(p, desktop)]] as const).flatMap(([view, stop]) => {
+        const pieces = front(p.id, stop);
+        if (!pieces) return [];
         return shown(p.id).map(({ what, quad }) => {
           const item = quad.map((pt) => seen(stop, pt));
           const covered = pieces.reduce((sum, piece) => {
@@ -885,6 +979,75 @@ describe("map boards in the tour views and their closeups (all nine islands)", (
     const l = ({ gtid: GTID.link, "petak-umpet": PETAK.link, "orbit-store": ORBIT.link, "ezra-bot": EZRA.link } as Record<string, Spot | undefined>)[id];
     return l && [signQuad(id, l, 1), upright(id, l, l.ry, SIGNPOST.postW, 0, SIGNPOST.postH)];
   };
+
+  const MINIS = { "pos-monosuko": MONOSUKO, "bee-furniture-crm": BEE, pedulipasal: PEDULI } as const;
+  const isMini = (id: string): id is keyof typeof MINIS => id in MINIS;
+  /** A mini's solid props as the faces that look at a stop's camera. */
+  const solidFaces = (id: string, stop: View): Quad[] | undefined => {
+    const solids = SOLIDS[id];
+    if (!solids || !isMini(id)) return undefined;
+    const [fx, fy, fz] = islandFrame(byId[id]);
+    const cam = new THREE.Vector3(stop.camera.x - fx, stop.camera.y - fy, stop.camera.z - fz);
+    return solids.flatMap(({ box }) =>
+      facesOf(box)
+        .filter((f) => f.normal.dot(cam.clone().sub(f.centre)) > 0)
+        .map((f) => f.corners.map((c) => ({ x: fx + c.x, y: fy + c.y, z: fz + c.z }))),
+    );
+  };
+  /** A mini's boards and signs: its info board, link sign and map board. */
+  const miniBoards = (id: string): { what: string; quad: Quad }[] => {
+    if (!isMini(id)) return [];
+    const L = MINIS[id];
+    return [
+      { what: "info board", quad: slabQuad(id, miniInfoPanel(id, L.info)) },
+      { what: "link sign", quad: signQuad(id, L.link, MINI_SIGN_SCALE) },
+      { what: "map board", quad: mapQuads(id)[0] },
+    ];
+  };
+
+  /** Whether the convex polygon `poly` (corners in order) holds view point p. */
+  const holds = (poly: Pt[], p: Pt) => {
+    let sign = 0;
+    for (let i = 0; i < poly.length; i++) {
+      const a = poly[i], b = poly[(i + 1) % poly.length];
+      const side = (b.x - a.x) * (p.y - a.y) - (b.y - a.y) * (p.x - a.x);
+      if (side === 0) continue;
+      if (sign === 0) sign = Math.sign(side);
+      else if (Math.sign(side) !== sign) return false;
+    }
+    return true;
+  };
+  /**
+   * The share of each item that front pieces cover, sampled on a 40 × 40 grid across the item in the view: where pieces
+   * overlap each other (a tree's blocks, a box's faces) a point counts once.
+   */
+  const sampledCoverage = (front: (id: string, stop: View) => Quad[] | undefined, shown: typeof items) =>
+    layout.islands.flatMap((p) => {
+      const desktop = tourStopFor(p);
+      return ([["desktop", desktop], ["portrait", portraitStop(p, desktop)]] as const).flatMap(([view, stop]) => {
+        const pieces = front(p.id, stop)?.map((quad) => ({ quad, poly: quad.map((pt) => seen(stop, pt)) }));
+        if (!pieces) return [];
+        return shown(p.id).map(({ what, quad }) => {
+          const [a, b, , d] = quad;
+          let hit = 0;
+          const N = 40;
+          for (let i = 0; i < N; i++) for (let j = 0; j < N; j++) {
+            const u = (i + 0.5) / N, v = (j + 0.5) / N;
+            const q = { x: a.x + (b.x - a.x) * u + (d.x - a.x) * v, y: a.y + (b.y - a.y) * u + (d.y - a.y) * v, z: a.z + (b.z - a.z) * u + (d.z - a.z) * v };
+            const pt = seen(stop, q);
+            if (pieces.some((piece) => holds(piece.poly, pt) && rayDepth(stop, pt, piece.quad) < pt.depth)) hit++;
+          }
+          return { id: p.id, view, what, share: hit / (N * N) };
+        });
+      });
+    });
+
+  it("keep every mini island's boards and signs clear of the solid props in front of them in both tour views", () => {
+    const covered = sampledCoverage(solidFaces, miniBoards)
+      .filter((c) => c.share > MAP_COVER)
+      .map((c) => `${c.id} (${c.view}): solid props cover ${(c.share * 100).toFixed(0)}% of the ${c.what}`);
+    expect(covered).toEqual([]);
+  });
 
   it("keep every star island's link sign off its screen, info board and bounce pads in both tour views", () => {
     const shown = (id: string) => items(id).filter((i) => i.what !== "link sign");

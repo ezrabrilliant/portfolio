@@ -5,13 +5,12 @@ import { runtime } from "@/world/state/runtime";
 import { LiveScreen } from "@/world/scene/screens/LiveScreen";
 import { mapApp } from "@/world/scene/screens/map";
 import { startTravel } from "@/world/scene/travel";
-import { MAP_BOARD } from "../layouts";
+import { MAP_BOARD, MAP_POST } from "../layouts";
 import { islandFrame } from "./local";
 import { PALETTE } from "./props";
 
-/** The post stands this far behind the face (LiveScreen's bezel is 0.14 deep behind it). */
-const POST_BACK = 0.2;
-const POST_GEO = new THREE.BoxGeometry(0.12, MAP_BOARD.y, 0.12);
+// the post (layouts.ts MAP_POST) stands behind the face, clear of LiveScreen's bezel (0.14 deep behind it)
+const POST_GEO = new THREE.BoxGeometry(MAP_POST.w, MAP_BOARD.y, MAP_POST.w);
 const POST_MAT = new THREE.MeshStandardMaterial({ color: PALETTE.wood, roughness: 0.9 });
 
 /**
@@ -27,7 +26,7 @@ export function MapBoard({ placement, at }: { placement: IslandPlacement; at: { 
         <mesh
           geometry={POST_GEO}
           material={POST_MAT}
-          position={[at.x - Math.sin(at.ry) * POST_BACK, MAP_BOARD.y / 2, at.z - Math.cos(at.ry) * POST_BACK]}
+          position={[at.x - Math.sin(at.ry) * MAP_POST.back, MAP_BOARD.y / 2, at.z - Math.cos(at.ry) * MAP_POST.back]}
           rotation={[0, at.ry, 0]}
           castShadow
         />

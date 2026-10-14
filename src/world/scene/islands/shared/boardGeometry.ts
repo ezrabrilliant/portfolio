@@ -6,8 +6,11 @@ import type { BoardRows } from "./text";
  * before its `scale`: x along the face (+x to the right), y up from the grass top, z out of the face.
  */
 
-/** InfoBoard: a panel `width` wide standing on two posts `postH` tall, each set `postInset` in from a panel end. */
-export const INFO_BOARD = { width: 2.4, postH: 1.0, postInset: 0.2 } as const;
+/**
+ * InfoBoard: a panel `width` wide and `depth` deep standing on two posts `postH` tall, each set `postInset` in from a
+ * panel end; the posts are `postW` square, `postZ` off the panel's centre plane, and run `postOver` up behind it.
+ */
+export const INFO_BOARD = { width: 2.4, postH: 1.0, postInset: 0.2, depth: 0.1, postW: 0.14, postZ: -0.05, postOver: 0.3 } as const;
 
 /** An InfoBoard's top edge above the grass, before scale: the posts, then a panel tall enough for every row. */
 export function infoBoardTop(rows: Pick<BoardRows, "height">): number {

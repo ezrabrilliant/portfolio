@@ -6,7 +6,7 @@ import { PALETTE } from "./props";
 import { infoBoardRows } from "./text";
 
 // shared with layouts.ts (INFO_HALF_SPAN, the mini boards' barrier rows) and the tour-view rules
-const { width: WIDTH, postH: POST_H, postInset: POST_INSET } = INFO_BOARD;
+const { width: WIDTH, postH: POST_H, postInset: POST_INSET, depth: DEPTH, postW: POST_W, postZ: POST_Z, postOver: POST_OVER } = INFO_BOARD;
 
 /**
  * Wooden board on two posts: a title and short lines of copy. Rendered in island-local space. `scale` shrinks the whole
@@ -30,13 +30,13 @@ export function InfoBoard({
       <group position={[at.x, 0, at.z]} rotation={[0, rotationY, 0]} scale={scale}>
         {[-1, 1].map((s) => (
           // post front face (z = -0.05 + 0.07) stays behind the board's front face (z = 0.05): no z-fighting
-          <mesh key={s} position={[s * (WIDTH / 2 - POST_INSET), (POST_H + 0.3) / 2, -0.05]} castShadow>
-            <boxGeometry args={[0.14, POST_H + 0.3, 0.14]} />
+          <mesh key={s} position={[s * (WIDTH / 2 - POST_INSET), (POST_H + POST_OVER) / 2, POST_Z]} castShadow>
+            <boxGeometry args={[POST_W, POST_H + POST_OVER, POST_W]} />
             <meshStandardMaterial color={PALETTE.wood} roughness={0.9} />
           </mesh>
         ))}
         <mesh position={[0, POST_H + boardH / 2, 0]} castShadow receiveShadow>
-          <boxGeometry args={[WIDTH, boardH, 0.1]} />
+          <boxGeometry args={[WIDTH, boardH, DEPTH]} />
           <meshStandardMaterial color={PALETTE.plank[0]} roughness={0.85} />
         </mesh>
         {rows.title.map((row, i) => (

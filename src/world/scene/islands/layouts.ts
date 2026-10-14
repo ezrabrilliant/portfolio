@@ -12,8 +12,11 @@ import { infoBoardRows, miniBoardLines } from "./shared/text";
  * Single source of island prop positions (island-local, fronts face +z).
  * Components read these to place props; FOOTPRINTS derives collision cells from the same numbers.
  * layouts.test.ts checks: inside 78% of the radius, at least 2 blocks from every crossing anchor (MINI_ANCHOR_CLEARANCE
- * on the radius-4 minis), and every panel on two posts is closed between its posts up to its top row (boardSpan).
- * Voxel titles stay visible from the tour camera (framing.ts): no board, trunk or chart column stands between them.
+ * on the radius-4 minis); every board, sign and map board has barrier cells along its whole face and posts (slabCells;
+ * the GTID price board, the Petak title sign, Ezra Bot's screen board and the plaza's district sign along their posts,
+ * boardSpan) up to its top row, so Ezra's model never stands in one; none stands in a drawn prop, and on the minis
+ * none hides behind one. Voxel titles stay visible from the tour camera (framing.ts): no board, trunk or chart column
+ * stands between them.
  */
 
 /**
@@ -166,9 +169,8 @@ export const EZRA = {
   robot: { x: -1.2, z: 0.2, w: 1.5, d: 1.0 },
   // forward and tighter (pitch 1.2) so the tour camera reads the replies; w 3.8 fits one 60 px canvas line. The lowest
   // tail tip ends 2.325 up: over Ezra's model standing (2.09 with the mortarboard) and when a barrier row stops his jump
-  // (2.29). Each
-  // bubble's left edge is at x, its plate d deep inside a slate rim `rim` wider all round; its tail (a square `size`
-  // turned 45°) hangs from (tail.x, tail.y) off the bubble's left edge and centre
+  // (2.29). Each bubble's left edge is at x, its plate d deep inside a slate rim `rim` wider all round; its tail (a
+  // square `size` turned 45°) hangs from (tail.x, tail.y) off the bubble's left edge and centre
   bubbles: { x: 0.5, z: 0.6, ys: [5.35, 4.15, 2.95], w: 3.8, h: 0.9, d: 0.16, rim: 0.05, tail: { x: 0.12, y: -0.42, size: 0.29 } },
   // low and in front, so from the tour camera it sits under the chat bubbles instead of over the newest one; x 1.0
   // (from 1.8) leaves room on its right for the link sign, which can't stand further out
@@ -293,15 +295,17 @@ export const PEDULI = {
   // left of the phone's sight lines, its table's back edge just clear of the book spines: at (1, −1.1) the phone hid it
   // from both tour cameras. x 0.5 keeps its barrier in cell (1, −1) (postCells rounds up), the post column takes cell 0
   scales: { x: 0.5, z: -1.4 },
-  // a stone plinth (x −0.05–1.55, cells 0..1 of row 1) with the phone body standing on it; the screen face sits 0.09
-  // in front of the body centre, high enough that the front props stay under it in the tour view
-  phone: { x: 0.75, z: 0.9, w: 1.42, h: 2.9, plinth: 0.8 },
+  // a stone plinth `plinth` tall, plinthW × plinthD (x −0.05–1.55, z 0.45–1.35: cells 0..1 of row 1), with the phone
+  // body (w × h × d) standing on it; the screen face sits 0.09 in front of the body centre, high enough that the front
+  // props stay under it in the tour view
+  phone: { x: 0.75, z: 0.9, w: 1.42, h: 2.9, d: 0.16, plinth: 0.8, plinthW: 1.6, plinthD: 0.9 },
   screen: { x: 0.75, y: 2.25, z: 0.99, w: 1.25, h: 2.708 },
   // trunk 4 tall: the crown (4–6 up) clears the pavilion roof (3.61–3.98)
   tree: { x: 3, z: 0, h: 4, seed: 59 },
-  // right of the phone, in front of the tree: on the left at (−1, 2) it hid the sign behind it in the tour view, and any
-  // spot right of that covered the phone
-  info: { x: 2, z: 1.1, ry: -0.6 },
+  // right of the phone, turned to the tour camera: its left end and posts stand 0.3 clear of the plinth (x 1.55), and
+  // both tour views show a gap between it and the phone. At (2, 1.1, −0.6) that end and its post sank into the plinth;
+  // on the left at (−1, 2) it hid the sign behind it in the tour view, and any spot right of that covered the phone
+  info: { x: 2.2, z: 0.9, ry: -1.05 },
   // at (−2.5, −0.5) the face stood in column −3: off the grass, over a rope post and inside the bridge's ring
   link: { x: -1.9, z: -0.4, ry: -0.3 },
   // by the bridge head, forward of (−2, 1), where its top edge cut into the "Get the APK" sign in the desktop view; at
@@ -372,14 +376,17 @@ const CELL_REACH = 0.5 - DEFAULT_PARAMS.width / 2 + MODEL_REACH;
 
 /**
  * The cells a thin slab (a board's panel, a sign's face, a post: under 2 × SLIVER deep) stands in, from row 0 up to the
- * row its top is in (`rows` to set another height): every cell its centre plane crosses, short of each end by the
- * corner Ezra's body (his box less SLIVER) can brush without his box reaching past that end. Wherever his body touches
- * the slab, his box reaches into one of them.
+ * row its top is in (`rows` to set another height): every cell its centre plane crosses, short of each end by as much
+ * as keeps every corner of that end within SLIVER (along x and along z) of the plane's last point. Wherever Ezra's
+ * body (his box less SLIVER) touches the slab, his box then reaches past that point into one of the cells.
  */
 export function slabCells(s: Slab, rows?: number): Cell[] {
   const depth = s.sz / 2;
   if (depth >= SLIVER) throw new Error(`slabCells: a slab ${s.sz} deep is not thin`);
-  const trim = Math.sqrt(SLIVER ** 2 - depth ** 2);
+  const c = Math.abs(Math.cos(s.ry ?? 0));
+  const n = Math.abs(Math.sin(s.ry ?? 0));
+  // an end corner sits `trim` along the face and `depth` across it from the plane's last point
+  const trim = Math.min(c > 1e-9 ? (SLIVER - depth * n) / c : Infinity, n > 1e-9 ? (SLIVER - depth * c) / n : Infinity);
   // a hair deep, so a plane lying on a cell edge stands in the cells either side of it (an end on an edge does not, but
   // a post trimmed to a point on an edge does)
   const f = footprintOf({ ...s, sx: Math.max(2e-6, s.sx - 2 * trim), sz: 2e-6 });
@@ -409,10 +416,29 @@ function unique(cells: Cell[]): Cell[] {
 export function infoSlab(at: { x: number; z: number; ry: number }, title: string, lines: readonly string[], scale = 1): Slab {
   const y0 = INFO_BOARD.postH * scale;
   const y1 = infoBoardTop(infoBoardRows(title, lines)) * scale;
-  return { x: at.x, y: (y0 + y1) / 2, z: at.z, sx: INFO_BOARD.width * scale, sy: y1 - y0, sz: 0, ry: at.ry };
+  return { x: at.x, y: (y0 + y1) / 2, z: at.z, sx: INFO_BOARD.width * scale, sy: y1 - y0, sz: INFO_BOARD.depth * scale, ry: at.ry };
 }
 
-/** shared/MapBoard.tsx's post: this wide, standing this far behind the face, up to the face's centre. */
+/** An InfoBoard's two posts (shared/InfoBoard.tsx, scaled whole), from the grass up behind the panel. */
+export function infoPostSlabs(at: { x: number; z: number; ry: number }, scale = 1): Slab[] {
+  const { width, postInset, postW, postZ, postH, postOver } = INFO_BOARD;
+  const h = (postH + postOver) * scale;
+  return [-1, 1].map((side) => {
+    const dx = side * (width / 2 - postInset) * scale;
+    const dz = postZ * scale;
+    return {
+      x: at.x + Math.cos(at.ry) * dx + Math.sin(at.ry) * dz,
+      y: h / 2,
+      z: at.z - Math.sin(at.ry) * dx + Math.cos(at.ry) * dz,
+      sx: postW * scale,
+      sy: h,
+      sz: postW * scale,
+      ry: at.ry,
+    };
+  });
+}
+
+/** A map board's post (shared/MapBoard.tsx draws it): `w` square, standing `back` behind the face, up to the face's centre. */
 export const MAP_POST = { w: 0.12, back: 0.2 } as const;
 
 /** A map board's bezel (shared/MapBoard.tsx: a LiveScreen MAP_BOARD.y up, turned by ry) and its post. */
@@ -452,9 +478,11 @@ const signCells = (l: { x: number; z: number; ry: number }, scale = 1): Cell[] =
   const rows = Math.ceil(footprintOf(face).y1);
   return unique([...slabCells(face, rows), ...slabCells(post, rows)]);
 };
-/** An InfoBoard's barrier: every cell its panel stands in, up to the row its top is in (`rows` to set another height). */
+/** An InfoBoard's barrier: every cell its panel or a post stands in, up to the row its top is in (`rows` to set another height). */
 function infoCells(b: { x: number; z: number; ry: number }, title: string, lines: readonly string[], scale = 1, rows?: number): Cell[] {
-  return slabCells(infoSlab(b, title, lines, scale), rows);
+  const panel = infoSlab(b, title, lines, scale);
+  const top = rows ?? Math.ceil(footprintOf(panel).y1);
+  return unique([panel, ...infoPostSlabs(b, scale)].flatMap((sl) => slabCells(sl, top)));
 }
 /** A mini's InfoBoard, scaled by MINI_BOARD_SCALE. */
 function miniInfo(id: string, b: { x: number; z: number; ry: number }): Cell[] {
@@ -501,11 +529,8 @@ function withCaps(cells: Cell[], caps: Cell[]): Cell[] {
   return out;
 }
 
-/**
- * Every island's prop cells, from the spots above as they stand when called (the layout rules' searches move a spot and
- * rebuild); FOOTPRINTS holds them as built at load.
- */
-export function buildFootprints(): Record<string, Cell[]> {
+/** Every island's prop cells, from the spots above (FOOTPRINTS). */
+function buildFootprints(): Record<string, Cell[]> {
   return {
   hero: [
     ...trunk(HERO.tree),

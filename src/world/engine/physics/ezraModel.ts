@@ -41,8 +41,9 @@ export const EZRA_CAP = {
 
 /**
  * How far the model reaches above his feet, in its neutral pose: the hair's top, and with the mortarboard on, the
- * button's top and the board (half its width either side of him, from its underside to its top). The tassel hangs
- * beside his face, inside the board's reach.
+ * button's top and the board (half its width either side of him, from its underside to its top). The cord and tassel
+ * hang from the board's edge beside his face, 0.42 out (0.03 past the board) and from the board's top down to 1.65:
+ * like the board they brush what he stands against, and nothing overhead meets them before the board.
  */
 export const EZRA_REACH = (() => {
   const capBase = EZRA_HEAD.pivot + EZRA_CAP.base;
