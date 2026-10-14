@@ -70,11 +70,10 @@ export function PlayCamera() {
       e.preventDefault();
       orbitInput.addZoom(e.deltaY);
     };
-    // any button orbits, so a right-drag must not end in the browser's context menu (which would also swallow the
-    // key-ups of keys held meanwhile; the keyboard keeps them when the menu is blocked)
-    const menu = (e: MouseEvent) => {
-      if (useWorld.getState().mode === "play") e.preventDefault();
-    };
+    // the world is an app surface: no browser context menu over it in either mode ("Save image as" on a right-click is
+    // what people used to 3D tools hit). In Play any button orbits, and an open menu would also swallow the key-ups of
+    // keys held meanwhile (the keyboard keeps held keys when the menu is blocked)
+    const menu = (e: MouseEvent) => e.preventDefault();
     el.addEventListener("contextmenu", menu);
     el.addEventListener("pointerdown", down);
     window.addEventListener("pointermove", move);
