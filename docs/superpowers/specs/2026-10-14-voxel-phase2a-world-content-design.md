@@ -37,10 +37,12 @@ currency (Rp, English digit grouping: `Rp 30,000`) stay as they are.
 
 ### 3.1 Web & Apps district
 
-- **Plaza** (`id: "web-plaza"`): a new island kind `hub` with no project. It sits on the existing Web & Apps district
-  slot (`DISTRICT_HUBS.web`, origin `{x: 66, y: 4, z: 22}`, radius 6, south of Orbit). It holds the minecart station,
+- **Plaza** (`id: "web-plaza"`, radius 5): a new island kind `hub` with no project. It sits **after Ezra Bot,
+  continuing the tour to the right**: origin (120, 8, −6), about 36 blocks along the tour framings' screen-right and lower (y 8),
+  so the minecart leg keeps the camera moving right instead of pulling it back toward the viewer (the Phase 1 slot
+  south of Orbit, `{x: 66, y: 4, z: 22}`, did exactly that and is no longer used). It holds the minecart station,
   a district sign reading **WEB & APPS** (Pixelify Sans on a plank board), a map board, two lamps, flowers and a tree.
-- **Minecart Ezra Bot → plaza**: Ezra Bot (y 14) and the plaza (y 4) are in different districts, so the existing
+- **Minecart Ezra Bot → plaza**: Ezra Bot (y 14) and the plaza (y 8) are in different districts, so the existing
   crossing rule already selects a minecart. Same rail, cart, station and speed profile as Petak Umpet → Orbit.
 - **Chain of minis**: plaza → POS Monosuko → Bee Furniture CRM → PeduliPasal, each link a plank bridge, so the chain
   forms an arc and the tour moves forward without doubling back through the plaza. The sketch's spoke bridges are
@@ -51,11 +53,12 @@ currency (Rp, English digit grouping: `Rp 30,000`) stay as they are.
 - `IslandKind` gains `"hub"`. `buildLayout` emits the `web-plaza` hub whenever at least one `web` project exists.
 - Minis in the `web` district are placed in **config order** along a chain from the hub (instead of golden-angle
   satellites). Rules, each unit-tested:
-  - consecutive islands' rims are 6–9 blocks apart (bridge length);
+  - consecutive islands' rims are 6–9 blocks apart (bridge length), and both bridge ends land on grass;
   - consecutive height difference ≤ 2 blocks, so `chooseCrossing` returns `"bridge"`;
   - no island overlaps any other (existing `overlaps()` margin);
-  - the chain runs along the tour camera's right vector (`VIEW_R`) with alternating depth offsets, so each new island
-    enters the frame from the right, like the main chain;
+  - the chain runs along the tour framings' real screen-right (12° from +x toward +z, the average of the stop cameras;
+    `VIEW_R` is ~24° off it) with alternating depth offsets, so each new island enters the frame from the right like
+    the main chain, and the web legs move the camera mostly sideways (tested);
   - placement is deterministic.
 - Minis in other districts keep the satellite placement (none exist today).
 - The tour order is derived instead of hard-coded: `hero, gtid, petak-umpet, orbit-store, ezra-bot`, then
@@ -220,8 +223,13 @@ used anywhere.
 - **Tour**: Ezra is seated on the Hero island, so when the tour camera's progress passes the 2026 milestone's
   position on the Hero → GTID segment, a cap is tossed into the air
   from it (a short arc with spin) with confetti, once per page load; clicking replays it.
-- Cap shape and colours (and whether a sash or gown is added) follow Ezra's graduation photo, which he will provide
-  as the reference.
+- Outfit, from Ezra's graduation photos (Petra Christian University, 90th graduation, 5 September 2026) and his
+  choice: accessories over his usual black tee, no gown.
+  - **Cap**: royal-blue mortarboard (board and skull cap `#1f4fc4`) with a black cord and tassel (`#1b1e24`) hanging
+    on his right side.
+  - **Collar band**: an orange (`#f26a1b`) V with a thin black inner edge over both shoulders (Petra's hood edging).
+  - **Medal**: a bronze disc (`#a8907e`) on a royal-blue ribbon, mid-chest.
+  - The tour toss throws the cap only.
 
 ## 8. Map signposts (fast travel)
 
@@ -278,8 +286,7 @@ from `milestones`. Link label for internal demo paths: "Try".
 
 - Out of scope: 2B (Ezra Bot Q&A, mailbox, resume), 2C (launch, retiring the old sections and the stale "Business
   Information Systems Student" title), 2D (Orbit subdomain), 2E (demo apps and their translation).
-- Open: Ezra's graduation photo as the reference for the cap (§7.2). Bangkit's selection figure (4,636 selected from
-  45,000+ registrants) is available for 2B's Q&A if wanted.
+- For 2B: Bangkit's selection figure (4,636 selected from 45,000+ registrants) is available for the Q&A if wanted.
 
 ## 14. Content rules (recap)
 
