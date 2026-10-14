@@ -5,11 +5,11 @@ import type { Crossing } from "@/world/engine/gen/layout";
 import { railPoint, railTangent, rideProgress } from "@/world/engine/traversal/rail";
 import type { TourPath } from "@/world/engine/camera/tourPath";
 import { playSfx } from "@/world/engine/audio/sfx";
-import { worldProjects } from "@/config/portfolio";
 import { runtime } from "@/world/state/runtime";
 import { useWorld } from "@/world/state/store";
 import { Interactable } from "../Interactable";
 import { WorldText } from "../WorldText";
+import { islandTitle } from "../islands/shared/project";
 import { scrollToIsland } from "../tour/scrollToIsland";
 import { stopProgresses } from "../tour/tourMath";
 import { cartTourTable, sampleTable } from "./cartFollow";
@@ -22,7 +22,6 @@ const cartWheels = mergeParts(
     [-0.4, 0.4].map((z) => ({ geo: new THREE.CylinderGeometry(0.13, 0.13, 0.08, 10), color: WOOD, position: [x, 0.1, z] as [number, number, number], rotation: [0, 0, Math.PI / 2] as [number, number, number] })),
   ),
 );
-const titleOf = (id: string) => worldProjects.find((p) => p.id === id)?.title ?? id;
 const CART_SAMPLES = 128;
 
 export function Minecart({ crossing }: { crossing: Crossing }) {
@@ -193,7 +192,7 @@ export function Minecart({ crossing }: { crossing: Crossing }) {
           key={island}
           id={`cart-${crossing.from}-${crossing.to}-${reverse ? "b" : "a"}`}
           island={island}
-          label={`Ride to ${titleOf(dest)}`}
+          label={`Ride to ${islandTitle(dest)}`}
           position={[st.x, st.y + 0.6, st.z]}
           size={[STATION_SIZE, 1.2, STATION_SIZE]}
           radius={2.6}
@@ -208,7 +207,7 @@ export function Minecart({ crossing }: { crossing: Crossing }) {
           <group position={[st.x - uz * SIGN_OFFSET, st.y, st.z + ux * SIGN_OFFSET]} rotation={[0, yaw, 0]}>
             {[0, Math.PI].map((r) => (
               <group key={r} rotation={[0, r, 0]}>
-                <WorldText text={`Minecart\n→ ${titleOf(dest)}`} position={[0, 1.62, 0.05]} size={0.2} color="#3a2a1c" />
+                <WorldText text={`Minecart\n→ ${islandTitle(dest)}`} position={[0, 1.62, 0.05]} size={0.2} color="#3a2a1c" />
               </group>
             ))}
           </group>

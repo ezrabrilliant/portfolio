@@ -23,6 +23,9 @@ export const STAR_ANCHORS: Record<string, Anchor> = {
 
 export const TOUR_ORDER: readonly string[] = ["hero", "gtid", "petak-umpet", "orbit-store", "ezra-bot"];
 
+/** The Web & Apps district's plaza: an island with no project. */
+export const WEB_PLAZA_ID = "web-plaza";
+
 export const DISTRICT_HUBS: Record<District, { origin: Vec3i; radius: number }> = {
   game: { origin: STAR_ANCHORS.gtid.origin, radius: STAR_ANCHORS.gtid.radius },
   discord: { origin: STAR_ANCHORS["orbit-store"].origin, radius: STAR_ANCHORS["orbit-store"].radius },

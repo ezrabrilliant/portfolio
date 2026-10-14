@@ -17,6 +17,12 @@ export const FRAMING: Record<string, { cam: V; target: V; dwell: number }> = {
   "petak-umpet": { cam: [-4.9, 6.4, 16.8], target: [-1.8, 0.5, -1], dwell: 1 },
   "orbit-store": { cam: [-6.7, 6.4, 13.3], target: [-1.5, 1.5, -1], dwell: 1 },
   "ezra-bot": { cam: [-2.9, 6.7, 13.3], target: [-0.5, 1.6, -0.6], dwell: 1 }, // same heading, 15 out: the chat replies are the subject
+  // Web & Apps: the plaza framed like a small star; the radius-4 minis closer (~12.8 out, ~17° yaw: at the stars' ~10°
+  // PeduliPasal's lopsided rim pulls its portrait framing off centre). Starting values until the islands are dressed.
+  "web-plaza": { cam: [-4.2, 6.6, 14.4], target: [-1.5, 1.2, -0.8], dwell: 1 },
+  "pos-monosuko": { cam: [-4.2, 5.2, 11.2], target: [-0.6, 1.8, -0.6], dwell: 1 },
+  "bee-furniture-crm": { cam: [-4.2, 5.2, 11.2], target: [-0.6, 1.8, -0.6], dwell: 1 },
+  pedulipasal: { cam: [-4.2, 5.2, 11.2], target: [-0.6, 1.8, -0.6], dwell: 1 },
 };
 
 export function tourStopFor(p: IslandPlacement): TourStop {

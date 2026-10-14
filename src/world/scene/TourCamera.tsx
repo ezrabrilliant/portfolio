@@ -4,7 +4,7 @@ import * as THREE from "three";
 import type { TourPath } from "@/world/engine/camera/tourPath";
 import { runtime } from "@/world/state/runtime";
 import { useWorld } from "@/world/state/store";
-import { STAR_ISLANDS } from "./islands";
+import { ISLANDS } from "./islands";
 import { buildTour, isPortrait } from "./tour/tourBuild";
 import { progressToScroll, refreshScrollMeasure, scrollMeasure, scrollToProgress, stopProgresses } from "./tour/tourMath";
 import { createTourDriver, stepTourDriver, stopAt, trackFor } from "./tour/tourMotion";
@@ -24,7 +24,7 @@ export function TourCamera() {
   const { path, track } = useMemo(() => {
     let tour = tours.get(portrait);
     if (!tour) {
-      const p = buildTour(runtime.layout, (pl) => STAR_ISLANDS[pl.id].tourStop(pl), portrait);
+      const p = buildTour(runtime.layout, (pl) => ISLANDS[pl.id].tourStop(pl), portrait);
       tour = { path: p, track: trackFor(p) };
       tours.set(portrait, tour);
     }

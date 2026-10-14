@@ -4,7 +4,7 @@ import type { BuiltWorld } from "@/world/engine/worldBuild";
 import type { VoxelGrid } from "@/world/engine/voxel/grid";
 import { runtime } from "@/world/state/runtime";
 import { useWorld } from "@/world/state/store";
-import { STAR_ISLANDS } from "./islands";
+import { ISLANDS } from "./islands";
 import { VIEW_F, islandTop } from "./islands/types";
 import { Ezra } from "./Ezra";
 import { ReadySignal } from "./ReadySignal";
@@ -27,7 +27,7 @@ import { stampCrossings } from "./crossings/stamp";
 
 function build(): BuiltWorld {
   const stamps: Array<(grid: VoxelGrid) => void> = runtime.layout.islands.map(
-    (p) => (grid: VoxelGrid) => STAR_ISLANDS[p.id]?.stamp?.(grid, p),
+    (p) => (grid: VoxelGrid) => ISLANDS[p.id]?.stamp?.(grid, p),
   );
   const built = buildWorld(runtime.layout, [...stamps, (grid: VoxelGrid) => stampCrossings(grid, runtime.layout)]);
   runtime.built = built;
@@ -37,7 +37,7 @@ function build(): BuiltWorld {
   const shape = built.shapes.hero;
   if (shape) {
     const top = islandTop(hero);
-    const cam = STAR_ISLANDS.hero?.tourStop(hero).camera;
+    const cam = ISLANDS.hero?.tourStop(hero).camera;
     const toViewer = cam ? { x: cam.x - top.x, z: cam.z - top.z } : { x: -VIEW_F.x, z: -VIEW_F.z };
     runtime.seat = findSeat(shape, hero.origin, toViewer, built.grid.isSolid);
     Object.assign(runtime.player.pos, runtime.seat.pos);
@@ -70,7 +70,7 @@ export function World() {
         return batch ? <IslandTerrain key={`terrain-${p.id}`} batch={batch} quality={quality} /> : null;
       })}
       {runtime.layout.islands.map((p) => {
-        const M = STAR_ISLANDS[p.id];
+        const M = ISLANDS[p.id];
         return M ? <M.Component key={`island-${p.id}`} placement={p} /> : null;
       })}
       <ParticlesRenderer />

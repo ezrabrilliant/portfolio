@@ -4,12 +4,16 @@ import type { VoxelGrid } from "@/world/engine/voxel/grid";
 import type { TourStop } from "@/world/engine/camera/tourPath";
 import type { Vec3 } from "@/world/engine/types";
 
-export interface StarIslandModule {
+/** A hand-built island: its props (Component), its collision (stamp) and its tour framing (tourStop). */
+export interface IslandModule {
   id: string;
   Component: FC<{ placement: IslandPlacement }>;
   stamp?: (grid: VoxelGrid, placement: IslandPlacement) => void;
   tourStop: (placement: IslandPlacement) => TourStop;
 }
+
+/** Phase 1 name of IslandModule, kept for existing imports. */
+export type StarIslandModule = IslandModule;
 
 /** Heading of every tour camera (looks toward +x, −z); ≈ (0.582, −0.813), derived from one angle so it is exactly unit length. */
 const VIEW_YAW = Math.atan2(0.582, -0.813);
