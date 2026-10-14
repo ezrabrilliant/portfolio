@@ -72,4 +72,34 @@ describe("createKeyboard", () => {
     expect(kb.keys.size).toBe(0);
     kb.dispose();
   });
+  it("clears held keys when a context menu opens: its key-ups never reach the page", () => {
+    const target = new EventTarget();
+    const kb = createKeyboard(target);
+    target.dispatchEvent(key("keydown", "KeyW"));
+    target.dispatchEvent(new Event("contextmenu"));
+    expect(kb.keys.size).toBe(0);
+    kb.dispose();
+  });
+  it("keeps held keys when the context menu was blocked (no menu opened, so the key-up still arrives)", () => {
+    const target = new EventTarget();
+    const kb = createKeyboard(target);
+    target.dispatchEvent(key("keydown", "KeyW"));
+    const menu = new Event("contextmenu", { cancelable: true });
+    menu.preventDefault();
+    target.dispatchEvent(menu);
+    expect(kb.keys.has("KeyW")).toBe(true);
+    kb.dispose();
+  });
+  it("clears held keys when the page is hidden (tab switch, app switch on a phone)", () => {
+    const target = new EventTarget();
+    const doc = Object.assign(new EventTarget(), { visibilityState: "visible" });
+    const kb = createKeyboard(target, doc);
+    target.dispatchEvent(key("keydown", "KeyW"));
+    doc.dispatchEvent(new Event("visibilitychange")); // still visible: nothing happens
+    expect(kb.keys.has("KeyW")).toBe(true);
+    doc.visibilityState = "hidden";
+    doc.dispatchEvent(new Event("visibilitychange"));
+    expect(kb.keys.size).toBe(0);
+    kb.dispose();
+  });
 });

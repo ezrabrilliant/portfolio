@@ -70,6 +70,12 @@ export function PlayCamera() {
       e.preventDefault();
       orbitInput.addZoom(e.deltaY);
     };
+    // any button orbits, so a right-drag must not end in the browser's context menu (which would also swallow the
+    // key-ups of keys held meanwhile; the keyboard keeps them when the menu is blocked)
+    const menu = (e: MouseEvent) => {
+      if (useWorld.getState().mode === "play") e.preventDefault();
+    };
+    el.addEventListener("contextmenu", menu);
     el.addEventListener("pointerdown", down);
     window.addEventListener("pointermove", move);
     window.addEventListener("pointerup", stop);
@@ -77,6 +83,7 @@ export function PlayCamera() {
     window.addEventListener("blur", stop);
     el.addEventListener("wheel", wheel, { passive: false });
     return () => {
+      el.removeEventListener("contextmenu", menu);
       el.removeEventListener("pointerdown", down);
       window.removeEventListener("pointermove", move);
       window.removeEventListener("pointerup", stop);

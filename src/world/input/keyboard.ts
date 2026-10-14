@@ -50,7 +50,14 @@ function isTypingTarget(t: EventTarget | null): boolean {
   return el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.tagName === "SELECT" || el.isContentEditable === true;
 }
 
-export function createKeyboard(target: EventTarget): Keyboard {
+type VisibilityTarget = EventTarget & { visibilityState?: string };
+
+/**
+ * Held keys and one-shot presses. A key-up the page never sees would leave a key held and Ezra walking on his own, so
+ * everything is released whenever key-ups can be lost: window blur, a context menu opening (Chrome sends no blur, and
+ * the menu swallows the key-up), and the page being hidden.
+ */
+export function createKeyboard(target: EventTarget, doc: VisibilityTarget | null = typeof document !== "undefined" ? document : null): Keyboard {
   const keys = new Set<string>();
   const pressed = new Set<string>();
   const down = (e: Event) => {
@@ -63,13 +70,22 @@ export function createKeyboard(target: EventTarget): Keyboard {
     const k = e as Event & { code?: string };
     if (k.code) keys.delete(k.code);
   };
-  const blur = () => {
+  const release = () => {
     keys.clear();
     pressed.clear();
   };
+  const visibility = () => {
+    if (doc?.visibilityState === "hidden") release();
+  };
+  // a blocked menu (Play's right-drag orbit) opens nothing, so its key-ups still arrive and held keys stay held
+  const menu = (e: Event) => {
+    if (!e.defaultPrevented) release();
+  };
   target.addEventListener("keydown", down);
   target.addEventListener("keyup", up);
-  target.addEventListener("blur", blur);
+  target.addEventListener("blur", release);
+  target.addEventListener("contextmenu", menu);
+  doc?.addEventListener("visibilitychange", visibility);
   return {
     keys,
     consume(code: string) {
@@ -80,7 +96,9 @@ export function createKeyboard(target: EventTarget): Keyboard {
     dispose() {
       target.removeEventListener("keydown", down);
       target.removeEventListener("keyup", up);
-      target.removeEventListener("blur", blur);
+      target.removeEventListener("blur", release);
+      target.removeEventListener("contextmenu", menu);
+      doc?.removeEventListener("visibilitychange", visibility);
     },
   };
 }
