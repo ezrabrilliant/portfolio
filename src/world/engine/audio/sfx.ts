@@ -1,4 +1,5 @@
-export type SfxName = "click" | "hover" | "punch" | "burst" | "jump" | "land" | "step" | "print" | "chat" | "link" | "bounce" | "cart";
+export type SfxName =
+  | "click" | "hover" | "punch" | "burst" | "jump" | "land" | "step" | "print" | "chat" | "link" | "bounce" | "cart" | "pop" | "poof";
 
 // ZzFX parameter order: volume, randomness, frequency, attack, sustain, release, shape, shapeCurve,
 // slide, deltaSlide, pitchJump, pitchJumpTime, repeatTime, noise, modulation, bitCrush, delay, sustainVolume, decay, tremolo
@@ -15,6 +16,10 @@ export const SFX_PRESETS: Record<SfxName, (number | undefined)[]> = {
   link: [0.4, 0, 660, 0, 0.06, 0.15, 0, 1, 0, 0, 220, 0.06],
   bounce: [0.6, 0, 200, 0, 0.08, 0.2, 1, 1, 20],
   cart: [0.4, 0.1, 90, 0.05, 0.4, 0.2, 2, 1, 0, 0, 0, 0, 0.08, 0.3],
+  // the graduation cap popping on (or the toss): a short soft blip sliding up
+  pop: [0.4, 0.02, 520, 0, 0.02, 0.08, 0, 1.6, 18],
+  // a fast-travel dust puff: a quiet noise burst falling away
+  poof: [0.3, 0.1, 150, 0.01, 0.04, 0.2, 4, 1, -3, 0, 0, 0, 0, 0.6],
 };
 
 type ZzfxModule = typeof import("zzfx");

@@ -4,7 +4,7 @@ const mocks = vi.hoisted(() => ({ zzfx: vi.fn(), resume: vi.fn(() => Promise.res
 vi.mock("zzfx", () => ({ zzfx: mocks.zzfx, ZZFX: { volume: 0.3, audioContext: { resume: mocks.resume } } }));
 
 const load = () => import("@/world/engine/audio/sfx");
-const NAMES = ["click", "hover", "punch", "burst", "jump", "land", "step", "print", "chat", "link", "bounce", "cart"];
+const NAMES = ["click", "hover", "punch", "burst", "jump", "land", "step", "print", "chat", "link", "bounce", "cart", "pop", "poof"];
 
 beforeEach(() => {
   vi.resetModules();

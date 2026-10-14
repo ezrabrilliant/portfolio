@@ -80,4 +80,12 @@ export const runtime = {
   closeups: new Map<string, CloseupTarget>(),
   /** The open closeup; openCloseup / closeCloseup write it together with the store's closeupId. */
   closeup: null as { id: string } | null,
+  /** Fast travel in Play (travel.ts startTravel): PlayerController puffs Ezra away, moves him to `to`, puffs him back. */
+  travel: null as { to: string; phase: "out" | "in"; t: number } | null,
+  /** Ezra's model is hidden (between the two puffs of a fast travel). */
+  hidden: false,
+  /** Ezra wears the graduation cap and regalia (the Play graduation moment, once per session). */
+  capOn: false,
+  /** Clock time the tour's cap toss started (first pass of the 2026 milestone per page load, or a click), or null. */
+  capToss: null as number | null,
 };

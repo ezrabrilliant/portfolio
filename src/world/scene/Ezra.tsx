@@ -6,6 +6,9 @@ import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js
 import { runtime } from "@/world/state/runtime";
 import { useWorld } from "@/world/state/store";
 import { LEG, pickAnim, poseFor } from "./ezra/anim";
+import { CAP_ON_HEAD_Y } from "./graduation";
+import { GraduationCap, GraduationRegalia } from "./GraduationCap";
+import { capPopScale } from "./milestones/moment";
 
 // colours from the approved sketch and the avatar photo: black tee, short black hair, jeans, light shoes
 const C = {
@@ -115,12 +118,15 @@ export function Ezra() {
   const armL = useRef<THREE.Group>(null);
   const armR = useRef<THREE.Group>(null);
   const head = useRef<THREE.Group>(null);
+  const cap = useRef<THREE.Group>(null);
+  const regalia = useRef<THREE.Group>(null);
+  const capAge = useRef(0);
 
-  useFrame((state) => {
+  useFrame((state, dt) => {
     if (!root.current || !body.current || !legL.current || !legR.current || !kneeL.current || !kneeR.current) return;
     if (!armL.current || !armR.current || !head.current) return;
-    // in a closeup he would stand in front of a low screen
-    if (runtime.closeup !== null) {
+    // between a fast travel's two puffs he is gone; in a closeup he would stand in front of a low screen
+    if (runtime.hidden || runtime.closeup !== null) {
       root.current.visible = false;
       return;
     }
@@ -158,6 +164,14 @@ export function Ezra() {
     armL.current.rotation.set(pose.armL, 0, pose.armSpread);
     armR.current.rotation.set(pose.armR, 0, -pose.armSpread);
     head.current.rotation.set(pose.headPitch, pose.headYaw, 0);
+    // the graduation outfit (Play moment): the cap pops on with a small overshoot, the collar and medal just appear
+    if (cap.current && regalia.current) {
+      const on = runtime.capOn;
+      cap.current.visible = on;
+      regalia.current.visible = on;
+      capAge.current = on ? capAge.current + dt : 0;
+      if (on) cap.current.scale.setScalar(reduced ? 1 : Math.max(0.001, capPopScale(capAge.current)));
+    }
 
     // a camera pressed against his head (wall clamp) would see the model from inside: hide it until it backs off
     const cam = state.camera.position;
@@ -192,6 +206,12 @@ export function Ezra() {
         </group>
         <group ref={head} position={[0, 1.36, 0]}>
           <mesh geometry={GEO.head} material={MAT} castShadow={cast} receiveShadow={cast} />
+          <group ref={cap} position={[0, CAP_ON_HEAD_Y, 0]} visible={false}>
+            <GraduationCap cast={cast} />
+          </group>
+        </group>
+        <group ref={regalia} visible={false}>
+          <GraduationRegalia cast={cast} />
         </group>
       </group>
     </group>
