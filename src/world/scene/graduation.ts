@@ -5,9 +5,11 @@ import { LEG } from "./ezra/anim";
 
 /**
  * Ezra's graduation outfit, from his photos (Petra Christian University's 90th graduation, 5 September 2026, Business
- * Information Systems): a royal-blue mortarboard with a black cord and tassel, and a royal-blue gown to the ankles with
- * wide sleeves ending in broad black cuffs, an orange hood band edged in black on both sides that crosses the
- * shoulders to a V on the chest, a thin black facing down the front, and a bronze medal on a deeper blue ribbon.
+ * Information Systems): a royal-blue mortarboard with a black cord and tassel, and a royal-blue gown with wide sleeves
+ * ending in broad black cuffs, an orange hood band edged in black on both sides that crosses the shoulders to a V on the
+ * chest and on the back, a thin black facing down the front, and a bronze medal on a deeper blue ribbon. In the photos
+ * the gown reaches his ankles; here it ends at mid-shin, so his shoes and a little of his legs show and his stride still
+ * reads at the size the world shows him.
  */
 export const GRAD_COLORS = {
   /** the photos read ≈ #0b44b5 under stage light; a touch lighter so it stays royal blue in the warm world light */
@@ -28,16 +30,21 @@ export const GRAD_COLORS = {
 export const CAP_ON_HEAD_Y = 0.49;
 
 /**
- * The measurements of Ezra's model (Ezra.tsx) the gown is cut to, in blocks. Body space: feet at the origin, facing +z,
- * his left +x. The arm hangs from its shoulder pivot (`top` above it, the hand's bottom `hand` below it); the thigh hangs
- * from the hip pivot (LEG in ezra/anim.ts). `shoe` is the shoe's top above the sole.
+ * Ezra's body measurements, in blocks: Ezra.tsx builds his model from these and the gown is cut to them, so the two
+ * cannot drift apart. Body space: feet at the origin, facing +z, his left +x.
+ * - torso and hips: their half width and depth, and their bottom and top heights.
+ * - arm: hangs from its shoulder pivot. The tee sleeve runs from `top` above the pivot down to `sleeve` below it; the
+ *   skin (forearm and hand) runs from `skin.top` below it down to the hand's bottom, `hand` below it.
+ * - thigh: hangs from the hip pivot (LEG in ezra/anim.ts), `top` above it and `bottom` below it; the shin below the knee
+ *   shares its half width.
+ * - shoe: the shoe's top above the sole.
  */
 export const EZRA_FIT = {
   torso: { halfW: 0.28, halfD: 0.16, bottom: 0.75, top: 1.33 },
-  hips: { halfW: 0.25, halfD: 0.15, bottom: 0.56 },
+  hips: { halfW: 0.25, halfD: 0.15, bottom: 0.56, top: 0.76 },
   shoulder: { x: 0.37, y: 1.28 },
-  arm: { halfW: 0.09, halfD: 0.1, top: 0.02, hand: 0.55 },
-  thigh: { half: 0.11, top: 0.02 },
+  arm: { halfW: 0.09, halfD: 0.1, top: 0.02, sleeve: 0.2, skin: { halfW: 0.075, halfD: 0.08, top: 0.19 }, hand: 0.55 },
+  thigh: { half: 0.11, top: 0.02, bottom: 0.39 },
   shoe: 0.12,
 } as const;
 
@@ -60,6 +67,8 @@ interface Piece {
   ry?: number;
   /** a disc facing +z instead of a box: size = [diameter, thickness, unused] */
   disc?: boolean;
+  /** a flat slab of this outline (x, y points around it) instead of a box, size[2] thick along z: for exact mitres */
+  outline?: readonly (readonly [number, number])[];
   radius?: number;
 }
 
@@ -73,6 +82,10 @@ function bake(pieces: readonly Piece[]): THREE.BufferGeometry {
       g = cyl.toNonIndexed();
       cyl.dispose();
       g.rotateX(Math.PI / 2);
+    } else if (p.outline) {
+      const shape = new THREE.Shape(p.outline.map(([x, y]) => new THREE.Vector2(x, y)));
+      g = new THREE.ExtrudeGeometry(shape, { depth: p.size[2], bevelEnabled: false });
+      g.translate(0, 0, -p.size[2] / 2);
     } else {
       const [w, h, d] = p.size;
       g = new RoundedBoxGeometry(w, h, d, 2, Math.min(p.radius ?? 0.01, Math.min(w, h, d) * 0.3));
@@ -109,24 +122,44 @@ export const CAP_GEOMETRY = bake([
   { size: [0.05, 0.2, 0.05], at: [-0.395, -0.105, 0.12], color: K.cord, radius: 0.015 },
 ]);
 
-/** The hood band's slant: each arm of the V leans this far (radians) from upright. */
-const V_LEAN = 0.522;
+/**
+ * The hood band's V: each arm leans `lean` (radians) from upright, its centre line meeting the gown's centre line at
+ * y `y0` and running `length` up to the shoulder. The orange is `width` wide, with a black `edge` on each side.
+ */
+const V = { lean: 0.522, y0: 1.0, length: 0.381, width: 0.075, edge: 0.022 } as const;
 /** How far a black edge's centre sits from the orange band's centre line (half the band plus half the edge). */
-const EDGE_OFF = 0.0485;
+const EDGE_OFF = V.width / 2 + V.edge / 2;
 
 /**
- * One arm (side s) of the hood band's V, on the front (f = 1) or the back (f = −1): orange, from the shoulder down to
- * the chest where the two arms meet at y 1.0, with a black edge on each side. The outer edges run on down to meet below
- * the V, where the front facing starts.
+ * A point of the V's arm on side s: `t` along its centre line from the gown's centre line, `k` across it (outward and
+ * down positive). With `k` alone it gives where that line meets the centre line, so the two arms meet there in a clean
+ * mitre.
+ */
+const vAt = (s: 1 | -1, k: number, t?: number): [number, number] => {
+  const sin = Math.sin(V.lean);
+  const cos = Math.cos(V.lean);
+  if (t === undefined) return [0, V.y0 - k / sin];
+  return [s * (t * sin + k * cos), V.y0 + t * cos - k * sin];
+};
+
+/**
+ * One arm (side s) of the hood band's V, on the front (f = 1) or the back (f = −1): orange from the shoulder down to the
+ * centre line, where it meets the other arm in a point, with a black edge on each side. The inner edges meet just above
+ * the point, where the V opens; the outer edges meet just below it, where the front facing carries on down.
  */
 const vArm = (s: 1 | -1, f: 1 | -1): Piece[] => {
   const z = f * (GOWN.halfD + 0.01);
   const ze = f * (GOWN.halfD + 0.0105);
-  const rz = -s * V_LEAN;
+  const [w, e, top] = [V.width / 2, V.edge, V.length];
   return [
-    { size: [0.075, 0.381, 0.02], at: [s * 0.095, 1.165, z], color: K.collar, rz },
-    { size: [0.022, 0.34, 0.021], at: [s * 0.053, 1.189, ze], color: K.collarEdge, rz },
-    { size: [0.022, 0.465, 0.021], at: [s * 0.1158, 1.104, ze], color: K.collarEdge, rz },
+    { outline: [vAt(s, w), vAt(s, w, top), vAt(s, -w, top), vAt(s, -w)], size: [0, 0, 0.02], at: [0, 0, z], color: K.collar },
+    {
+      outline: [vAt(s, -w), vAt(s, -w, top - 0.02), vAt(s, -w - e, top - 0.02), vAt(s, -w - e)],
+      size: [0, 0, 0.021],
+      at: [0, 0, ze],
+      color: K.collarEdge,
+    },
+    { outline: [vAt(s, w + e), vAt(s, w + e, top), vAt(s, w, top), vAt(s, w)], size: [0, 0, 0.021], at: [0, 0, ze], color: K.collarEdge },
   ];
 };
 
@@ -153,8 +186,8 @@ export const GOWN_GEOMETRY = bake([
     color: K.gown,
     radius: 0.035,
   },
-  // the front facing: from below the V (where the band's outer edges meet) down to the skirt
-  { size: [0.03, 0.37, 0.012], at: [0, 0.745, GOWN.halfD + 0.006], color: K.facing },
+  // the front facing: lies on the gown (2 mm proud), from the skirt up into the black tip where the band's outer edges meet
+  { size: [0.03, 0.89 - GOWN.bottom - 0.01, 0.012], at: [0, (0.89 + GOWN.bottom + 0.01) / 2, GOWN.halfD + 0.002 - 0.006], color: K.facing },
   ...side(1),
   ...side(-1),
   { size: [0.17, 0.03, 0.012], at: [0, 1.36, -0.11], color: K.ribbon },
@@ -200,9 +233,14 @@ const skirt = (s: 1 | -1) => {
   const inner = -s * LEG.hipX;
   const outer = s * (GOWN.halfW - LEG.hipX);
   const y = (top + bottom) / 2;
+  const radius = 0.03;
+  // the facing fills the half's rounded inner front edge (2 mm proud of the face), so it is that corner rather than a
+  // strip standing off it: a swung half shows no detached black line
+  const back = GOWN.halfD - radius;
+  const front = GOWN.halfD + 0.002;
   return bake([
-    { size: [Math.abs(outer - inner), top - bottom, 2 * GOWN.halfD], at: [(outer + inner) / 2, y, 0], color: K.gown, radius: 0.03 },
-    { size: [0.015, top - bottom, 0.012], at: [inner + s * 0.0075, y, GOWN.halfD + 0.006], color: K.facing },
+    { size: [Math.abs(outer - inner), top - bottom, 2 * GOWN.halfD], at: [(outer + inner) / 2, y, 0], color: K.gown, radius },
+    { size: [0.015, top - bottom, front - back], at: [inner + s * 0.0075, y, (front + back) / 2], color: K.facing },
   ]);
 };
 

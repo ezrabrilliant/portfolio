@@ -117,7 +117,7 @@ const REST = tossPose(TOSS.duration);
 
 /**
  * The graduation moment (spec §7.2). Play: the first time Ezra comes within CAP_RADIUS of the graduation pillar he gets
- * the cap and regalia (runtime.capOn, Ezra.tsx), with confetti and a pop. Tour: the first time a page load's tour
+ * the cap and gown (runtime.capOn, Ezra.tsx), with confetti and a pop. Tour: the first time a page load's tour
  * passes the pillar (its progress from the track point that watches it), a cap is tossed up off the pillar and lands
  * back on it; clicking the pillar replays the toss (Tour) or the confetti (Play).
  */

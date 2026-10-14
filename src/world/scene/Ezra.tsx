@@ -45,27 +45,35 @@ function part(boxes: readonly Box[]): THREE.BufferGeometry {
   return merged;
 }
 
-// model faces +Z, its left is +X; limbs are symmetric about their own pivot. The graduation gown is cut to these
-// measurements (EZRA_FIT in graduation.ts): change them together
+/** A box `halfW` / `halfD` either side of its part's pivot axis (centred `z` forward), from height `bottom` up to `top`. */
+function slab(halfW: number, halfD: number, bottom: number, top: number, colour: string, z = 0): Box {
+  return [2 * halfW, top - bottom, 2 * halfD, 0, (top + bottom) / 2, z, colour];
+}
+
+// model faces +Z, its left is +X; limbs are symmetric about their own pivot. The torso, hips, arms, legs and shoes are
+// built from EZRA_FIT (graduation.ts), the measurements the graduation gown is cut to, so the two cannot drift apart
+const F = EZRA_FIT;
+/** The shoe's top below the knee (the sole's bottom is LEG.shin below it). */
+const SHOE_TOP = -(LEG.shin - F.shoe);
 const GEO = {
   // pivot at the hip; runs half a leg past the knee so a bent knee stays square
-  thigh: part([[0.22, 0.41, 0.22, 0, -0.185, 0, C.jeans]]),
+  thigh: part([slab(F.thigh.half, F.thigh.half, -F.thigh.bottom, F.thigh.top, C.jeans)]),
   // pivot at the knee (LEG.knee below the hip); sole bottom at −LEG.shin, heel at LEG.back, toe at LEG.toe
   shin: part([
-    [0.22, 0.26, 0.22, 0, -0.11, 0, C.jeans],
-    [0.24, 0.09, 0.3, 0, -0.265, 0.04, C.shoe],
-    [0.25, 0.035, 0.31, 0, -0.3225, 0.04, C.sole],
+    slab(F.thigh.half, F.thigh.half, SHOE_TOP - 0.02, F.thigh.top, C.jeans),
+    slab(0.12, 0.15, SHOE_TOP - 0.09, SHOE_TOP, C.shoe, 0.04),
+    slab(0.125, 0.155, -LEG.shin, -LEG.shin + 0.035, C.sole, 0.04),
   ]),
   // body group origin (feet); the hips reach below the hip pivot so a seated Ezra has no gap under him
   body: part([
-    [0.5, 0.2, 0.3, 0, 0.66, 0, C.jeans],
-    [0.56, 0.58, 0.32, 0, 1.04, 0, C.shirt],
+    slab(F.hips.halfW, F.hips.halfD, F.hips.bottom, F.hips.top, C.jeans),
+    slab(F.torso.halfW, F.torso.halfD, F.torso.bottom, F.torso.top, C.shirt),
     [0.2, 0.08, 0.2, 0, 1.35, 0, C.skin],
   ]),
-  // pivot at the shoulder
+  // pivot at the shoulder: the tee sleeve, then the forearm and hand
   arm: part([
-    [0.18, 0.22, 0.2, 0, -0.09, 0, C.shirt],
-    [0.15, 0.36, 0.16, 0, -0.37, 0, C.skin],
+    slab(F.arm.halfW, F.arm.halfD, -F.arm.sleeve, F.arm.top, C.shirt),
+    slab(F.arm.skin.halfW, F.arm.skin.halfD, -F.arm.hand, -F.arm.skin.top, C.skin),
   ]),
   // pivot at the base of the head
   head: part([
