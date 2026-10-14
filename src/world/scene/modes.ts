@@ -97,6 +97,14 @@ export function holdDropInput(input: CharacterInput, dropping: boolean): Charact
 }
 
 /**
+ * Movement during the hero stand-up stretch ends the stretch: the controls answer the first push of the stick or W at
+ * once (on a phone the press that enters Play is already a drag) instead of ignoring it for STAND_UP_SECONDS.
+ */
+export function cutsStandUp(standUp: number, move: { x: number; z: number }): boolean {
+  return standUp > 0 && Math.hypot(move.x, move.z) > 0.05;
+}
+
+/**
  * The island Ezra stands on in Play: the one whose centre column is nearest (x, z), if (x, z) lies within its radius;
  * null between islands. PlayerController feeds it to setActiveIsland, so arrivals (Ezra Bot's reply, Orbit's receipt,
  * GTID's sparkles) fire by walking, not only from the tour. Called every grounded frame: no allocation.

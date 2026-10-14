@@ -10,7 +10,7 @@ import { useWorld } from "@/world/state/store";
 import { axisFromKeys, cameraRelative, sharedKeyboard } from "@/world/input/keyboard";
 import { consumeTouch, touchInput } from "@/world/input/touch";
 import { advanceRide, rideHeading } from "./crossings/ride";
-import { holdDropInput, islandUnder } from "./modes";
+import { cutsStandUp, holdDropInput, islandUnder } from "./modes";
 
 const TAU = Math.PI * 2;
 function dampAngle(a: number, b: number, lambda: number, dt: number): number {
@@ -130,6 +130,11 @@ export function PlayerController() {
     input.run = sharedKeyboard.keys.has("ShiftLeft") || sharedKeyboard.keys.has("ShiftRight");
     // dropping into Play: no steering or jump until he lands (a held W would carry him onto a prop)
     holdDropInput(input, runtime.dropping);
+    // moving cuts the stand-up stretch short: the first push already walks
+    if (cutsStandUp(runtime.standUp, { x: input.moveX, z: input.moveZ })) {
+      runtime.standUp = 0;
+      p.locked = false;
+    }
 
     const r = stepCharacter(p, input, dt, {
       isSolid: built.grid.isSolid,

@@ -6,7 +6,7 @@ import { buildLayout } from "@/world/engine/gen/layout";
 import type { IslandPlacement } from "@/world/engine/gen/layout";
 import type { IsSolid } from "@/world/engine/types";
 import { defaultTourStop, islandTop } from "./islands/types";
-import { dropStart, enterKind, islandUnder, landingColumn, watchPoint } from "./modes";
+import { cutsStandUp, dropStart, enterKind, islandUnder, landingColumn, watchPoint } from "./modes";
 import { tourVia } from "./tour/tourMath";
 import { buildTourTrack, nearestTrackProgress, stopAt } from "./tour/tourMotion";
 
@@ -163,5 +163,18 @@ describe("watchPoint (resuming the tour after Play)", () => {
       }
       expect(nearestTrackProgress(track, watchPoint(path.stops, path.stops[i].target))).toBeCloseTo(stopProgress(path, i), 3);
     });
+  });
+});
+
+describe("cutsStandUp", () => {
+  it("moving during the stand-up stretch ends it, so the first push of the stick or W already walks", () => {
+    expect(cutsStandUp(0.8, { x: 0.6, z: 0 })).toBe(true);
+  });
+  it("no input lets the stretch play out", () => {
+    expect(cutsStandUp(0.8, { x: 0, z: 0 })).toBe(false);
+    expect(cutsStandUp(0.8, { x: 0.02, z: 0.03 })).toBe(false);
+  });
+  it("does nothing once he is standing", () => {
+    expect(cutsStandUp(0, { x: 1, z: 0 })).toBe(false);
   });
 });
