@@ -14,7 +14,7 @@ import { closeCloseup, openCloseup } from "@/world/scene/closeupState";
 import { loadCanvasFonts } from "@/world/scene/islands/shared/canvasFonts";
 import { islandFrame, worldTuple } from "@/world/scene/islands/shared/local";
 import { screensVersion } from "./dirty";
-import { DEMO_PAUSE, demoMayRun, redrawDue } from "./policy";
+import { DEMO_PAUSE, arrivalPause, demoMayRun, inView, redrawDue } from "./policy";
 import type { DemoGate } from "./policy";
 import { SCREEN_SCALE, hitAt, uvToLogical } from "./types";
 import type { HitRegion, ScreenApp } from "./types";
@@ -49,8 +49,9 @@ export interface LiveScreenProps<S> {
 /**
  * One program screen (spec §5.1): a canvas texture of logical × SCREEN_SCALE pixels, redrawn only when the program's
  * state changed, an image arrived or the program animates (at most 15 fps, only while in view). Its idle demo plays
- * while the island is in view or the screen is in closeup, pauses DEMO_PAUSE after a tap, and is off under reduced
- * motion. Activating it (click, E, Enter) opens the closeup; taps in closeup reach the program via its CloseupTarget.
+ * while the island is in view or the screen is in closeup, starts ARRIVAL_READ after the screen comes into view, pauses
+ * DEMO_PAUSE after a tap, and is off under reduced motion. Activating it (click, E, Enter) opens the closeup; taps in
+ * closeup reach the program via its CloseupTarget.
  */
 export function LiveScreen<S>({
   id,
@@ -98,6 +99,7 @@ export function LiveScreen<S>({
       version: -1,
       lastDraw: -Infinity,
       pausedUntil: 0,
+      wasInView: false,
       fontsReady: false,
       ctx: null as CanvasRenderingContext2D | null,
       gate: { reduced: false, t: 0, pausedUntil: 0, inCloseup: false, activeIsland: "", island: "" } as DemoGate,
@@ -192,10 +194,14 @@ export function LiveScreen<S>({
     const g = st.gate;
     g.reduced = world.reducedMotion;
     g.t = t;
-    g.pausedUntil = st.pausedUntil;
     g.inCloseup = runtime.closeup?.id === id;
     g.activeIsland = world.activeIsland;
     g.island = placement.id;
+    // on arrival the visitor reads the screen as it is for ARRIVAL_READ before the demo moves it on
+    const nowInView = inView(g);
+    st.pausedUntil = arrivalPause(st.wasInView, nowInView, t, st.pausedUntil);
+    st.wasInView = nowInView;
+    g.pausedUntil = st.pausedUntil;
     if (demoMayRun(g)) {
       const next = app.auto(st.s, t);
       if (next) {
