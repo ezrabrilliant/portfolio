@@ -9,7 +9,8 @@ import {
   BEE, EZRA, FOOTPRINTS, GTID, HERO, INFO_HALF_SPAN, MAP_BOARD, MAP_HALF_SPAN, MINI_ANCHOR_CLEARANCE, MINI_BOARD_SCALE,
   MINI_SIGN_SCALE, MONOSUKO, ORBIT, PEDULI, PETAK, PLAZA,
 } from "./layouts";
-import { TOUR_FOV, tourStopFor } from "./framing";
+import { TOUR_FOV, portraitStop, tourStopFor } from "./framing";
+import { awningParts } from "./monosuko/awning";
 import { INFO_BOARD, SIGNPOST_FACE, infoBoardTop } from "./shared/boardGeometry";
 import { islandFrame } from "./shared/local";
 import { projectById } from "./shared/project";
@@ -313,13 +314,60 @@ describe("Web & Apps tour views", () => {
     };
   };
 
-  it("show each mini's screen whole in its stop, with no board in front of it", () => {
+  /** The 8 world corners of an island-local box (centre, size, tilt rx about x as PropBlocks draws it). */
+  const boxCorners = (id: string, b: { x: number; y: number; z: number; sx: number; sy: number; sz: number; rx?: number }): Vec3[] => {
+    const [fx, fy, fz] = islandFrame(byId[id]);
+    const c = Math.cos(b.rx ?? 0), s = Math.sin(b.rx ?? 0);
+    const out: Vec3[] = [];
+    for (const dx of [-b.sx / 2, b.sx / 2]) for (const dy of [-b.sy / 2, b.sy / 2]) for (const dz of [-b.sz / 2, b.sz / 2]) {
+      out.push({ x: fx + b.x + dx, y: fy + b.y + dy * c - dz * s, z: fz + b.z + dy * s + dz * c });
+    }
+    return out;
+  };
+  /** LiveScreen's bezel reaches this far past the face on every side (its frame is 0.16 wider and taller). */
+  const BEZEL = 0.08;
+  /** PosMonosuko's badge disc depth. */
+  const BADGE_DEPTH = 0.12;
+  /**
+   * What hangs over a mini's screen, as boxes: the POS awning (stripes and valance) and the badge standing on it. Being
+   * above the screen, their screen-space boxes overlap its box while missing the face, so they get an exact test below.
+   */
+  const overhead: Record<string, { what: string; corners: Vec3[] }[]> = {
+    "pos-monosuko": [
+      ...awningParts().map((p) => ({ what: `awning ${p.kind} ${p.i}`, corners: boxCorners("pos-monosuko", p) })),
+      { what: "badge", corners: boxCorners("pos-monosuko", { ...MONOSUKO.logo, sx: 2 * MONOSUKO.logo.r, sy: 2 * MONOSUKO.logo.r, sz: BADGE_DEPTH }) },
+    ],
+  };
+  /** A point in the view's plane, x and y in the same unit (projectBox's x is divided by its 16:9 aspect). */
+  const flat = (stop: Stop, q: Vec3) => {
+    const b = projectBox(stop, [q]);
+    return { x: (b.x0 * 16) / 9, y: b.y0 };
+  };
+  /** How far `q` lies above the line from `l` to `r` (l left of r), in half frame heights. */
+  const above = (l: { x: number; y: number }, r: { x: number; y: number }, q: { x: number; y: number }) =>
+    ((r.x - l.x) * (q.y - l.y) - (r.y - l.y) * (q.x - l.x)) / Math.hypot(r.x - l.x, r.y - l.y);
+  /** The least clearance between an overhead corner and the screen's top edge: ~1.5 px at 720 tall, ~2 px at 940. */
+  const OVERHEAD_CLEAR = 0.004;
+
+  it("show each mini's screen whole in its stop: no board in front of it, nothing over it hanging into it (desktop and portrait)", () => {
     for (const [id, L] of minis) {
       const { screen, ...fronts } = miniBoxes(id, L);
       expect(reach(screen), `${id} screen inside the frame`).toBeLessThan(0.95);
       for (const [what, box] of Object.entries(fronts)) {
         if (box.depth >= screen.depth) continue;
         expect(overlap(box, screen), `${id}: ${what} covers the screen`).toBeLessThan(0.01);
+      }
+      // the screen (with its bezel) lies below the line through its projected top edge: everything overhead stays above it
+      const scr = L.screen;
+      const [fx, fy, fz] = islandFrame(byId[id]);
+      const edge = [-1, 1].map((s) => ({ x: fx + scr.x + s * (scr.w / 2 + BEZEL), y: fy + scr.y + scr.h / 2 + BEZEL, z: fz + scr.z }));
+      const desktop = tourStopFor(byId[id]);
+      for (const [view, stop] of [["desktop", desktop], ["portrait", portraitStop(byId[id], desktop)]] as const) {
+        const [l, r] = edge.map((q) => flat(stop, q));
+        for (const part of overhead[id] ?? []) {
+          const least = Math.min(...part.corners.map((q) => above(l, r, flat(stop, q))));
+          expect(least, `${id} (${view}): the ${part.what} hangs into the screen`).toBeGreaterThan(OVERHEAD_CLEAR);
+        }
       }
     }
   });

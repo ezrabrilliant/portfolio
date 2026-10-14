@@ -6,6 +6,7 @@ import { useWorld } from "@/world/state/store";
 import { LiveScreen } from "@/world/scene/screens/LiveScreen";
 import { posApp } from "@/world/scene/screens/pos";
 import { MINI_BOARD_SCALE, MINI_SIGN_SCALE, MONOSUKO } from "./layouts";
+import { awningParts } from "./monosuko/awning";
 import { InfoBoard } from "./shared/InfoBoard";
 import { PropBlocks } from "./shared/PropBlocks";
 import { Signpost } from "./shared/Signpost";
@@ -17,19 +18,10 @@ import { miniBoardLines } from "./shared/text";
 const POS_GREEN = "#1f7a4d";
 const AWNING_WHITE = "#efede6";
 const GRILL_TOP = 1.36; // chicken pieces on the grate, on the counter top (1.0)
-/**
- * The awning: six 0.1-thick stripes on the back posts, `len` long and centred at z, sloping down `tilt` toward the front
- * from `top` (its top at the back edge), with a short valance. Nothing may stand between a tour camera and the screen,
- * whose top edge (bezel) is 4.14 up at z −2.12. The phone camera looks down steeply (the sight line from that edge
- * climbs ~0.62 per block toward it), so the front edge is only ~0.5 in front of the screen and as high as the badge
- * allows: its top meets the badge's bottom, which stands as high as the desktop frame allows. The front valance clears
- * the phone's sight line by ~0.07; a deeper or lower awning (the first one reached z +0.2) hid two-thirds of the screen.
- */
-const AWNING = { z: -2.1, len: 1.0, top: 5.0, tilt: 0.25, valance: 0.1 } as const;
 
-/** Stone floor, plank back wall, back posts, counter, the green-and-white awning, the grill, the logo post, table and stools. */
+/** Stone floor, plank back wall, back posts, counter, the green-and-white awning, the grill, table and stools. */
 function stallBlocks(): PropBlock[] {
-  const { stall, grill, logo, table } = MONOSUKO;
+  const { stall, grill, table } = MONOSUKO;
   const out: PropBlock[] = [];
   for (let x = stall.x0; x <= stall.x1; x++) for (let z = stall.wallZ; z <= stall.counterZ + 1; z++) {
     out.push({ x, y: 0.06, z, c: PALETTE.stone[0], sy: 0.12 });
@@ -37,19 +29,20 @@ function stallBlocks(): PropBlock[] {
   for (let x = stall.x0; x <= stall.x1; x++) for (let row = 0; row < stall.wallRows; row++) {
     out.push({ x, y: row + 0.5, z: stall.wallZ - 0.3, c: PALETTE.plank[0], sz: 0.2 });
   }
-  // the posts stand at the back corners, behind the screen's plane: a front post crossed the screen in the tour views
-  for (const x of [stall.x0 - 0.4, stall.x1 + 0.4]) {
-    out.push({ x, y: 2.425, z: stall.wallZ - 0.3, c: PALETTE.wood, sx: 0.2, sy: 4.85, sz: 0.2 });
-  }
   out.push({ x: 0, y: 0.44, z: stall.counterZ + 0.05, c: PALETTE.plank[1], sx: 3.0, sy: 0.88, sz: 0.7 }); // counter
   out.push({ x: 0, y: 0.94, z: stall.counterZ + 0.05, c: PALETTE.wood, sx: 3.3, sy: 0.12, sz: 0.9 }); // counter top
-  const { z, len, top, tilt, valance } = AWNING;
-  const drop = (len / 2) * Math.sin(tilt) + 0.05 * Math.cos(tilt); // from the back top edge (or the centre) down a half
-  const front = { y: top - 2 * drop, z: z + (len / 2) * Math.cos(tilt) }; // the front edge's bottom
-  for (let i = 0; i < 6; i++) {
-    const c = i % 2 ? AWNING_WHITE : POS_GREEN;
-    out.push({ x: -1.5 + i * 0.6, y: top - drop, z, c, sx: 0.6, sy: 0.1, sz: len, rx: tilt });
-    out.push({ x: -1.5 + i * 0.6, y: front.y - valance / 2 + 0.02, z: front.z, c, sx: 0.6, sy: valance, sz: 0.05 });
+  // the awning over the screen (MONOSUKO.awning; layouts.test keeps it clear of the screen in both tour views)
+  const awning = awningParts();
+  for (const p of awning) {
+    out.push({ x: p.x, y: p.y, z: p.z, sx: p.sx, sy: p.sy, sz: p.sz, rx: p.rx, c: p.i % 2 ? AWNING_WHITE : POS_GREEN });
+  }
+  // the posts stand at the back corners, behind the screen's plane (a front post crossed the screen in the tour views),
+  // up to the middle of the awning's slab above them
+  const stripe = awning.find((p) => p.kind === "stripe");
+  const postZ = stall.wallZ - 0.3;
+  const postTop = stripe ? stripe.y - (postZ - stripe.z) * Math.tan(stripe.rx) : MONOSUKO.awning.top;
+  for (const x of [stall.x0 - 0.4, stall.x1 + 0.4]) {
+    out.push({ x, y: postTop / 2, z: postZ, c: PALETTE.wood, sx: 0.2, sy: postTop, sz: 0.2 });
   }
   // a tabletop charcoal grill with chicken pieces on the counter's right end
   out.push({ x: grill.x, y: 1.15, z: grill.z, c: "#4a4d52", sx: 0.7, sy: 0.3, sz: 0.45 });
@@ -57,7 +50,6 @@ function stallBlocks(): PropBlock[] {
   for (const [dx, dz] of [[-0.18, -0.06], [0.02, 0.06], [0.2, -0.04]] as const) {
     out.push({ x: grill.x + dx, y: GRILL_TOP, z: grill.z + dz, c: "#8a4a22", sx: 0.18, sy: 0.08, sz: 0.12 });
   }
-  out.push({ x: logo.x, y: logo.y - 0.65, z: logo.z - 0.12, c: PALETTE.wood, sx: 0.14, sy: 0.7, sz: 0.14 }); // logo post, behind the badge
   out.push({ x: table.x, y: 0.6, z: table.z, c: PALETTE.plank[0], sx: 1.0, sy: 0.08, sz: 0.7 });
   out.push({ x: table.x, y: 0.28, z: table.z, c: PALETTE.wood, sx: 0.12, sy: 0.56, sz: 0.12 });
   for (const dx of [-0.75, 0.75]) {
@@ -71,7 +63,7 @@ const LOGO_URL = "/world/monosuko/logo.webp";
 const DISC_GEO = new THREE.CylinderGeometry(MONOSUKO.logo.r, MONOSUKO.logo.r, 0.12, 40);
 const DISC_MAT = new THREE.MeshStandardMaterial({ color: PALETTE.wood, roughness: 0.9 });
 
-/** The restaurant's round badge on its post above the awning (the logo Part B ships for the POS screen). */
+/** The restaurant's round badge, standing on the awning (the logo Part B ships for the POS screen). */
 function LogoBadge() {
   const texture = useMemo(() => {
     const t = new THREE.TextureLoader().load(LOGO_URL);
@@ -98,7 +90,8 @@ function LogoBadge() {
 
 const PUFFS = 7;
 const PUFF_GEO = new THREE.BoxGeometry(1, 1, 1);
-const PUFF_MAT = new THREE.MeshStandardMaterial({ color: "#e9e6e0", roughness: 1, transparent: true, opacity: 0.55, depthWrite: false });
+// a light warm grey: off-white puffs vanished against the white cloud floor behind the island
+const PUFF_MAT = new THREE.MeshStandardMaterial({ color: "#cbc3b8", roughness: 1, transparent: true, opacity: 0.62, depthWrite: false });
 
 /** Wisps of smoke off the grill: seven small puffs in one instanced draw, rising under the screen and drifting right as they fade. */
 function Smoke() {

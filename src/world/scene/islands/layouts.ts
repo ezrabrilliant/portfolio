@@ -149,7 +149,13 @@ export const MONOSUKO = {
   screen: { x: 0, y: 3.0, z: -2.12, w: 3.4, h: 2.125 },
   // a tabletop charcoal grill on the counter's right end; smoke rises from it
   grill: { x: 1.05, z: -1.0 },
+  // the badge stands on the awning; its top is at the edge of the desktop tour frame, so neither can rise
   logo: { x: 0, y: 5.6, z: -2.3, r: 0.72 },
+  // the awning over the screen (monosuko/awning.ts): `stripes` slabs across w, `len` long and centred at z, sloping down
+  // `tilt` from `top` (their top at the back edge) to a `valance` along the front. The phone's tour camera looks down
+  // steeply (its sight line from the screen's top edge climbs ~0.62 per block), so the front edge stays ~0.5 in front of
+  // the screen; layouts.test keeps all of it above the screen from both tour cameras
+  awning: { x: 0, z: -2.1, w: 3.6, stripes: 6, len: 1.0, top: 5.0, tilt: 0.25, valance: 0.1 },
   table: { x: 0.9, z: 1.9 },
   info: { x: -0.75, z: 2.25, ry: -0.6 },
   link: { x: 0.5, z: -0.45, ry: -0.3 },
