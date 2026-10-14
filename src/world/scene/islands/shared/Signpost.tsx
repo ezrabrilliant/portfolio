@@ -16,9 +16,12 @@ const HIT_CZ = 0.1;
 const HIT_HX = 1.3;
 const HIT_HZ = 0.3;
 
-/** Arrow signpost that opens a project's real site in a new tab. Greyed out and inactive while `url` is empty. */
+/**
+ * Arrow signpost that opens a project's real site (or its demo path) in a new tab. Greyed out and inactive while `url`
+ * is empty. `scale` shrinks the whole sign about its foot (MINI_SIGN_SCALE on the minis).
+ */
 export function Signpost({
-  id, placement, at, label, url, rotationY = 0,
+  id, placement, at, label, url, rotationY = 0, scale = 1,
 }: {
   id: string;
   placement: IslandPlacement;
@@ -26,6 +29,7 @@ export function Signpost({
   label: string;
   url: string | undefined;
   rotationY?: number;
+  scale?: number;
 }) {
   const enabled = Boolean(url);
   const lift = useHoverLift(id);
@@ -38,14 +42,14 @@ export function Signpost({
   // the registry's hitbox is axis-aligned: rotate the local centre by rotationY and cover the rotated footprint
   const cos = Math.cos(rotationY);
   const sin = Math.sin(rotationY);
-  const hitX = at.x + HIT_CX * cos + HIT_CZ * sin;
-  const hitZ = at.z - HIT_CX * sin + HIT_CZ * cos;
-  const hitW = 2 * (Math.abs(cos) * HIT_HX + Math.abs(sin) * HIT_HZ);
-  const hitD = 2 * (Math.abs(sin) * HIT_HX + Math.abs(cos) * HIT_HZ);
+  const hitX = at.x + (HIT_CX * cos + HIT_CZ * sin) * scale;
+  const hitZ = at.z + (-HIT_CX * sin + HIT_CZ * cos) * scale;
+  const hitW = 2 * (Math.abs(cos) * HIT_HX + Math.abs(sin) * HIT_HZ) * scale;
+  const hitD = 2 * (Math.abs(sin) * HIT_HX + Math.abs(cos) * HIT_HZ) * scale;
   return (
     <>
       <group position={islandFrame(placement)}>
-        <group position={[at.x, 0, at.z]} rotation={[0, rotationY, 0]}>
+        <group position={[at.x, 0, at.z]} rotation={[0, rotationY, 0]} scale={scale}>
           <mesh position={[0, POST_H / 2, 0]} castShadow>
             <boxGeometry args={[0.16, POST_H, 0.16]} />
             <meshStandardMaterial color={PALETTE.wood} roughness={0.9} />
@@ -67,8 +71,8 @@ export function Signpost({
         id={id}
         island={placement.id}
         label={label}
-        position={worldTuple(placement, hitX, BOARD_Y, hitZ)}
-        size={[hitW, 0.8, hitD]}
+        position={worldTuple(placement, hitX, BOARD_Y * scale, hitZ)}
+        size={[hitW, 0.8 * scale, hitD]}
         radius={2.4}
         onActivate={open}
         enabled={() => enabled}

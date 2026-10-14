@@ -43,3 +43,22 @@ export function infoBoardRows(title: string, lines: readonly string[]): BoardRow
   const bodyY = body.map((_, i) => bodyTop + i * BODY_ROW);
   return { title: titleRows, body, titleY, bodyY, height: bodyTop + body.length * BODY_ROW };
 }
+
+/**
+ * A mini island board's meta rows: the year and the tags joined with " · ", packed greedily into rows of at most
+ * `maxChars` (the InfoBoard body limit) so a row never ends on a dangling separator: "2026 · React", "Express · MySQL".
+ */
+export function metaRows(year: number, tags: readonly string[], maxChars = BODY_CHARS): string[] {
+  const rows: string[] = [];
+  let current = "";
+  for (const item of [String(year), ...tags]) {
+    if (!current) current = item;
+    else if (current.length + 3 + item.length <= maxChars) current += ` · ${item}`;
+    else {
+      rows.push(current);
+      current = item;
+    }
+  }
+  if (current) rows.push(current);
+  return rows;
+}

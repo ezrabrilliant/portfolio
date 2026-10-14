@@ -9,9 +9,10 @@ import { GtidIsland } from "./Gtid";
 import { PetakUmpetIsland } from "./PetakUmpet";
 import { OrbitStoreIsland } from "./OrbitStore";
 import { EzraBotIsland } from "./EzraBot";
+import { PlazaIsland } from "./Plaza";
 
-/** Every star island shares one tour framing (framing.ts) and stamps its FOOTPRINTS cells as barrier collision. */
-const star = (id: string, Component: FC<{ placement: IslandPlacement }>): IslandModule => ({
+/** Every island shares one tour framing (framing.ts) and stamps its FOOTPRINTS cells as barrier collision. */
+const island = (id: string, Component: FC<{ placement: IslandPlacement }>): IslandModule => ({
   id,
   Component,
   tourStop: tourStopFor,
@@ -24,12 +25,12 @@ const bare = (id: string): IslandModule => ({ id, Component: Bare, tourStop: tou
 
 /** The island registry: the hero, the four stars, the Web & Apps plaza and its three minis. */
 export const ISLANDS: Record<string, IslandModule> = {
-  hero: star("hero", HeroIsland),
-  gtid: star("gtid", GtidIsland),
-  "petak-umpet": star("petak-umpet", PetakUmpetIsland),
-  "orbit-store": star("orbit-store", OrbitStoreIsland),
-  "ezra-bot": star("ezra-bot", EzraBotIsland),
-  [WEB_PLAZA_ID]: bare(WEB_PLAZA_ID),
+  hero: island("hero", HeroIsland),
+  gtid: island("gtid", GtidIsland),
+  "petak-umpet": island("petak-umpet", PetakUmpetIsland),
+  "orbit-store": island("orbit-store", OrbitStoreIsland),
+  "ezra-bot": island("ezra-bot", EzraBotIsland),
+  [WEB_PLAZA_ID]: island(WEB_PLAZA_ID, PlazaIsland),
   "pos-monosuko": bare("pos-monosuko"),
   "bee-furniture-crm": bare("bee-furniture-crm"),
   pedulipasal: bare("pedulipasal"),

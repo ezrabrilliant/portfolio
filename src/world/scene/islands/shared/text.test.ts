@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { infoBoardRows, wrapWords } from "./text";
+import { infoBoardRows, metaRows, wrapWords } from "./text";
 
 describe("wrapWords", () => {
   it("wraps on word boundaries without exceeding the limit", () => {
@@ -41,5 +41,14 @@ describe("infoBoardRows", () => {
     const last = r.bodyY[r.bodyY.length - 1];
     expect(last).toBeLessThan(r.height);
     expect(r.height - last).toBeCloseTo(0.3);
+  });
+});
+
+describe("metaRows", () => {
+  it("packs the year and tags into rows of at most 21 characters, never ending a row on a separator", () => {
+    expect(metaRows(2026, ["React", "Express", "MySQL"])).toEqual(["2026 · React", "Express · MySQL"]);
+    expect(metaRows(2025, ["React", "PostgreSQL"])).toEqual(["2025 · React", "PostgreSQL"]);
+    expect(metaRows(2024, ["Kotlin", "TensorFlow", "Gemini"])).toEqual(["2024 · Kotlin", "TensorFlow · Gemini"]);
+    expect(metaRows(2026, [])).toEqual(["2026"]);
   });
 });

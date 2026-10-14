@@ -1,11 +1,18 @@
 import { describe, expect, it } from "vitest";
-import { STAR_TOUR, buildLayout } from "@/world/engine/gen/layout";
+import { buildLayout } from "@/world/engine/gen/layout";
+import { generateIsland } from "@/world/engine/gen/islandGen";
 import { characterCollides } from "@/world/engine/physics/character";
 import { worldCopy, worldProjects } from "@/config/portfolio";
+import type { Vec3 } from "@/world/engine/types";
 import { PAD_SIZE, SIGN_OFFSET, SIGN_WIDTH, STATION_SIZE, padPair, railEnds } from "@/world/scene/crossings/geometry";
-import { EZRA, FOOTPRINTS, GTID, HERO, INFO_HALF_SPAN, ORBIT, PETAK } from "./layouts";
+import {
+  BEE, EZRA, FOOTPRINTS, GTID, HERO, INFO_HALF_SPAN, MAP_BOARD, MAP_HALF_SPAN, MINI_ANCHOR_CLEARANCE, MINI_BOARD_SCALE,
+  MINI_SIGN_SCALE, MONOSUKO, ORBIT, PEDULI, PETAK, PLAZA,
+} from "./layouts";
+import { TOUR_FOV, tourStopFor } from "./framing";
+import { islandFrame } from "./shared/local";
 import { projectById } from "./shared/project";
-import { infoBoardRows } from "./shared/text";
+import { infoBoardRows, metaRows } from "./shared/text";
 
 const layout = buildLayout(worldProjects);
 const byId = Object.fromEntries(layout.islands.map((p) => [p.id, p]));
@@ -13,30 +20,59 @@ const toLocal = (id: string, v: { x: number; z: number }) => ({
   x: v.x - (byId[id].origin.x + 0.5),
   z: v.z - (byId[id].origin.z + 0.5),
 });
-
-// islands with hand-built props; the Web & Apps islands join as their modules land (terrain only until then)
-const dressed = layout.tourOrder.filter((id) => FOOTPRINTS[id] !== undefined);
-const footprint = (id: string) => FOOTPRINTS[id] ?? [];
+const grassOf = (id: string) => {
+  const p = byId[id];
+  return new Set(generateIsland({ radius: p.radius, depth: p.depth, seed: p.seed }).cells.filter((c) => c.y === 0).map((c) => `${c.x},${c.z}`));
+};
+const WEB = ["web-plaza", "pos-monosuko", "bee-furniture-crm", "pedulipasal"];
 
 describe("island prop footprints", () => {
-  it("exist for the hero and every star island", () => {
-    for (const id of STAR_TOUR) expect(FOOTPRINTS[id]?.length ?? 0).toBeGreaterThan(0);
-    expect(dressed).toEqual(expect.arrayContaining([...STAR_TOUR]));
+  it("exist for every tour island", () => {
+    for (const id of layout.tourOrder) expect(FOOTPRINTS[id]?.length ?? 0, id).toBeGreaterThan(0);
   });
 
   it("stay on the island (inside 78% of the radius, the narrowest rim after noise)", () => {
-    for (const id of dressed) {
+    for (const id of layout.tourOrder) {
       const r = byId[id].radius * 0.78;
       for (const [x, , z] of FOOTPRINTS[id]) expect(Math.hypot(x, z), `${id} (${x},${z})`).toBeLessThanOrEqual(r);
     }
   });
 
-  it("leave 2 blocks clear around every crossing anchor", () => {
+  it("stand on the Web & Apps islands on grass with grass on all four sides (never on the rim of the real terrain)", () => {
+    for (const id of WEB) {
+      const grass = grassOf(id);
+      for (const [x, , z] of FOOTPRINTS[id]) {
+        const ok = [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1]].every(([dx, dz]) => grass.has(`${x + dx},${z + dz}`));
+        expect(ok, `${id} (${x},${z})`).toBe(true);
+      }
+    }
+  });
+
+  it("leave 2 blocks clear around every crossing anchor (MINI_ANCHOR_CLEARANCE on the radius-4 minis)", () => {
     for (const c of layout.crossings) {
       for (const [id, anchor] of [[c.from, c.a], [c.to, c.b]] as const) {
         const a = toLocal(id, anchor);
-        for (const [x, , z] of footprint(id)) {
-          expect(Math.hypot(x - a.x, z - a.z), `${id} (${x},${z}) vs ${c.kind}`).toBeGreaterThanOrEqual(2);
+        const clear = byId[id].kind === "mini" ? MINI_ANCHOR_CLEARANCE : 2;
+        for (const [x, , z] of FOOTPRINTS[id]) {
+          expect(Math.hypot(x - a.x, z - a.z), `${id} (${x},${z}) vs ${c.kind}`).toBeGreaterThanOrEqual(clear);
+        }
+      }
+    }
+  });
+
+  // Bridge.tsx stands a rope post 1.05 to each side of every bridge anchor
+  it("never put a prop cell on a bridge's rope post", () => {
+    for (const c of layout.crossings) {
+      if (c.kind !== "bridge") continue;
+      const len = Math.hypot(c.b.x - c.a.x, c.b.z - c.a.z);
+      const side = { x: -(c.b.z - c.a.z) / len, z: (c.b.x - c.a.x) / len };
+      for (const [id, anchor] of [[c.from, c.a], [c.to, c.b]] as const) {
+        for (const s of [1.05, -1.05]) {
+          const post = toLocal(id, { x: anchor.x + side.x * s, z: anchor.z + side.z * s });
+          for (const [x, , z] of FOOTPRINTS[id]) {
+            const inside = Math.abs(post.x - x) < 0.6 && Math.abs(post.z - z) < 0.6;
+            expect(inside, `${id} (${x},${z}) holds a rope post of ${c.from} → ${c.to}`).toBe(false);
+          }
         }
       }
     }
@@ -68,22 +104,67 @@ describe("island prop footprints", () => {
     }
     expect(furniture.length).toBeGreaterThan(0);
     for (const f of furniture) {
-      for (const [x, , z] of footprint(f.id)) {
+      for (const [x, , z] of FOOTPRINTS[f.id]) {
         // gap between the cell's square and the furniture's square; negative = they overlap
         const gap = Math.max(Math.abs(x - f.x), Math.abs(z - f.z)) - 0.5 - f.half;
         expect(gap, `${f.id} (${x},${z}) vs ${f.what}`).toBeGreaterThanOrEqual(0);
       }
     }
   });
+
+  it("give every Web & Apps prop its own cells (no two props claim one)", () => {
+    for (const id of WEB) {
+      const seen = new Set<string>();
+      for (const c of FOOTPRINTS[id]) {
+        const k = c.join(",");
+        expect(seen.has(k), `${id} (${k}) claimed twice`).toBe(false);
+        seen.add(k);
+      }
+    }
+  });
+
+  // On the small Web & Apps islands the props fill most of the free ground: Ezra must still get from every bridge head
+  // to every other one, and to the spot in front of the island's screen, over free grass (one cell wide is enough).
+  it("keep a walkway on the Web & Apps islands: bridge head to bridge head, and to the screen", () => {
+    const stands: Record<string, { x: number; z: number } | undefined> = {
+      "pos-monosuko": MONOSUKO.stand, "bee-furniture-crm": BEE.stand, pedulipasal: PEDULI.stand,
+    };
+    for (const id of WEB) {
+      const grass = grassOf(id);
+      const blocked = new Set(FOOTPRINTS[id].map(([x, , z]) => `${x},${z}`));
+      const heads = layout.crossings.flatMap((c) => [[c.from, c.a], [c.to, c.b]] as const).filter(([i]) => i === id).map(([, a]) => toLocal(id, a));
+      const goals = [...heads.map((a) => ({ x: Math.round(a.x), z: Math.round(a.z) })), ...(stands[id] ? [stands[id]!] : [])];
+      const start = goals[0];
+      const seen = new Set([`${start.x},${start.z}`]);
+      const queue = [start];
+      while (queue.length) {
+        const c = queue.shift()!;
+        for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+          const k = `${c.x + dx},${c.z + dz}`;
+          if (seen.has(k) || !grass.has(k) || blocked.has(k)) continue;
+          seen.add(k);
+          queue.push({ x: c.x + dx, z: c.z + dz });
+        }
+      }
+      for (const g of goals) expect(seen.has(`${g.x},${g.z}`), `${id}: (${g.x},${g.z}) unreachable`).toBe(true);
+    }
+  });
 });
 
 describe("board and sign collision", () => {
-  // InfoBoard: posts 1.0 tall, then the text panel (shared/InfoBoard.tsx); its height grows with the wrapped copy
-  const infoTop = (title: string, lines: readonly string[]) => 1.0 + infoBoardRows(title, lines).height;
+  // InfoBoard: posts 1.0 tall, then the text panel (shared/InfoBoard.tsx); its height grows with the wrapped copy and
+  // the whole board scales on the minis
+  const infoTop = (title: string, lines: readonly string[], scale = 1) => (1.0 + infoBoardRows(title, lines).height) * scale;
   const stats = (id: string) => projectById(id).stats ?? [];
+  const miniLines = (id: string) => {
+    const p = projectById(id);
+    return [p.line, ...metaRows(p.year, p.tags)];
+  };
   const g = GTID.board;
   const s = EZRA.screen;
-  // every panel on two posts: where the posts stand (± half around `at`, turned by ry) and its top edge above the grass
+  const mapTop = MAP_BOARD.y + MAP_BOARD.h / 2;
+  // every panel on two posts (or one post with a wide panel): where it stands (± half around `at`, turned by ry) and its
+  // top edge above the grass
   const boards = [
     { id: "hero", what: "about board", at: HERO.info, half: INFO_HALF_SPAN, ry: HERO.info.ry, top: infoTop(worldCopy.location, [worldCopy.heroLine]) },
     { id: "gtid", what: "price board", at: g, half: g.w / 2 - 0.3, ry: g.ry, top: g.y + g.h / 2 - 0.4 + (g.h + 0.16) / 2 }, // Gtid.tsx PriceBoard
@@ -93,6 +174,16 @@ describe("board and sign collision", () => {
     { id: "orbit-store", what: "info board", at: ORBIT.info, half: INFO_HALF_SPAN, ry: ORBIT.info.ry, top: infoTop("Orbit Store", stats("orbit-store")) },
     { id: "ezra-bot", what: "screen", at: s, half: s.w / 2 - 0.25, ry: s.ry, top: s.y + s.h / 2 - 0.2 + (s.h + 0.14) / 2 }, // EzraBot.tsx SCREEN_GEO
     { id: "ezra-bot", what: "info board", at: EZRA.info, half: INFO_HALF_SPAN, ry: EZRA.info.ry, top: infoTop("Discord", stats("ezra-bot")) },
+    { id: "web-plaza", what: "district sign", at: PLAZA.sign, half: PLAZA.sign.w / 2 - 0.1, ry: PLAZA.sign.ry, top: PLAZA.sign.y + PLAZA.sign.h / 2 },
+    ...([
+      ["pos-monosuko", MONOSUKO.info],
+      ["bee-furniture-crm", BEE.info],
+      ["pedulipasal", PEDULI.info],
+    ] as const).map(([id, b]) => ({ id, what: "info board", at: b, half: INFO_HALF_SPAN * MINI_BOARD_SCALE, ry: b.ry, top: infoTop(projectById(id).title, miniLines(id), MINI_BOARD_SCALE) })),
+    ...([
+      ["hero", HERO.map], ["gtid", GTID.map], ["petak-umpet", PETAK.map], ["orbit-store", ORBIT.map], ["ezra-bot", EZRA.map],
+      ["web-plaza", PLAZA.map], ["pos-monosuko", MONOSUKO.map], ["bee-furniture-crm", BEE.map], ["pedulipasal", PEDULI.map],
+    ] as const).map(([id, m]) => ({ id, what: "map board", at: m, half: MAP_HALF_SPAN, ry: m.ry, top: mapTop })),
   ];
   // an island's footprint as an IsSolid in island-local blocks: local cell x spans [x − 0.5, x + 0.5) around the
   // frame, so a frame position px sits in block floor(px + 0.5)
@@ -126,5 +217,95 @@ describe("board and sign collision", () => {
       if (top < Math.floor(b.top)) short.push(`${b.id} ${b.what}: panel top ${b.top.toFixed(2)}, barrier top row ${top}`);
     }
     expect(short).toEqual([]);
+  });
+
+  it("scale the mini signposts' post to the same footprint (one column)", () => {
+    expect(MINI_SIGN_SCALE).toBeGreaterThan(0.5);
+    expect(MINI_SIGN_SCALE).toBeLessThanOrEqual(1);
+  });
+});
+
+/** Screen-space box (NDC, 16:9, TOUR_FOV) and depth of a set of world points seen from a tour stop. */
+function projectBox(stop: { camera: Vec3; target: Vec3 }, pts: Vec3[]) {
+  const f = { x: stop.target.x - stop.camera.x, y: stop.target.y - stop.camera.y, z: stop.target.z - stop.camera.z };
+  const fl = Math.hypot(f.x, f.y, f.z);
+  f.x /= fl; f.y /= fl; f.z /= fl;
+  const rl = Math.hypot(f.z, f.x);
+  const r = { x: -f.z / rl, y: 0, z: f.x / rl };
+  const u = { x: r.y * f.z - r.z * f.y, y: r.z * f.x - r.x * f.z, z: r.x * f.y - r.y * f.x };
+  const t = Math.tan(((TOUR_FOV / 2) * Math.PI) / 180);
+  const box = { x0: Infinity, x1: -Infinity, y0: Infinity, y1: -Infinity, depth: 0 };
+  for (const p of pts) {
+    const v = { x: p.x - stop.camera.x, y: p.y - stop.camera.y, z: p.z - stop.camera.z };
+    const z = v.x * f.x + v.y * f.y + v.z * f.z;
+    const nx = (v.x * r.x + v.z * r.z) / (z * t * (16 / 9));
+    const ny = (v.x * u.x + v.y * u.y + v.z * u.z) / (z * t);
+    box.x0 = Math.min(box.x0, nx); box.x1 = Math.max(box.x1, nx);
+    box.y0 = Math.min(box.y0, ny); box.y1 = Math.max(box.y1, ny);
+    box.depth += z / pts.length;
+  }
+  return box;
+}
+
+describe("Web & Apps tour views", () => {
+  /** Corners of a vertical panel: centre (x, z) local, width w turned by ry, from y0 to y1 above the grass. */
+  const panel = (id: string, c: { x: number; z: number }, w: number, ry: number, y0: number, y1: number, dx = 0): Vec3[] => {
+    const [fx, fy, fz] = islandFrame(byId[id]);
+    const out: Vec3[] = [];
+    for (const s of [-w / 2 + dx, w / 2 + dx]) for (const y of [y0, y1]) out.push({ x: fx + c.x + s * Math.cos(ry), y: fy + y, z: fz + c.z - s * Math.sin(ry) });
+    return out;
+  };
+  const overlap = (a: ReturnType<typeof projectBox>, b: ReturnType<typeof projectBox>) =>
+    (Math.max(0, Math.min(a.x1, b.x1) - Math.max(a.x0, b.x0)) * Math.max(0, Math.min(a.y1, b.y1) - Math.max(a.y0, b.y0))) /
+    ((b.x1 - b.x0) * (b.y1 - b.y0));
+  const minis = [
+    ["pos-monosuko", MONOSUKO],
+    ["bee-furniture-crm", BEE],
+    ["pedulipasal", PEDULI],
+  ] as const;
+
+  it("show each mini's screen whole in its stop, with no board in front of it", () => {
+    for (const [id, L] of minis) {
+      const stop = tourStopFor(byId[id]);
+      const scr = L.screen;
+      const screen = projectBox(stop, panel(id, scr, scr.w, 0, scr.y - scr.h / 2, scr.y + scr.h / 2));
+      expect(Math.max(-screen.x0, screen.x1, -screen.y0, screen.y1), `${id} screen inside the frame`).toBeLessThan(0.95);
+      const p = projectById(id);
+      const infoH = infoBoardRows(p.title, [p.line, ...metaRows(p.year, p.tags)]).height;
+      const fronts = [
+        { what: "info board", box: projectBox(stop, panel(id, L.info, 2.4 * MINI_BOARD_SCALE, L.info.ry, MINI_BOARD_SCALE, (1 + infoH) * MINI_BOARD_SCALE)) },
+        // Signpost board: x −0.85..1.53 around its post, 0.5 tall at 1.85 (all × scale)
+        { what: "link sign", box: projectBox(stop, panel(id, L.link, 2.38 * MINI_SIGN_SCALE, L.link.ry, 1.6 * MINI_SIGN_SCALE, 2.1 * MINI_SIGN_SCALE, 0.34 * MINI_SIGN_SCALE)) },
+        { what: "map board", box: projectBox(stop, panel(id, L.map, MAP_BOARD.w, L.map.ry, MAP_BOARD.y - MAP_BOARD.h / 2, MAP_BOARD.y + MAP_BOARD.h / 2)) },
+      ];
+      for (const f of fronts) {
+        if (f.box.depth >= screen.depth) continue;
+        expect(overlap(f.box, screen), `${id}: ${f.what} covers the screen`).toBeLessThan(0.01);
+      }
+    }
+  });
+
+  it("keep each Web & Apps board and sign in view: none mostly hidden behind another or behind the screen", () => {
+    for (const [id, L] of [["web-plaza", PLAZA], ...minis] as const) {
+      const stop = tourStopFor(byId[id]);
+      const map = projectBox(stop, panel(id, L.map, MAP_BOARD.w, L.map.ry, MAP_BOARD.y - MAP_BOARD.h / 2, MAP_BOARD.y + MAP_BOARD.h / 2));
+      expect(Math.max(-map.x0, map.x1, -map.y0, map.y1), `${id} map board inside the frame`).toBeLessThan(0.98);
+      if (id === "web-plaza") continue;
+      const M = L as (typeof minis)[number][1];
+      const p = projectById(id);
+      const infoH = infoBoardRows(p.title, [p.line, ...metaRows(p.year, p.tags)]).height;
+      const boxes = {
+        "map board": map,
+        "info board": projectBox(stop, panel(id, M.info, 2.4 * MINI_BOARD_SCALE, M.info.ry, MINI_BOARD_SCALE, (1 + infoH) * MINI_BOARD_SCALE)),
+        "link sign": projectBox(stop, panel(id, M.link, 2.38 * MINI_SIGN_SCALE, M.link.ry, 1.6 * MINI_SIGN_SCALE, 2.1 * MINI_SIGN_SCALE, 0.34 * MINI_SIGN_SCALE)),
+        screen: projectBox(stop, panel(id, M.screen, M.screen.w, 0, M.screen.y - M.screen.h / 2, M.screen.y + M.screen.h / 2)),
+      };
+      for (const what of ["map board", "info board", "link sign"] as const) {
+        for (const [other, b] of Object.entries(boxes)) {
+          if (other === what || b.depth >= boxes[what].depth) continue;
+          expect(overlap(b, boxes[what]), `${id}: the ${other} hides the ${what}`).toBeLessThan(what === "link sign" ? 0.3 : 0.25);
+        }
+      }
+    }
   });
 });
