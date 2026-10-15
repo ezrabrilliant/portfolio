@@ -334,15 +334,15 @@ export interface TourDriver {
 }
 
 /** Seconds of an island-to-island glide (the tour's ‹ ›, ← →, a swipe, the map). */
-export const GLIDE_TIME = 0.8;
+export const GLIDE_TIME = 1.4;
 
 /**
- * The glide's ease: quick off the mark, soft landing (ease-out quart). The track already dwells near each stop (it moves
- * the camera little per progress there), so an ease-in would leave it standing at the start.
+ * The glide's ease: a gentle start and a soft landing (ease-in-out sine). 0.8 s with an ease-out felt rushed (Ezra,
+ * 2026-10-15); the track's own dwell near each stop adds to the calm at both ends.
  */
 export function glideEase(u: number): number {
   const x = Math.min(1, Math.max(0, u));
-  return 1 - (1 - x) ** 4;
+  return 0.5 - 0.5 * Math.cos(Math.PI * x);
 }
 
 /** Starts a glide from the camera's progress now to `to` (the page has been scrolled there at once). */

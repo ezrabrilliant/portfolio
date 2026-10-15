@@ -237,10 +237,11 @@ describe("island-to-island glide", () => {
   const path = buildTour(layout, (p) => tourStopFor(p), false);
   const track = buildTourTrack(path);
 
-  it("eases out: quick off the mark, landing softly", () => {
+  it("eases in and out: a gentle start, half way at half time, a soft landing", () => {
     expect(glideEase(0)).toBe(0);
-    expect(glideEase(1)).toBe(1);
-    expect(glideEase(0.25)).toBeGreaterThan(0.6);
+    expect(glideEase(1)).toBeCloseTo(1, 12);
+    expect(glideEase(0.5)).toBeCloseTo(0.5, 12);
+    expect(glideEase(0.1)).toBeLessThan(0.1);
   });
 
   it("runs the camera from its stop to the next in GLIDE_TIME, then follows the scroll", () => {
