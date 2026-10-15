@@ -9,15 +9,17 @@ export const CLOSEUP_GLIDE = 0.8;
  * below it ending near 87 px, plus air). CloseupCamera turns it into closeupPose's `inset`, a share of the canvas height.
  */
 export const CLOSEUP_HUD_PX = 96;
+/** CSS px at the bottom of the canvas the closeup's Back button covers (world.css .hud-back, plus air). */
+export const CLOSEUP_BACK_PX = 84;
 /** The closeup camera's near plane stops this far in front of the face: everything nearer the camera is clipped. */
 export const CLOSEUP_NEAR_MARGIN = 0.25;
 
 /**
- * How closeupPose frames its target. `inset`: share of the frame height kept free at the top (the HUD); the target is
- * fitted and centred in the frame below it. `pan`: world units the camera slides along the face's horizontal, for a
+ * How closeupPose frames its target. `inset`: share of the frame height kept free at the top (the HUD), `insetBottom`
+ * at the bottom (the Back button); the target is fitted and centred in the frame between them. `pan`: world units the camera slides along the face's horizontal, for a
  * wide target on a portrait viewport (clamped to closeupPanLimit; 0 = centred).
  */
-export interface CloseupView { inset?: number; pan?: number }
+export interface CloseupView { inset?: number; insetBottom?: number; pan?: number }
 
 /** A landscape target on a portrait viewport is fitted by its height and panned sideways, not shrunk to the width. */
 export function closeupPans(size: { w: number; h: number }, aspect: number): boolean {
@@ -66,7 +68,9 @@ export function closeupPose(
   out?: { camera: Vec3; target: Vec3 },
   view: CloseupView = {},
 ): { camera: Vec3; target: Vec3 } {
-  const inset = view.inset ?? 0;
+  const top = view.inset ?? 0;
+  const bottom = view.insetBottom ?? 0;
+  const inset = top + bottom;
   const tanY = Math.tan((fovDeg * Math.PI) / 360);
   const d = closeupDistance(size, aspect, fovDeg, inset);
   const len = Math.hypot(normal.x, normal.y, normal.z);
@@ -91,8 +95,9 @@ export function closeupPose(
   const rx = uy * nz - uz * ny;
   const ry = uz * nx - ux * nz;
   const rz = ux * ny - uy * nx;
-  // a lift of inset × the half frame height puts the face's centre in the middle of the frame below the HUD
-  const lift = inset * d * tanY;
+  // a lift of (top − bottom) × the half frame height puts the face's centre in the middle of the frame between the HUD
+  // and the Back button
+  const lift = (top - bottom) * d * tanY;
   const pan = clampPan(view.pan ?? 0, closeupPanLimit(size, aspect, fovDeg, inset));
   const ox = ux * lift + rx * pan;
   const oy = uy * lift + ry * pan;

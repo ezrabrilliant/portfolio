@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { CLOSEUP_HUD_PX } from "@/world/engine/camera/closeup";
-import { HINTS, promptPill } from "./hudHints";
+import { HINTS, hintShown, promptPill } from "./hudHints";
 
 /**
  * The hint line's box, read from world.css itself (the base .hud-hint rule and its small-phone rule), so these budgets
@@ -73,5 +73,22 @@ describe("promptPill (the prompt at the bottom of the HUD)", () => {
   it("the tour: the pill without a key cap, on both kinds of device (a tap or click, or Enter on what Tab focused)", () => {
     expect(promptPill("tour", false)).toEqual({ key: null });
     expect(promptPill("tour", true)).toEqual({ key: null });
+  });
+});
+
+describe("hintShown (hints teach once)", () => {
+  const none = { tour: false, play: false, closeup: false };
+  const all = { tour: true, play: true, closeup: true };
+
+  it("shows each kind until it is seen", () => {
+    for (const k of ["tour", "play", "closeup", "closeupPan"] as const) {
+      expect(hintShown(k, none, false), k).toBe(true);
+      expect(hintShown(k, all, false), k).toBe(false);
+    }
+  });
+
+  it("brings Play's legend back with help, only Play's", () => {
+    expect(hintShown("play", all, true)).toBe(true);
+    expect(hintShown("tour", all, true)).toBe(false);
   });
 });

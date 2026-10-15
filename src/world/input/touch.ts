@@ -45,3 +45,19 @@ export function resetTouch(): void {
   touchInput.interact = false;
   touchInput.active = false;
 }
+
+/** The stick's zone, as shares of the viewport: the left STICK_ZONE.w, the bottom STICK_ZONE.h. Everything else looks. */
+export const STICK_ZONE = { w: 0.45, h: 0.45 } as const;
+
+/** Does a touch at (x, y) in a w × h viewport land in the stick's zone (lower left)? */
+export function inStickZone(x: number, y: number, w: number, h: number): boolean {
+  return x < w * STICK_ZONE.w && y > h * (1 - STICK_ZONE.h);
+}
+
+/** CSS px of pinch spread → orbitInput.addZoom's wheel units (a 100 px spread zooms in by ~a third). */
+export const PINCH_TO_WHEEL = 1.8;
+
+/** The wheel-equivalent zoom for two fingers moving from `prev` px apart to `now` px apart (spread = zoom in = negative). */
+export function pinchWheel(prev: number, now: number): number {
+  return -(now - prev) * PINCH_TO_WHEEL;
+}

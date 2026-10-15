@@ -120,7 +120,8 @@ export function useModeTransitions(enabled: boolean) {
       // Esc closes an open closeup instead (in Play the next Esc leaves Play); in the tour useTabCycling may have
       // closed it already when the canvas has focus, and then this Esc does nothing more
       if (e.code === "Escape" && runtime.closeup) closeCloseup();
-      else if (s.mode === "tour" && isMoveCode(e.code)) s.setMode("play");
+      // ← / → step the tour island by island (useTourNav); the other move keys start walking
+      else if (s.mode === "tour" && isMoveCode(e.code) && e.code !== "ArrowLeft" && e.code !== "ArrowRight") s.setMode("play");
       else if (s.mode === "play" && e.code === "Escape") s.setMode("tour");
       // Space is jump in Play: it must not also press a focused HUD button (the "Tour" button right after clicking Play)
       else if (s.mode === "play" && e.code === "Space" && t?.tagName === "BUTTON" && t.closest(".hud")) e.preventDefault();

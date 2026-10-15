@@ -25,15 +25,16 @@ html.world-playing, html.world-playing body { overflow: hidden; }
 .seo-mirror--visible a { display: inline-block; margin-right: 16px; color: #1f4f8a; }
 
 .mobile-controls { position: fixed; inset: 0; z-index: 9; pointer-events: none; }
-.mc-zone { position: absolute; bottom: 0; height: 62%; pointer-events: auto; touch-action: none; }
-.mc-zone--stick { left: 0; width: 50%; }
-.mc-zone--orbit { right: 0; width: 50%; }
-/* one joystick look everywhere: resting (tour and Play) and active (under the thumb) */
-.mc-zone--rest, .mc-rest {
+/* Play: every spot the buttons leave turns the camera (one finger) or zooms it (two); the lower left floats the stick */
+.mc-layer { position: absolute; inset: 0; pointer-events: auto; touch-action: none; }
+/* one joystick look everywhere: resting (tour, and Play until the first walk) and active (under the thumb) */
+.mc-rest-zone, .mc-rest {
   position: fixed; left: 24px; bottom: max(28px, env(safe-area-inset-bottom));
   width: 112px; height: 112px; border-radius: 50%;
 }
-.mc-zone--rest { pointer-events: auto; touch-action: none; }
+.mc-rest-zone { pointer-events: auto; touch-action: none; }
+.mc-rest-zone--off { pointer-events: none; }
+.mc-rest-zone--off .mc-rest { opacity: 0; }
 .mc-rest {
   display: grid; place-items: center; pointer-events: none; box-sizing: border-box;
   background: rgba(19, 33, 43, 0.16); border: 2px solid rgba(244, 243, 239, 0.85);
@@ -55,12 +56,13 @@ html.world-playing, html.world-playing body { overflow: hidden; }
   display: flex; flex-direction: column; align-items: flex-end; gap: 12px; pointer-events: auto;
 }
 .mc-btn {
-  min-width: 72px; min-height: 56px; padding: 0 16px; border-radius: 28px; border: 0;
+  min-height: 52px; padding: 0 18px; border-radius: 26px; border: 0;
   font: 700 15px/1 "Schibsted Grotesk", system-ui, sans-serif;
-  background: rgba(244, 243, 239, 0.92); color: #13212b; touch-action: manipulation;
+  background: rgba(244, 243, 239, 0.95); color: #13212b; touch-action: manipulation;
+  box-shadow: 0 2px 8px rgba(13, 20, 24, 0.25); max-width: calc(100vw - 32px - 112px - 24px);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.mc-btn:disabled { opacity: 0.45; }
-.mc-btn--jump { min-width: 84px; min-height: 84px; border-radius: 50%; background: #13212b; color: #f4f3ef; }
+.mc-btn--jump { width: 84px; min-height: 84px; padding: 0; border-radius: 50%; background: #13212b; color: #f4f3ef; }
 
 @font-face {
   font-family: "Schibsted Grotesk";
@@ -74,29 +76,56 @@ html.world-playing, html.world-playing body { overflow: hidden; }
   position: absolute; top: max(16px, env(safe-area-inset-top)); left: 16px;
   display: flex; gap: 8px; pointer-events: auto;
 }
-.hud-btn {
-  font: 700 14px/1 "Schibsted Grotesk", system-ui, sans-serif;
-  background: rgba(244, 243, 239, 0.9); color: #13212b;
-  border: 1px solid rgba(19, 33, 43, 0.18); border-radius: 6px;
-  padding: 10px 14px; cursor: pointer;
-  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
-  transition: background-color 0.2s ease, transform 0.1s ease;
+.hud-tools {
+  position: absolute; top: max(16px, env(safe-area-inset-top)); right: 16px;
+  display: flex; gap: 8px; pointer-events: auto;
 }
-.hud-btn:hover { background: #ffffff; }
-.hud-btn:active { transform: translateY(1px); }
-.hud-btn--on, .hud-btn--on:hover { background: #13212b; color: #f4f3ef; }
-/* dark outer ring plus a light inner one, so focus also shows on the dark "on" button */
-.hud-btn:focus-visible { outline: 2px solid #13212b; outline-offset: 2px; box-shadow: inset 0 0 0 2px #f4f3ef; }
-/* phones show their touch lines too (Hud.tsx HINTS.touch): one line from 360 px wide, and a closeup's on smaller phones
-   too (the rule below), so it ends inside the CLOSEUP_HUD_PX (96 px) band the closeup camera leaves free; a longer line
-   wraps inside the side gutters. hudHints.test reads these numbers */
+.hud-btn, .hud-chip, .hud-seg, .hud-icon, .hud-back {
+  font: 700 14px/1 "Schibsted Grotesk", system-ui, sans-serif; color: #13212b; cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease, transform 0.1s ease;
+}
+.hud-btn, .hud-chip, .hud-icon, .hud-switch {
+  background: rgba(244, 243, 239, 0.9); border: 1px solid rgba(19, 33, 43, 0.18);
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+}
+.hud-chip { min-height: 44px; padding: 0 16px; border-radius: 22px; }
+/* the error screen's Retry (WorldBoundary) */
+.hud-btn { padding: 10px 14px; border-radius: 6px; }
+.hud-chip--go { background: #13212b; color: #f4f3ef; border-color: #13212b; }
+.hud-switch { display: flex; padding: 3px; border-radius: 10px; }
+.hud-seg { border: 0; background: transparent; padding: 9px 14px; border-radius: 7px; }
+.hud-seg:hover { background: rgba(19, 33, 43, 0.08); }
+.hud-seg--on, .hud-seg--on:hover { background: #13212b; color: #f4f3ef; cursor: default; }
+.hud-icon { display: grid; place-items: center; width: 44px; height: 44px; padding: 0; border-radius: 50%; font-size: 17px; }
+.hud-icon:hover, .hud-chip:hover { background: #ffffff; }
+.hud-icon--on, .hud-icon--on:hover { background: #13212b; color: #f4f3ef; }
+.hud-chip--go:hover { background: #13212b; }
+.hud-chip:active, .hud-icon:active, .hud-back:active { transform: translateY(1px); }
+/* dark outer ring plus a light inner one, so focus also shows on the dark "on" buttons */
+.hud-chip:focus-visible, .hud-seg:focus-visible, .hud-icon:focus-visible, .hud-back:focus-visible {
+  outline: 2px solid #13212b; outline-offset: 2px; box-shadow: inset 0 0 0 2px #f4f3ef;
+}
+.hud-chip:disabled, .hud-seg:disabled, .hud-icon:disabled { opacity: 0.45; cursor: default; }
+.hud-icon:disabled:hover { background: rgba(244, 243, 239, 0.9); }
+/* a closeup's way back: big, bottom centre, in thumb reach (CloseupCamera keeps CLOSEUP_BACK_PX free for it) */
+.hud-back {
+  position: absolute; left: 50%; bottom: max(20px, env(safe-area-inset-bottom)); transform: translateX(-50%);
+  min-height: 52px; padding: 0 26px; border-radius: 26px; border: 0; pointer-events: auto;
+  background: #13212b; color: #f4f3ef; font-size: 16px; box-shadow: 0 3px 12px rgba(13, 20, 24, 0.3);
+}
+.hud-back:active { transform: translateX(-50%) translateY(1px); }
+/* the hint: teaches once (hudHints.ts hintShown). Phones show their touch lines: one line from 360 px wide, and a
+   closeup's on smaller phones too (the rule below), so it ends inside the CLOSEUP_HUD_PX (96 px) band the closeup camera
+   leaves free; a longer line wraps inside the side gutters. hudHints.test reads these numbers */
 .hud-hint {
-  position: absolute; top: calc(max(16px, env(safe-area-inset-top)) + 46px); left: 16px; margin: 0;
+  position: absolute; top: calc(max(16px, env(safe-area-inset-top)) + 52px); left: 16px; margin: 0;
   box-sizing: border-box; max-width: calc(100% - 32px);
   font: 500 12px/1.4 ui-monospace, "SFMono-Regular", Menlo, monospace; color: rgba(19, 33, 43, 0.8);
   background: rgba(244, 243, 239, 0.85); padding: 4px 8px; border-radius: 4px;
   backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+  animation: hud-hint-in 0.3s ease both;
 }
+@keyframes hud-hint-in { from { opacity: 0; transform: translateY(-4px); } }
 @media (max-width: 359px) { .hud-hint { font-size: 11px; padding: 4px 6px; } }
 .hud-prompt {
   position: absolute; left: 50%; bottom: max(28px, env(safe-area-inset-bottom)); transform: translateX(-50%);
@@ -108,9 +137,36 @@ html.world-playing, html.world-playing body { overflow: hidden; }
   display: inline-block; min-width: 18px; padding: 3px 5px; margin-right: 4px; border-radius: 4px;
   background: #f4f3ef; color: #13212b; font: 700 12px/1 ui-monospace, monospace; text-align: center;
 }
+/* desktop tour: island by island, bottom centre (← / → do the same) */
+.hud-steps {
+  position: absolute; left: 50%; bottom: max(20px, env(safe-area-inset-bottom)); transform: translateX(-50%);
+  display: flex; gap: 10px; pointer-events: auto;
+}
+.hud-steps .hud-icon { font-size: 24px; line-height: 1; padding-bottom: 3px; box-sizing: border-box; }
+/* the island map from anywhere (MapOverlay): the map boards' screen on a card over a dimmed world */
+.map-overlay {
+  position: fixed; inset: 0; z-index: 12; display: grid; place-items: center; padding: 16px;
+  background: rgba(13, 20, 24, 0.45); backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px);
+  touch-action: none; animation: map-in 0.2s ease both;
+}
+@keyframes map-in { from { opacity: 0; } }
+.map-card {
+  position: relative; width: min(100%, 760px); padding: 10px; box-sizing: border-box;
+  background: #1b1f22; border-radius: 14px; box-shadow: 0 12px 40px rgba(13, 20, 24, 0.45);
+}
+.map-canvas { display: block; width: 100%; aspect-ratio: 480 / 300; border-radius: 6px; cursor: pointer; touch-action: none; }
+.map-close {
+  position: absolute; top: -14px; right: -10px; width: 44px; height: 44px; border-radius: 50%; border: 0;
+  background: #f4f3ef; color: #13212b; font: 700 24px/1 "Schibsted Grotesk", system-ui, sans-serif; cursor: pointer;
+  box-shadow: 0 2px 8px rgba(13, 20, 24, 0.35);
+}
+.map-close:focus-visible { outline: 2px solid #f4f3ef; outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { .map-overlay { animation: none; } }
 .world-fade { position: fixed; inset: 0; background: #0d1418; opacity: 0; pointer-events: none; }
-@media (prefers-reduced-motion: reduce) { .hud-btn { transition: none; } }
-.hud-btn:disabled, .hud-btn:disabled:hover { opacity: 0.5; cursor: default; background: rgba(244, 243, 239, 0.9); }
+@media (prefers-reduced-motion: reduce) {
+  .hud-chip, .hud-seg, .hud-icon, .hud-back { transition: none; }
+  .hud-hint { animation: none; }
+}
 
 .loader {
   position: fixed; inset: 0; z-index: 20; display: grid; place-content: center; justify-items: center; gap: 18px;

@@ -24,6 +24,9 @@ export interface WorldState {
   /** Id of the screen in closeup, or null (openCloseup / closeCloseup write it together with runtime.closeup). */
   closeupId: string | null;
   setCloseup(id: string | null): void;
+  /** The HUD's island map overlay (MapOverlay) is open: world input waits behind it. */
+  mapOpen: boolean;
+  setMapOpen(open: boolean): void;
 }
 
 const inBrowser = typeof window !== "undefined" && typeof window.matchMedia === "function";
@@ -69,5 +72,9 @@ export const useWorld = create<WorldState>()((set, get) => ({
   closeupId: null,
   setCloseup: (closeupId) => {
     if (get().closeupId !== closeupId) set({ closeupId });
+  },
+  mapOpen: false,
+  setMapOpen: (mapOpen) => {
+    if (get().mapOpen !== mapOpen) set({ mapOpen });
   },
 }));

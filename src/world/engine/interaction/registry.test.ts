@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createRegistry, type Interactable } from "@/world/engine/interaction/registry";
+import { createRegistry, inReach, type Interactable } from "@/world/engine/interaction/registry";
 
 function item(id: string, x: number, z: number, extra: Partial<Interactable> = {}): Interactable {
   return {
@@ -76,5 +76,14 @@ describe("raycast", () => {
     const r = createRegistry();
     r.register(item("box", 0, 4));
     expect(r.raycast({ x: 0.2, y: 1, z: 0 }, { x: 0, y: 0, z: 1 })?.id).toBe("box");
+  });
+});
+
+describe("inReach (Play's click to use)", () => {
+  it("reaches what the E prompt reaches, plus a little", () => {
+    const item = { position: { x: 0, y: 1.9, z: 2 }, radius: 2.5 };
+    expect(inReach(item, { x: 0, y: 1, z: 0 })).toBe(true);
+    expect(inReach(item, { x: 0, y: 1, z: -0.9 })).toBe(true);
+    expect(inReach(item, { x: 0, y: 1, z: -2 })).toBe(false);
   });
 });

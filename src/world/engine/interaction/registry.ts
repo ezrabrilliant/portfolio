@@ -71,3 +71,14 @@ export function createRegistry(): InteractionRegistry {
     },
   };
 }
+
+/** Above Ezra's feet, where reach is measured from (as InteractionController's E prompt). */
+const CHEST = 0.9;
+/** A click may reach this much past an item's own prompt radius (a click aims, E only takes the nearest in front). */
+const CLICK_SLACK = 0.5;
+
+/** Can Ezra (feet at `feet`) use `it` with a click in Play: within its prompt radius, plus CLICK_SLACK? */
+export function inReach(it: Pick<Interactable, "position" | "radius">, feet: Vec3): boolean {
+  const dx = it.position.x - feet.x, dy = it.position.y - (feet.y + CHEST), dz = it.position.z - feet.z;
+  return Math.hypot(dx, dy, dz) <= it.radius + CLICK_SLACK;
+}

@@ -1,7 +1,7 @@
 import { useEffect, useMemo } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
-import { CLOSEUP_HUD_PX, clampPan, closeupNear, closeupPanLimit, closeupPose } from "@/world/engine/camera/closeup";
+import { CLOSEUP_BACK_PX, CLOSEUP_HUD_PX, clampPan, closeupNear, closeupPanLimit, closeupPose } from "@/world/engine/camera/closeup";
 import type { Vec3 } from "@/world/engine/types";
 import { runtime } from "@/world/state/runtime";
 import { useWorld } from "@/world/state/store";
@@ -65,13 +65,16 @@ export function CloseupCamera() {
       setNear(st.baseNear);
       return;
     }
-    // the HUD covers the canvas's top CLOSEUP_HUD_PX: the target is fitted and centred in the frame below it
-    const inset = Math.min(MAX_INSET, CLOSEUP_HUD_PX / Math.max(1, state.size.height));
-    closeupPan.limit = closeupPanLimit(target.size, camera.aspect, camera.fov, inset);
+    // the HUD covers the canvas's top CLOSEUP_HUD_PX and the Back button its bottom CLOSEUP_BACK_PX: the target is fitted
+    // and centred in the frame between them
+    const h = Math.max(1, state.size.height);
+    const inset = Math.min(MAX_INSET, CLOSEUP_HUD_PX / h);
+    const insetBottom = Math.min(MAX_INSET, CLOSEUP_BACK_PX / h);
+    closeupPan.limit = closeupPanLimit(target.size, camera.aspect, camera.fov, inset + insetBottom);
     closeupPan.offset = clampPan(closeupPan.offset, closeupPan.limit);
     const center = target.center();
     const normal = target.normal();
-    const pose = closeupPose(center, normal, target.size, camera.aspect, camera.fov, st.pose, { inset, pan: closeupPan.offset });
+    const pose = closeupPose(center, normal, target.size, camera.aspect, camera.fov, st.pose, { inset, insetBottom, pan: closeupPan.offset });
     // CSS px of drag → world units on the face (CloseupController's pan)
     const dist = Math.hypot(pose.camera.x - pose.target.x, pose.camera.y - pose.target.y, pose.camera.z - pose.target.z);
     closeupPan.perPx = (2 * dist * Math.tan((camera.fov * Math.PI) / 360)) / Math.max(1, state.size.height);

@@ -10,6 +10,8 @@ import { TourScrollTrack } from "@/world/ui/TourScrollTrack";
 import { WorldBoundary, WorldLoadFailed } from "@/world/ui/WorldBoundary";
 import { useModeTransitions } from "./useModeTransitions";
 import { useTabCycling } from "./useTabCycling";
+import { useTourNav } from "./useTourNav";
+import { MapOverlay } from "@/world/ui/MapOverlay";
 
 // the 3D world (three, R3F, drei and every island) loads as its own chunk; the shell below renders at once and
 // the Loader covers the page until the world reports ready
@@ -28,6 +30,7 @@ export default function WorldApp() {
   // its text version instead of React unmounting everything
   const [failed, setFailed] = useState(false);
   useModeTransitions(webgl && !failed);
+  useTourNav(webgl && !failed);
   const wrap = useRef<HTMLDivElement>(null);
   useTabCycling(wrap);
   useEffect(() => {
@@ -52,6 +55,7 @@ export default function WorldApp() {
       <TourScrollTrack />
       <Hud />
       <MobileControls />
+      <MapOverlay />
       <Loader />
       <SeoMirror />
     </>

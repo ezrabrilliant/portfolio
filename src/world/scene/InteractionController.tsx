@@ -6,6 +6,7 @@ import { runtime } from "@/world/state/runtime";
 import { useWorld } from "@/world/state/store";
 import { sharedKeyboard } from "@/world/input/keyboard";
 import { consumeTouch } from "@/world/input/touch";
+import { inReach } from "@/world/engine/interaction/registry";
 
 export function InteractionController() {
   const camera = useThree((s) => s.camera);
@@ -29,13 +30,17 @@ export function InteractionController() {
     };
     const onMove = (e: PointerEvent) => {
       // a closeup owns the pointer (CloseupController): no hover on the world behind it
-      if (e.pointerType !== "mouse" || useWorld.getState().mode !== "tour" || runtime.closeup) return;
-      const id = pick(e)?.id ?? null;
+      if (e.pointerType !== "mouse" || runtime.closeup) return;
+      // Play: only what is in reach shows the hand (a click uses it); never while a drag turns the camera
+      const play = useWorld.getState().mode === "play";
+      if (play && e.buttons !== 0) return;
+      const found = pick(e);
+      const id = found && (!play || inReach(found, runtime.player.pos)) ? found.id : null;
       if (id === runtime.hoverId) return;
       runtime.hoverId = id;
       el.style.cursor = id ? "pointer" : "";
       useWorld.getState().setHovered(id);
-      if (id) playSfx("hover");
+      if (id && !play) playSfx("hover");
     };
     const onDown = (e: PointerEvent) => {
       downX = e.clientX;
@@ -45,9 +50,17 @@ export function InteractionController() {
     const onUp = (e: PointerEvent) => {
       // checked both ways, so the result never depends on which pointerup listener runs first
       if (downInCloseup || runtime.closeup) return;
-      if (useWorld.getState().mode !== "tour") return;
       if (Math.hypot(e.clientX - downX, e.clientY - downY) > 6) return;
-      pick(e)?.onActivate();
+      const s = useWorld.getState();
+      if (s.mode === "tour") {
+        pick(e)?.onActivate();
+        return;
+      }
+      // Play: a primary click (a mouse; phones have the action button) on something within Ezra's reach uses it, as E
+      // does; a drag turns the camera instead (PlayCamera), and a click on anything farther does nothing
+      if (e.pointerType !== "mouse" || e.button !== 0 || runtime.travel || runtime.ride || s.mapOpen) return;
+      const hit = pick(e);
+      if (hit && inReach(hit, runtime.player.pos)) hit.onActivate();
     };
     const onLeave = () => {
       runtime.hoverId = null;
