@@ -5,6 +5,7 @@ import { respawn, stepCharacter } from "@/world/engine/physics/character";
 import type { CharacterInput } from "@/world/engine/physics/character";
 import { playSfx } from "@/world/engine/audio/sfx";
 import { runtime } from "@/world/state/runtime";
+import { TITLE_DELAY, announceIsland } from "@/world/ui/islandAnnounce";
 import type { Ride } from "@/world/state/runtime";
 import { useWorld } from "@/world/state/store";
 import { axisFromKeys, cameraRelative, sharedKeyboard } from "@/world/input/keyboard";
@@ -113,6 +114,7 @@ export function PlayerController() {
         const spot = arrivalSpot(built.blocked, island, runtime.tourPath?.stops.find((s) => s.id === tr.to));
         Object.assign(p.pos, spot.pos);
         runtime.stepOffset = 0;
+        announceIsland(tr.to, TITLE_DELAY.travel);
         Object.assign(p.lastSafe, spot.pos);
         p.vel.x = p.vel.y = p.vel.z = 0;
         p.onGround = true;

@@ -24,7 +24,7 @@ export function startTravel(to: string): void {
   if (runtime.travel || !runtime.layout.islands.some((i) => i.id === to)) return;
   if (useWorld.getState().mode !== "play") {
     closeCloseup();
-    scrollToIsland(to);
+    scrollToIsland(to, "map");
     return;
   }
   const p = runtime.player.pos;

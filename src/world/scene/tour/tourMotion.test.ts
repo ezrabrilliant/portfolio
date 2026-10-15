@@ -8,7 +8,7 @@ import { tourStopFor } from "../islands/framing";
 import { defaultTourStop, islandTop } from "../islands/types";
 import { buildTour } from "./tourBuild";
 import { tourVia, trackHeightPx } from "./tourMath";
-import { BLEND_TIME, GLIDE_TIME, buildTourTrack, createTourDriver, followProgress, glideEase, nearestTrackProgress, sampleTrack, startGlide, stepTourDriver, stopAt } from "./tourMotion";
+import { BLEND_TIME, GLIDE_TIME, MAP_GLIDE_TIME, buildTourTrack, createTourDriver, followProgress, glideEase, nearestTrackProgress, overviewOf, sampleTrack, startGlide, stepTourDriver, stopAt } from "./tourMotion";
 import type { TourTrack } from "./tourMotion";
 
 const layout = buildLayout(worldProjects);
@@ -244,28 +244,46 @@ describe("island-to-island glide", () => {
     expect(glideEase(0.1)).toBeLessThan(0.1);
   });
 
-  it("runs the camera from its stop to the next in GLIDE_TIME, then follows the scroll", () => {
+  it("hops to the next stop over an arc above both, then sits on the stop's framing", () => {
     const d = createTourDriver();
     const inp = { playing: false, scroll: track.stops[2], handoff: 0, reduced: false, dt: 1 / 60 };
     stepTourDriver(d, track, inp);
     d.follow.x = track.stops[2];
     d.follow.v = 0;
-    startGlide(d, track.stops[3]);
+    startGlide(d, track, track.stops[3], "hop");
+    const dur = d.glide!.dur;
+    expect(dur).toBeGreaterThanOrEqual(GLIDE_TIME);
+    const start = { ...d.glide!.cam0 }, end = { ...d.glide!.cam1 };
     inp.scroll = track.stops[3];
-    let t = 0;
-    while (d.glide && t < 2) {
+    let t = 0, top = -Infinity;
+    while (d.glide && t < 4) {
       stepTourDriver(d, track, inp);
+      top = Math.max(top, d.cam.y);
       t += inp.dt;
     }
-    expect(t).toBeCloseTo(GLIDE_TIME, 1);
+    expect(t).toBeCloseTo(dur, 1);
+    expect(top).toBeGreaterThan(Math.max(start.y, end.y) + 1);
     expect(d.follow.x).toBe(track.stops[3]);
+    const cam = { x: 0, y: 0, z: 0 }, look = { x: 0, y: 0, z: 0 };
+    sampleTrack(track, track.stops[3], cam, look);
+    expect(d.cam).toEqual(cam);
+  });
+
+  it("rises over the whole archipelago on a map pick", () => {
+    const d = createTourDriver();
+    const inp = { playing: false, scroll: track.stops[0], handoff: 0, reduced: false, dt: 1 / 60 };
+    stepTourDriver(d, track, inp);
+    const view = overviewOf(path.stops);
+    startGlide(d, track, track.stops[8], "map", view);
+    expect(d.glide!.dur).toBe(MAP_GLIDE_TIME);
+    expect(d.glide!.camC.y).toBeGreaterThan(view.center.y + view.spread);
   });
 
   it("gives way when the page is scrolled elsewhere mid-glide", () => {
     const d = createTourDriver();
     const inp = { playing: false, scroll: track.stops[2], handoff: 0, reduced: false, dt: 1 / 60 };
     stepTourDriver(d, track, inp);
-    startGlide(d, track.stops[3]);
+    startGlide(d, track, track.stops[3], "hop");
     inp.scroll = track.stops[5];
     stepTourDriver(d, track, inp);
     expect(d.glide).toBeNull();

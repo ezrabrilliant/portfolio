@@ -64,8 +64,8 @@ export const runtime = {
   tourPath: null as TourPath | null,
   tourProgress: 0,
   tourBlend: 0,
-  /** A tour glide asked for (tourStep / scrollToIsland): the progress to glide to; TourCamera starts it and clears this. */
-  tourGlideTo: -1,
+  /** A tour move asked for (scrollToIsland): where to and how; TourCamera starts it and clears this. */
+  tourGlide: null as { to: number; kind: "hop" | "map" } | null,
   seat: null as { pos: Vec3; heading: number; viewerHeading: number } | null,
   seated: true,
   standUp: 0,

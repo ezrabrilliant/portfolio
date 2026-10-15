@@ -329,26 +329,90 @@ export interface TourDriver {
   rescroll: number;
   cam: Vec3;
   look: Vec3;
-  /** an island-to-island glide (startGlide): the camera's progress runs from → to over `dur` seconds, then follows the scroll again */
-  glide: { from: number; to: number; t: number; dur: number } | null;
+  /** an island-to-island move (startGlide), or null: the camera flies its own curve, then follows the scroll again */
+  glide: Glide | null;
 }
 
-/** Seconds of an island-to-island glide (the tour's ‹ ›, ← →, a swipe, the map). */
-export const GLIDE_TIME = 1.4;
-
 /**
- * The glide's ease: a gentle start and a soft landing (ease-in-out sine). 0.8 s with an ease-out felt rushed (Ezra,
- * 2026-10-15); the track's own dwell near each stop adds to the calm at both ends.
+ * How the tour moves to another island (spec: voxel controls §5): "hop" arcs over the sea of clouds from island to
+ * island (‹ ›, ← →, a swipe, a pad or cart tapped in the tour); "map" rises until the archipelago shows, then dives
+ * onto the destination (a pick on the map).
  */
+export type GlideKind = "hop" | "map";
+
+export interface Glide {
+  kind: GlideKind;
+  from: number;
+  to: number;
+  t: number;
+  dur: number;
+  /** camera and look-at at the start, at the end, and the curves' middle control points */
+  cam0: Vec3; cam1: Vec3; camC: Vec3;
+  look0: Vec3; look1: Vec3; lookC: Vec3;
+}
+
+/** Seconds of a hop between neighbours (longer for a farther island, up to HOP_MAX). */
+export const GLIDE_TIME = 1.5;
+const HOP_MAX = 2.1;
+/** Seconds of a map pick's rise and dive. */
+export const MAP_GLIDE_TIME = 2.4;
+
+/** The glide's ease: a gentle start and a soft landing (ease-in-out sine). */
 export function glideEase(u: number): number {
   const x = Math.min(1, Math.max(0, u));
   return 0.5 - 0.5 * Math.cos(Math.PI * x);
 }
 
-/** Starts a glide from the camera's progress now to `to` (the page has been scrolled there at once). */
-export function startGlide(d: TourDriver, to: number, dur = GLIDE_TIME): void {
+/** A point on the quadratic Bézier a → c → b at u (written into `out`). */
+export function bezier(a: Vec3, c: Vec3, b: Vec3, u: number, out: Vec3): Vec3 {
+  const v = 1 - u;
+  out.x = v * v * a.x + 2 * v * u * c.x + u * u * b.x;
+  out.y = v * v * a.y + 2 * v * u * c.y + u * u * b.y;
+  out.z = v * v * a.z + 2 * v * u * c.z + u * u * b.z;
+  return out;
+}
+
+/** The archipelago from above (a map pick's rise): the middle of every stop's look-at and how far they spread from it. */
+export function overviewOf(stops: readonly { target: Vec3 }[]): { center: Vec3; spread: number } {
+  const n = Math.max(1, stops.length);
+  const center = { x: 0, y: 0, z: 0 };
+  for (const s of stops) {
+    center.x += s.target.x / n;
+    center.y += s.target.y / n;
+    center.z += s.target.z / n;
+  }
+  let spread = 0;
+  for (const s of stops) spread = Math.max(spread, Math.hypot(s.target.x - center.x, s.target.z - center.z));
+  return { center, spread };
+}
+
+
+/**
+ * Starts a move from the camera's pose now (progress `d.follow.x`) to the stop at progress `to` (the page has been
+ * scrolled there at once). A hop's curve rises over the midpoint by a third of the distance; a map pick's rises over
+ * the whole archipelago (`overview`: the middle of every stop's look-at, and how far they spread).
+ */
+export function startGlide(d: TourDriver, track: TourTrack, to: number, kind: GlideKind, overview?: { center: Vec3; spread: number }): void {
   if (d.follow.x < 0) return;
-  d.glide = { from: d.follow.x, to, t: 0, dur };
+  const cam0 = { x: 0, y: 0, z: 0 }, look0 = { x: 0, y: 0, z: 0 };
+  const cam1 = { x: 0, y: 0, z: 0 }, look1 = { x: 0, y: 0, z: 0 };
+  sampleTrack(track, d.follow.x, cam0, look0);
+  sampleTrack(track, to, cam1, look1);
+  const span = dist(cam0, cam1);
+  let camC: Vec3, lookC: Vec3, dur: number;
+  if (kind === "map" && overview) {
+    // high above the archipelago's middle, set back along the view, looking at its middle
+    const bx = cam0.x - look0.x, bz = cam0.z - look0.z;
+    const bl = Math.hypot(bx, bz) || 1;
+    camC = { x: overview.center.x + (bx / bl) * overview.spread * 0.6, y: overview.center.y + overview.spread * 1.1, z: overview.center.z + (bz / bl) * overview.spread * 0.6 };
+    lookC = { ...overview.center };
+    dur = MAP_GLIDE_TIME;
+  } else {
+    camC = { x: (cam0.x + cam1.x) / 2, y: Math.max(cam0.y, cam1.y) + Math.max(4, span / 3), z: (cam0.z + cam1.z) / 2 };
+    lookC = { x: (look0.x + look1.x) / 2, y: (look0.y + look1.y) / 2, z: (look0.z + look1.z) / 2 };
+    dur = Math.min(HOP_MAX, GLIDE_TIME + span / 120);
+  }
+  d.glide = { kind, from: d.follow.x, to, t: 0, dur, cam0, cam1, camC, look0, look1, lookC };
 }
 
 export interface DriverInput {
@@ -418,14 +482,20 @@ export function stepTourDriver(d: TourDriver, track: TourTrack, inp: DriverInput
   if (d.glide) {
     const gl = d.glide;
     gl.t += inp.dt;
-    const prev = f.x;
-    f.x = gl.from + (gl.to - gl.from) * glideEase(gl.t / gl.dur);
-    f.v = inp.dt > 0 ? (f.x - prev) / inp.dt : 0;
+    const u = glideEase(gl.t / gl.dur);
+    // the progress walks along with it (the chapter, the milestones read it); the pose flies its own curve
+    f.x = gl.from + (gl.to - gl.from) * u;
+    f.v = 0;
+    bezier(gl.cam0, gl.camC, gl.cam1, u, d.cam);
+    bezier(gl.look0, gl.lookC, gl.look1, u, d.look);
     if (gl.t >= gl.dur) {
       f.x = gl.to;
-      f.v = 0;
       d.glide = null;
+      sampleTrack(track, f.x, d.cam, d.look);
     }
+    if (d.blend > 0) d.blend = Math.max(0, d.blend - inp.dt / BLEND_TIME);
+    d.weight = 1 - smoother(1 - d.blend);
+    return true;
   } else if (inp.reduced) {
     // camera cuts: always sit exactly on the nearest stop
     f.x = track.stops[stopAt(track, target)];

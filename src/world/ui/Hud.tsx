@@ -6,6 +6,7 @@ import { runtime } from "@/world/state/runtime";
 import { closeupPans } from "@/world/engine/camera/closeup";
 import { closeCloseup } from "@/world/scene/closeupState";
 import { closeFromBack } from "./backFocus";
+import { TitleCard } from "./TitleCard";
 import { isTypingTarget } from "@/world/input/keyboard";
 import { stepTour } from "@/world/scene/tour/tourStep";
 import { CLOSEUP_HINT_S, HINTS, PLAY_HINT, hintShown, promptPill, type HintSeen } from "./hudHints";
@@ -219,6 +220,7 @@ export function Hud() {
           <span aria-hidden="true">← </span>Back
         </button>
       )}
+      <TitleCard />
       <div id="world-fade" className="world-fade" />
     </div>
   );

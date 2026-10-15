@@ -26,7 +26,7 @@ describe("startTravel", () => {
   it("Tour: closes the closeup and scrolls to the island's stop", () => {
     startTravel("orbit-store");
     expect(mocks.closeCloseup).toHaveBeenCalledOnce();
-    expect(mocks.scrollToIsland).toHaveBeenCalledWith("orbit-store");
+    expect(mocks.scrollToIsland).toHaveBeenCalledWith("orbit-store", "map");
     expect(runtime.travel).toBeNull();
   });
 
@@ -61,7 +61,7 @@ describe("startTravel", () => {
     standOn("hero");
     startTravel("hero");
     expect(mocks.closeCloseup).toHaveBeenCalledOnce();
-    expect(mocks.scrollToIsland).toHaveBeenCalledWith("hero");
+    expect(mocks.scrollToIsland).toHaveBeenCalledWith("hero", "map");
   });
 
   it("ignores ids that are not islands", () => {

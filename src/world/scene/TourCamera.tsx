@@ -7,7 +7,7 @@ import { useWorld } from "@/world/state/store";
 import { ISLANDS } from "./islands";
 import { buildTour, isPortrait } from "./tour/tourBuild";
 import { progressToScroll, refreshScrollMeasure, scrollMeasure, scrollToProgress, stopProgresses } from "./tour/tourMath";
-import { createTourDriver, stepTourDriver, stopAt, trackFor, startGlide } from "./tour/tourMotion";
+import { createTourDriver, stepTourDriver, stopAt, trackFor, startGlide, overviewOf } from "./tour/tourMotion";
 import type { DriverInput, TourTrack } from "./tour/tourMotion";
 
 export function TourCamera() {
@@ -103,9 +103,9 @@ export function TourCamera() {
     inp.handoff = runtime.tourProgress;
     inp.reduced = world.reducedMotion;
     inp.dt = Math.min(rawDt, 1 / 30);
-    if (runtime.tourGlideTo >= 0 && !playing) {
-      startGlide(d, runtime.tourGlideTo);
-      runtime.tourGlideTo = -1;
+    if (runtime.tourGlide && !playing) {
+      startGlide(d, track, runtime.tourGlide.to, runtime.tourGlide.kind, overviewOf(path.stops));
+      runtime.tourGlide = null;
     }
     if (!stepTourDriver(d, track, inp)) return;
     if (d.rescroll >= 0) window.scrollTo(0, progressToScroll(d.rescroll, m));
