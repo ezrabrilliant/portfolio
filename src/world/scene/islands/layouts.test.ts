@@ -302,6 +302,20 @@ describe("board and sign collision", () => {
     expect(off).toEqual([]);
   });
 
+  it("leave the strip behind the PeduliPasal phone walkable end to end (it was a wall of whole barrier blocks)", () => {
+    const isSolid = solidOf("pedulipasal");
+    const props = localProps("pedulipasal");
+    const pv = PEDULI.pavilion;
+    const ph = PEDULI.phone;
+    // between the phone's back (z 0.45) and the pavilion's front (z −1), from post to post (drawn at x −0.4 and 2.4)
+    const z = (ph.z - ph.plinthD / 2 + (pv.z1 + 0.1)) / 2;
+    const stuck: string[] = [];
+    for (let x = pv.x0; x <= pv.x1 + 1e-9; x += 0.1) {
+      if (characterCollides(isSolid, x + 0.5, 0, z + 0.5, DEFAULT_PARAMS, props)) stuck.push(x.toFixed(1));
+    }
+    expect(stuck).toEqual([]);
+  });
+
   it("keep MINI_SIGN_SCALE between half and full size", () => {
     expect(MINI_SIGN_SCALE).toBeGreaterThan(0.5);
     expect(MINI_SIGN_SCALE).toBeLessThanOrEqual(1);
@@ -619,10 +633,6 @@ describe("what Ezra could walk or jump into, on every island", () => {
    * with how far his model stands or rises in, so a new gap, a deeper one or a closed one all show up here.
    */
   const OPEN: { id: string; what: string; at: string[]; upTo: number }[] = [
-    // the screen's ends (x ±1.5–1.78, 1.86 up) over (±2, −2): 1.62 / 1.12 from the bridge anchors, (−2, −2) on a rope post.
-    // Standing there the model's top is 0.24 into the bezel's end, and a jump carries it 1.74 in
-    { id: "pos-monosuko", what: "stands in the screen", at: ["(2,-2)", "(-2,-2)"], upTo: 0.24 },
-    { id: "pos-monosuko", what: "rises into the screen", at: ["(2,-2)", "(-2,-2)"], upTo: 1.74 },
     // the front-left eave (2.59 up) over (−2, 0), 1.14 from the POS bridge anchor
     { id: "bee-furniture-crm", what: "rises into the shed roof", at: ["(-2,0)"], upTo: 1.02 },
   ];

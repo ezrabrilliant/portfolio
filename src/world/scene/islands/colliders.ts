@@ -44,16 +44,22 @@ const HAIR = 0.03;
 /** A block this thin or thinner in plan (a post, a pole, a sign's panel) is walked through. */
 const THIN = 0.2;
 
-/** A drawn block as a collision box, or null for one that is tilted (leaves, awnings), underfoot or a hair thin. */
-export function blockBox(b: PropBlock, what: string): PropBox | null {
+/**
+ * A drawn block as a collision box, or null for one that is tilted (leaves, awnings), underfoot or a hair thin. `solid`:
+ * a building's own blocks (a pavilion's posts) stop him however thin; otherwise thin ones pass.
+ */
+export function blockBox(b: PropBlock, what: string, solid = false): PropBox | null {
   if (b.rx || b.rz) return null;
   const sx = b.sx ?? 1, sy = b.sy ?? 1, sz = b.sz ?? 1;
   if (b.y + sy / 2 <= UNDERFOOT || Math.min(sx, sy, sz) < HAIR) return null;
-  return { x: b.x, y: b.y, z: b.z, sx, sy, sz, ry: b.ry ?? 0, what, pass: Math.min(sx, sz) <= THIN };
+  return { x: b.x, y: b.y, z: b.z, sx, sy, sz, ry: b.ry ?? 0, what, pass: !solid && Math.min(sx, sz) <= THIN };
 }
 
 const blocks = (list: readonly PropBlock[], what: string): PropBox[] =>
   list.flatMap((b) => blockBox(b, what) ?? []);
+/** A small building drawn from blocks (a stall, a shed, a pavilion): every block solid, posts as thin as drawn. */
+const building = (list: readonly PropBlock[], what: string): PropBox[] =>
+  list.flatMap((b) => blockBox(b, what, true) ?? []);
 
 /**
  * A slab (layouts.ts: boards, signs, map bezels, bubbles) as a collision box; tilted ones (roof planks) have none. Boards
@@ -121,7 +127,7 @@ function buildPropBoxes(): Record<string, PropBox[]> {
       ...map(PETAK.map),
     ],
     "orbit-store": [
-      ...blocks(orbitStallBlocks(), "stall"),
+      ...building(orbitStallBlocks(), "stall"),
       ...statsInfo("orbit-store", ORBIT.info),
       ...sign(ORBIT.link),
       ...map(ORBIT.map),
@@ -142,21 +148,23 @@ function buildPropBoxes(): Record<string, PropBox[]> {
       ...map(PLAZA.map),
     ],
     "pos-monosuko": [
-      ...blocks(posStallBlocks(), "stall"),
+      ...building(posStallBlocks(), "stall"),
+      // the screen hangs over the strip behind the counter: it stops a head there
+      ...slab(screenSlab(MONOSUKO.screen), "screen", false),
       ...miniInfo("pos-monosuko", MONOSUKO.info),
       ...sign(MONOSUKO.link, MINI_SIGN_SCALE),
       ...map(MONOSUKO.map),
     ],
     "bee-furniture-crm": [
-      ...blocks(shedBlocks(), "shed"),
+      ...building(shedBlocks(), "shed"),
       ...slab(screenSlab(BEE.screen), "monitor", false),
       ...miniInfo("bee-furniture-crm", BEE.info),
       ...sign(BEE.link, MINI_SIGN_SCALE),
       ...map(BEE.map),
     ],
     pedulipasal: [
-      ...blocks(pavilionBlocks(), "pavilion"),
-      ...blocks([phoneBody()], "phone"),
+      ...building(pavilionBlocks(), "pavilion"),
+      ...building([phoneBody()], "phone"),
       ...miniInfo("pedulipasal", PEDULI.info),
       ...sign(PEDULI.link, MINI_SIGN_SCALE),
       ...map(PEDULI.map),

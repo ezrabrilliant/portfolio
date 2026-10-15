@@ -2,7 +2,7 @@ import { DEFAULT_PARAMS, MODEL_TOP } from "@/world/engine/physics/character";
 import { EZRA_REACH } from "@/world/engine/physics/ezraModel";
 import { layoutLines } from "./voxelFont";
 import { INFO_BOARD, SCREEN_BEZEL, SIGNPOST, SIGNPOST_FACE, infoBoardTop } from "./shared/boardGeometry";
-import { boxCells, postCells, type Cell } from "./shared/local";
+import { boxCells, type Cell } from "./shared/local";
 import { treeBlocks } from "./shared/props";
 import { infoBoardRows } from "./shared/text";
 
@@ -498,9 +498,8 @@ function buildFootprints(): Record<string, Cell[]> {
     [PETAK.house.x0 + 1, 1, PETAK.house.z0 + PETAK.house.d],
     [PETAK.house.x0 + 1, 0, PETAK.house.z0 + PETAK.house.d + 1],
   ],
-  "orbit-store": [
-    ...boxCells(-1, 1, 0, 1, -1, 1),
-  ],
+  // the stall collides as its drawn blocks (colliders.ts building)
+  "orbit-store": [],
   "ezra-bot": [
     ...boxCells(-2, 0, 0, 3, 0, 0),
     // the torso and head (robot.d deep around z 0.2, face plates ~0.08 more) reach 0.28 into row z 1 from x −1.95
@@ -508,30 +507,18 @@ function buildFootprints(): Record<string, Cell[]> {
     ...boxCells(-2, -1, 0, 3, 1, 1),
   ],
   "web-plaza": [],
-  "pos-monosuko": [
-    ...boxCells(MONOSUKO.stall.x0, MONOSUKO.stall.x1, 0, MONOSUKO.stall.wallRows - 1, MONOSUKO.stall.wallZ, MONOSUKO.stall.wallZ),
-    ...boxCells(MONOSUKO.stall.x0, MONOSUKO.stall.x1, 0, 0, MONOSUKO.stall.counterZ, MONOSUKO.stall.counterZ),
-    // rows 1–2 over the counter's grill end: stepping onto the counter neither stands Ezra in the grill (up to 1.4)
-    // nor lets him onto an invisible ledge above it. The screen's ends (x ±1.5–1.78) hang over (±2, −2), in the
-    // bridges' clearance rings: no ceiling there (layouts.test lists the gap)
-    ...boxCells(Math.round(MONOSUKO.grill.x), Math.round(MONOSUKO.grill.x), 1, 2, Math.round(MONOSUKO.grill.z), Math.round(MONOSUKO.grill.z)),
-  ],
+  // the stall (wall, counter, grill, posts) collides as its drawn blocks (colliders.ts building)
+  "pos-monosuko": [],
+  // the shed's walls, posts and bench collide as their drawn blocks (colliders.ts building); its tilted roof planks
+  // have no box, so ceiling cells under them keep a jump's head below them
   "bee-furniture-crm": withCaps(
-    [
-      ...boxCells(BEE.shed.x0, BEE.shed.x1, 0, BEE.shed.rows - 1, BEE.shed.z0, BEE.shed.z0), // back wall: the bench stands against it
-      ...boxCells(BEE.shed.x0, BEE.shed.x0, 0, BEE.shed.rows - 1, BEE.shed.z1, BEE.shed.z1), // left wall's front end
-      ...postCells(BEE.shed.x1 + 0.4, BEE.shed.z1 + 0.4, BEE.shed.rows), // front-right roof post
-    ],
+    [],
     // under the roof (eaves 0.2–0.29 past the shed on every side): Ezra still walks under it in rows 0–1. The roof's
     // front-left corner (−2, 0) lies in the bridge's clearance ring
     capCells(beeRoofPlanks(), [[-2, 0]]),
   ),
-  pedulipasal: [
-    ...boxCells(PEDULI.pavilion.x0, PEDULI.pavilion.x1, 0, 2, PEDULI.pavilion.z0, PEDULI.pavilion.z0), // the shelf row, back posts at its ends
-    ...boxCells(PEDULI.pavilion.x0, PEDULI.pavilion.x0, 0, 2, PEDULI.pavilion.z1, PEDULI.pavilion.z1), // front posts
-    ...boxCells(PEDULI.pavilion.x1, PEDULI.pavilion.x1, 0, 2, PEDULI.pavilion.z1, PEDULI.pavilion.z1),
-    ...boxCells(0, 1, 0, 3, 1, 1), // the plinth and the phone on it (x −0.05–1.55, 3.7 tall)
-  ],
+  // the pavilion, shelf, plinth and phone collide as their drawn blocks (colliders.ts building)
+  pedulipasal: [],
   };
 }
 
