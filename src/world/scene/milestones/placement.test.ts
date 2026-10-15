@@ -5,7 +5,7 @@ import { milestones, worldProjects } from "@/config/portfolio";
 import { bridgeCells, steppingStones } from "@/world/scene/crossings/geometry";
 import { FOOTPRINTS } from "@/world/scene/islands/layouts";
 import { VIEW_F } from "@/world/scene/islands/types";
-import { MILESTONE_BRIDGE, MILESTONE_LEG_TRAVEL, PLAQUE_RY, milestoneCells, milestoneSpots, milestoneSpotsFor, tourTravelWeights } from "./placement";
+import { MILESTONE_BRIDGE, MILESTONE_LEG_TRAVEL, PILLAR_FOOT, PLAQUE_RY, milestoneCells, pillarColumns, milestoneSpots, milestoneSpotsFor, tourTravelWeights } from "./placement";
 
 const layout = buildLayout(worldProjects);
 const island = (id: string) => layout.islands.find((i) => i.id === id)!;
@@ -72,11 +72,31 @@ describe("milestone placement", () => {
     }
   });
 
-  it("occupies two barrier rows per pillar, plus a 3 × 3 stone slab and a keel block under the own stone", () => {
+  it("occupies two barrier rows over every column under the plinth, plus a 3 × 3 stone slab and a keel block under the own stone", () => {
     const own = milestoneCells(spots[1]);
     expect(own.filter((c) => c.block === "stone")).toHaveLength(10);
-    expect(own.filter((c) => c.block === "barrier").map((c) => c.y)).toEqual([spots[1].pos.y, spots[1].pos.y + 1]);
+    const cols = pillarColumns(spots[1]);
+    expect(cols).toContainEqual({ x: Math.floor(spots[1].pos.x), z: Math.floor(spots[1].pos.z) });
+    expect(cols.length).toBeGreaterThan(1);
+    const barrier = own.filter((c) => c.block === "barrier");
+    expect(barrier).toHaveLength(cols.length * 2);
+    expect(new Set(barrier.map((c) => c.y))).toEqual(new Set([spots[1].pos.y, spots[1].pos.y + 1]));
+    // the turned plinth stays on its own 3 × 3 stone
+    for (const c of cols) expect(cheb(c, { x: Math.floor(spots[1].pos.x), z: Math.floor(spots[1].pos.z) })).toBeLessThanOrEqual(1);
     expect(milestoneCells(spots[0]).every((c) => c.block === "barrier")).toBe(true);
+  });
+
+  it("covers every plinth corner with a barrier column", () => {
+    for (const s of spots) {
+      const cols = new Set(pillarColumns(s).map((c) => `${c.x},${c.z}`));
+      for (const [sx, sz] of [[-1, -1], [-1, 1], [1, -1], [1, 1]]) {
+        const lx = sx * (PILLAR_FOOT.w / 2 - 0.06);
+        const lz = sz * (PILLAR_FOOT.d / 2 - 0.06);
+        const x = Math.floor(s.pos.x + lx * Math.cos(s.ry) + lz * Math.sin(s.ry));
+        const z = Math.floor(s.pos.z - lx * Math.sin(s.ry) + lz * Math.cos(s.ry));
+        expect(cols.has(`${x},${z}`), `${s.year} corner ${sx},${sz}`).toBe(true);
+      }
+    }
   });
 
   it("slows the tour only on the milestone bridge's leg", () => {

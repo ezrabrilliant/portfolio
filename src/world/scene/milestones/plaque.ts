@@ -7,20 +7,20 @@ import { wrapWords } from "@/world/scene/islands/shared/text";
  * sizes, as InfoBoard measures), so troika never wraps a row on its own.
  */
 export const PLAQUE = {
-  w: 1.0,
-  h: 0.86,
-  yearSize: 0.28,
-  titleSize: 0.09,
-  lineSize: 0.07,
-  titleChars: 20,
-  lineChars: 26,
+  w: 1.3,
+  h: 1.4,
+  yearSize: 0.34,
+  titleSize: 0.14,
+  lineSize: 0.1,
+  titleChars: 16,
+  lineChars: 23,
 } as const;
 
-const YEAR_Y = 0.2; // row centres, measured down from the plaque's top edge
-const TITLE_Y = 0.43;
-const TITLE_ROW = 0.115;
-const LINE_GAP = 0.14;
-const LINE_ROW = 0.09;
+const YEAR_Y = 0.24; // row centres, measured down from the plaque's top edge
+const TITLE_Y = 0.54;
+const TITLE_ROW = 0.17;
+const LINE_GAP = 0.2;
+const LINE_ROW = 0.125;
 
 export interface PlaqueRows {
   title: string[];

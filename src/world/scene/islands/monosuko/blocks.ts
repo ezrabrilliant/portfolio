@@ -27,13 +27,12 @@ export function stallBlocks(): PropBlock[] {
   for (const p of awning) {
     out.push({ x: p.x, y: p.y, z: p.z, sx: p.sx, sy: p.sy, sz: p.sz, rx: p.rx, c: p.i % 2 ? AWNING_WHITE : POS_GREEN });
   }
-  // the posts stand at the back corners, behind the screen's plane (a front post crossed the screen in the tour views),
-  // up to the middle of the awning's slab above them
+  // the posts stand outside the screen's ends, behind its plane, up to the middle of the awning's slab above them
   const stripe = awning.find((p) => p.kind === "stripe");
-  const postZ = stall.wallZ - 0.3;
-  const postTop = stripe ? stripe.y - (postZ - stripe.z) * Math.tan(stripe.rx) : MONOSUKO.awning.top;
-  for (const x of [stall.x0 - 0.4, stall.x1 + 0.4]) {
-    out.push({ x, y: postTop / 2, z: postZ, c: PALETTE.wood, sx: 0.2, sy: postTop, sz: 0.2 });
+  const { posts } = MONOSUKO;
+  for (const [x, z] of [[-posts.x, posts.zLeft], [posts.x, posts.zRight]]) {
+    const top = stripe ? stripe.y - (z - stripe.z) * Math.tan(stripe.rx) : MONOSUKO.awning.top;
+    out.push({ x, y: top / 2, z, c: PALETTE.wood, sx: 0.2, sy: top, sz: 0.2 });
   }
   // a tabletop charcoal grill with chicken pieces on the counter's right end
   out.push({ x: grill.x, y: 1.15, z: grill.z, c: "#4a4d52", sx: grill.w, sy: 0.3, sz: grill.d });

@@ -16,7 +16,7 @@ describe("milestone plaques", () => {
 
   it("stacks year, title and line top to bottom", () => {
     const r = plaqueRows(milestones[2]);
-    expect(r.line).toEqual(["Business Information", "Systems, Petra Christian", "University"]);
+    expect(r.line).toEqual(["Business Information", "Systems, Petra", "Christian University"]);
     expect(r.yearY).toBeLessThan(r.titleY[0]);
     expect(r.titleY[r.titleY.length - 1]).toBeLessThan(r.lineY[0]);
   });

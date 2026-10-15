@@ -12,7 +12,9 @@ export const MILESTONE_INLAND = 1.2;
 /** Blocks from the bridge axis to the centre of a middle milestone's own floating stone (3 × 3, a block clear of the deck). */
 export const MID_STONE_SIDE = 4;
 /** Pillar height above its ground; collision covers rows 0..1. */
-export const PILLAR_H = 1.7;
+export const PILLAR_H = 2.14;
+/** The pillar's plinth, its widest part: w along the plaque, d front to back (before the pillar turns by ry). */
+export const PILLAR_FOOT = { w: 1.6, d: 0.9 } as const;
 
 /** Scroll weight of the tour's flight along the milestone bridge (the others weigh 1): "the camera slows slightly while passing". */
 export const MILESTONE_LEG_TRAVEL = 1.3;
@@ -68,9 +70,30 @@ export function tourTravelWeights(layout: WorldLayout): number[] {
 
 export interface WorldCell { x: number; y: number; z: number; block: BlockName }
 
+/** Columns under the pillar's turned plinth (sampled a little inside its edges, so a corner grazing a cell skips it). */
+export function pillarColumns(spot: MilestoneSpot): { x: number; z: number }[] {
+  const cos = Math.cos(spot.ry);
+  const sin = Math.sin(spot.ry);
+  const hw = PILLAR_FOOT.w / 2 - 0.05;
+  const hd = PILLAR_FOOT.d / 2 - 0.05;
+  const seen = new Map<string, { x: number; z: number }>();
+  const N = 16;
+  for (let i = 0; i <= N; i++) {
+    for (let j = 0; j <= N; j++) {
+      const lx = -hw + (2 * hw * i) / N;
+      const lz = -hd + (2 * hd * j) / N;
+      // Three's turn about +y: x' = x cos + z sin, z' = −x sin + z cos
+      const x = Math.floor(spot.pos.x + lx * cos + lz * sin);
+      const z = Math.floor(spot.pos.z - lx * sin + lz * cos);
+      seen.set(`${x},${z}`, { x, z });
+    }
+  }
+  return [...seen.values()].sort((a, b) => a.x - b.x || a.z - b.z);
+}
+
 /**
  * World cells a milestone occupies: an own stone's 3 × 3 slab one row under its top plus a keel block under its middle
- * (real stone, meshed with the nearest island's terrain), then the pillar's two barrier rows.
+ * (real stone, meshed with the nearest island's terrain), then two barrier rows over every column under the pillar.
  */
 export function milestoneCells(spot: MilestoneSpot): WorldCell[] {
   const x = Math.floor(spot.pos.x);
@@ -81,6 +104,6 @@ export function milestoneCells(spot: MilestoneSpot): WorldCell[] {
     for (let ix = -1; ix <= 1; ix++) for (let iz = -1; iz <= 1; iz++) out.push({ x: x + ix, y: y - 1, z: z + iz, block: "stone" });
     out.push({ x, y: y - 2, z, block: "stone" });
   }
-  out.push({ x, y, z, block: "barrier" }, { x, y: y + 1, z, block: "barrier" });
+  for (const c of pillarColumns(spot)) out.push({ ...c, y, block: "barrier" }, { ...c, y: y + 1, block: "barrier" });
   return out;
 }

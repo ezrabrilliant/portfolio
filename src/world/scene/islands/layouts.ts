@@ -240,8 +240,12 @@ export const MONOSUKO = {
   // the awning over the screen (monosuko/awning.ts): `stripes` slabs across w, `len` long and centred at z, sloping down
   // `tilt` from `top` (their top at the back edge) to a `valance` along the front. The phone's tour camera looks down
   // steeply (its sight line from the screen's top edge climbs ~0.62 per block), so the front edge stays ~0.5 in front of
-  // the screen; layouts.test keeps all of it above the screen from both tour cameras
-  awning: { x: 0, z: -2.1, w: 3.6, stripes: 6, len: 1.0, top: 5.0, tilt: 0.25, valance: 0.1 },
+  // the screen; layouts.test keeps all of it above the screen from both tour cameras. It reaches back over the posts
+  awning: { x: 0, z: -2.25, w: 4.4, stripes: 8, len: 1.3, top: 5.08, tilt: 0.25, valance: 0.16 },
+  // the stall's two posts, outside the screen's ends and just behind the back wall (a post in front of the screen's
+  // plane crossed it in the tour views). The left one stands in row −3 (row −2 is in the west bridge's anchor ring),
+  // the right one in row −2 (row −3 there is the rim)
+  posts: { x: 2.05, zLeft: -2.55, zRight: -2.45 },
   table: { x: 0.9, z: 1.9 },
   info: { x: -0.75, z: 2.25, ry: -0.6 },
   // front right, its face in row 1: at (0.5, −0.45) the face stood over the stand and the counter's end, reached into
@@ -606,6 +610,8 @@ function buildFootprints(): Record<string, Cell[]> {
     // bridges' clearance rings: no ceiling there (layouts.test lists the gap)
     ...boxCells(Math.round(MONOSUKO.grill.x), Math.round(MONOSUKO.grill.x), 1, 2, Math.round(MONOSUKO.grill.z), Math.round(MONOSUKO.grill.z)),
     ...postCells(MONOSUKO.table.x, MONOSUKO.table.z, 1),
+    ...postCells(-MONOSUKO.posts.x, MONOSUKO.posts.zLeft),
+    ...postCells(MONOSUKO.posts.x, MONOSUKO.posts.zRight),
     ...miniInfo("pos-monosuko", MONOSUKO.info),
     ...signCells(MONOSUKO.link, MINI_SIGN_SCALE),
     ...mapCells(MONOSUKO.map),

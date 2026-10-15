@@ -14,22 +14,22 @@ import { watchPoint } from "@/world/scene/modes";
 import { bakeBoxes } from "@/world/scene/shared/bake";
 import { nearestTrackProgress, trackFor } from "@/world/scene/tour/tourMotion";
 import { TOSS, crossedForward, nearMilestone, tossPose } from "./moment";
-import { MILESTONE_BRIDGE, PILLAR_H, milestoneSpotsFor, type MilestoneSpot } from "./placement";
+import { MILESTONE_BRIDGE, PILLAR_FOOT, PILLAR_H, milestoneSpotsFor, type MilestoneSpot } from "./placement";
 import { PLAQUE, plaqueRows } from "./plaque";
 
 const STONE = "#b5afa5";
 const STONE_DARK = "#a19b91";
 const SLAB = "#d3ccbf";
 const CARVED = "#4a4036";
-const PLAQUE_TOP = 1.58; // the slab's top edge above the pillar's ground (just under the cap stone at 1.6)
-const PLAQUE_Z = 0.33; // slab centre in front of the column (column front face at 0.3)
+const PLAQUE_TOP = 2.0; // the slab's top edge above the pillar's ground (just under the cap stone)
+const PLAQUE_Z = 0.38; // slab centre in front of the column (column front face at 0.35)
 
 /** Plinth, column, cap stone and the plaque slab, one vertex-coloured geometry shared by every pillar (the plaque faces +z). */
 const PILLAR_GEO = bakeBoxes(
   [
-    [1.0, 0.16, 0.74, 0, 0.08, 0, STONE_DARK],
-    [0.86, 1.44, 0.6, 0, 0.88, 0, STONE],
-    [0.98, 0.12, 0.72, 0, PILLAR_H - 0.06, 0, STONE_DARK],
+    [PILLAR_FOOT.w, 0.18, PILLAR_FOOT.d, 0, 0.09, 0, STONE_DARK],
+    [1.42, 1.84, 0.7, 0, 1.1, 0, STONE],
+    [1.56, 0.14, 0.86, 0, PILLAR_H - 0.07, 0, STONE_DARK],
     [PLAQUE.w, PLAQUE.h, 0.06, 0, PLAQUE_TOP - PLAQUE.h / 2, PLAQUE_Z, SLAB],
   ],
   "a milestone pillar",
@@ -84,7 +84,7 @@ function Pillar({ spot, m, onPress }: { spot: MilestoneSpot; m: Milestone; onPre
         island={island}
         label={`${m.year} · ${m.title}`}
         position={[spot.pos.x, spot.pos.y + PILLAR_H / 2, spot.pos.z]}
-        size={[1.1, PILLAR_H, 1.1]}
+        size={[PILLAR_FOOT.w + 0.1, PILLAR_H, PILLAR_FOOT.w + 0.1]}
         radius={2.5}
         onActivate={press}
       />

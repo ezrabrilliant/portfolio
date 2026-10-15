@@ -61,12 +61,21 @@ describe("island prop footprints", () => {
     for (const id of layout.tourOrder) expect(FOOTPRINTS[id]?.length ?? 0, id).toBeGreaterThan(0);
   });
 
+  /**
+   * Cells past 78% that stand on the real terrain anyway (the next test checks grass on all four sides): the POS stall's
+   * back-left post, which can't stand in row −2 (the west bridge's anchor ring).
+   */
+  const PAST_RIM: Record<string, string[]> = { "pos-monosuko": ["-2,-3"] };
+
   it("stay on the island (inside 78% of the radius, the narrowest rim after noise)", () => {
     for (const id of layout.tourOrder) {
       const r = byId[id].radius * 0.78;
       // ceiling-only columns over the rim are checked against what they cap instead, where that is known
       const cells = OVERHEAD_ISLANDS.includes(id) ? groundCells(id) : FOOTPRINTS[id];
-      for (const [x, , z] of cells) expect(Math.hypot(x, z), `${id} (${x},${z})`).toBeLessThanOrEqual(r);
+      for (const [x, , z] of cells) {
+        if (PAST_RIM[id]?.includes(`${x},${z}`)) continue;
+        expect(Math.hypot(x, z), `${id} (${x},${z})`).toBeLessThanOrEqual(r);
+      }
     }
   });
 
@@ -80,12 +89,19 @@ describe("island prop footprints", () => {
     }
   });
 
+  /**
+   * Cells inside an anchor's ring that stay off the walk from the bridge: the POS stall's right post, in the back
+   * corner (2, −2) 1.62 from the east anchor, behind the line Ezra walks in on. It also closes the screen's right end.
+   */
+  const NEAR_ANCHOR: Record<string, string[]> = { "pos-monosuko": ["2,-2"] };
+
   it("leave 2 blocks clear around every crossing anchor (MINI_ANCHOR_CLEARANCE on the radius-4 minis)", () => {
     for (const c of layout.crossings) {
       for (const [id, anchor] of [[c.from, c.a], [c.to, c.b]] as const) {
         const a = toLocal(id, anchor);
         const clear = byId[id].kind === "mini" ? MINI_ANCHOR_CLEARANCE : 2;
         for (const [x, , z] of FOOTPRINTS[id]) {
+          if (NEAR_ANCHOR[id]?.includes(`${x},${z}`)) continue;
           expect(Math.hypot(x - a.x, z - a.z), `${id} (${x},${z}) vs ${c.kind}`).toBeGreaterThanOrEqual(clear);
         }
       }
@@ -571,10 +587,11 @@ describe("what Ezra could walk or jump into, on every island", () => {
   const OPEN: { id: string; what: string; at: string[]; upTo: number }[] = [
     // the crown's corner block (3.0 up) over (−3, −2), 1.55 from the minecart anchor
     { id: "web-plaza", what: "rises into the tree crown", at: ["(-3,-2)", "(-3,-1)", "(-4,-1)", "(-4,-2)"], upTo: 0.6 },
-    // the screen's ends (x ±1.5–1.78, 1.86 up) over (±2, −2): 1.62 / 1.12 from the bridge anchors, (−2, −2) on a rope post.
-    // Standing there the model's top is 0.24 into the bezel's end, and a jump carries it 1.74 in
-    { id: "pos-monosuko", what: "stands in the screen", at: ["(2,-2)", "(-2,-2)"], upTo: 0.24 },
-    { id: "pos-monosuko", what: "rises into the screen", at: ["(2,-2)", "(-2,-2)"], upTo: 1.74 },
+    // the screen's left end (x −1.5…−1.78, 1.86 up) over (−2, −2): 1.12 from the west bridge anchor, on a rope post
+    // (the stall's right post closes the right end). Standing there the model's top is 0.24 into the bezel's end, and a
+    // jump carries it 1.74 in
+    { id: "pos-monosuko", what: "stands in the screen", at: ["(-2,-2)"], upTo: 0.24 },
+    { id: "pos-monosuko", what: "rises into the screen", at: ["(-2,-2)"], upTo: 1.74 },
     // the front-left eave (2.59 up) over (−2, 0), 1.14 from the POS bridge anchor
     { id: "bee-furniture-crm", what: "rises into the shed roof", at: ["(-2,0)"], upTo: 1.02 },
     // the bubbles' right half (2.35 up) over the minecart station (no barrier over its platform)
