@@ -7,6 +7,9 @@ export function scrollToIsland(id: string): void {
   if (!path) return;
   const i = path.stops.findIndex((s) => s.id === id);
   if (i < 0) return;
-  const top = progressToScroll(stopProgresses(path)[i]);
-  window.scrollTo({ top, behavior: useWorld.getState().reducedMotion ? "auto" : "smooth" });
+  // the page jumps there at once and the tour camera glides (TourCamera: one ease, GLIDE_TIME), instead of a smooth
+  // page scroll with the camera's own follow lag on top of it
+  const to = stopProgresses(path)[i];
+  if (!useWorld.getState().reducedMotion) runtime.tourGlideTo = to;
+  window.scrollTo({ top: progressToScroll(to), behavior: "auto" });
 }

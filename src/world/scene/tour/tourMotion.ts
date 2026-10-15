@@ -329,6 +329,26 @@ export interface TourDriver {
   rescroll: number;
   cam: Vec3;
   look: Vec3;
+  /** an island-to-island glide (startGlide): the camera's progress runs from → to over `dur` seconds, then follows the scroll again */
+  glide: { from: number; to: number; t: number; dur: number } | null;
+}
+
+/** Seconds of an island-to-island glide (the tour's ‹ ›, ← →, a swipe, the map). */
+export const GLIDE_TIME = 0.8;
+
+/**
+ * The glide's ease: quick off the mark, soft landing (ease-out quart). The track already dwells near each stop (it moves
+ * the camera little per progress there), so an ease-in would leave it standing at the start.
+ */
+export function glideEase(u: number): number {
+  const x = Math.min(1, Math.max(0, u));
+  return 1 - (1 - x) ** 4;
+}
+
+/** Starts a glide from the camera's progress now to `to` (the page has been scrolled there at once). */
+export function startGlide(d: TourDriver, to: number, dur = GLIDE_TIME): void {
+  if (d.follow.x < 0) return;
+  d.glide = { from: d.follow.x, to, t: 0, dur };
 }
 
 export interface DriverInput {
@@ -354,6 +374,7 @@ export function createTourDriver(): TourDriver {
     rescroll: -1,
     cam: { x: 0, y: 0, z: 0 },
     look: { x: 0, y: 0, z: 0 },
+    glide: null,
   };
 }
 
@@ -391,7 +412,21 @@ export function stepTourDriver(d: TourDriver, track: TourTrack, inp: DriverInput
   d.target = target;
 
   if (f.x < 0) f.x = target;
-  if (inp.reduced) {
+  const g = d.glide;
+  // a glide ends early when the page scrolls somewhere else meanwhile (the visitor scrolled on)
+  if (g && (inp.reduced || Math.abs(target - g.to) > HANDOFF_EPS)) d.glide = null;
+  if (d.glide) {
+    const gl = d.glide;
+    gl.t += inp.dt;
+    const prev = f.x;
+    f.x = gl.from + (gl.to - gl.from) * glideEase(gl.t / gl.dur);
+    f.v = inp.dt > 0 ? (f.x - prev) / inp.dt : 0;
+    if (gl.t >= gl.dur) {
+      f.x = gl.to;
+      f.v = 0;
+      d.glide = null;
+    }
+  } else if (inp.reduced) {
     // camera cuts: always sit exactly on the nearest stop
     f.x = track.stops[stopAt(track, target)];
     f.v = 0;

@@ -8,7 +8,7 @@ import { tourStopFor } from "../islands/framing";
 import { defaultTourStop, islandTop } from "../islands/types";
 import { buildTour } from "./tourBuild";
 import { tourVia, trackHeightPx } from "./tourMath";
-import { BLEND_TIME, buildTourTrack, createTourDriver, followProgress, nearestTrackProgress, sampleTrack, stepTourDriver, stopAt } from "./tourMotion";
+import { BLEND_TIME, GLIDE_TIME, buildTourTrack, createTourDriver, followProgress, glideEase, nearestTrackProgress, sampleTrack, startGlide, stepTourDriver, stopAt } from "./tourMotion";
 import type { TourTrack } from "./tourMotion";
 
 const layout = buildLayout(worldProjects);
@@ -229,5 +229,44 @@ describe("tour driver: Play → tour hand-off", () => {
     expect(frames[0].edge).toBe(true);
     expect(frames[0].weight).toBe(0);
     expect(frames[0].x).toBe(resume);
+  });
+});
+
+describe("island-to-island glide", () => {
+  const layout = buildLayout(worldProjects);
+  const path = buildTour(layout, (p) => tourStopFor(p), false);
+  const track = buildTourTrack(path);
+
+  it("eases out: quick off the mark, landing softly", () => {
+    expect(glideEase(0)).toBe(0);
+    expect(glideEase(1)).toBe(1);
+    expect(glideEase(0.25)).toBeGreaterThan(0.6);
+  });
+
+  it("runs the camera from its stop to the next in GLIDE_TIME, then follows the scroll", () => {
+    const d = createTourDriver();
+    const inp = { playing: false, scroll: track.stops[2], handoff: 0, reduced: false, dt: 1 / 60 };
+    stepTourDriver(d, track, inp);
+    d.follow.x = track.stops[2];
+    d.follow.v = 0;
+    startGlide(d, track.stops[3]);
+    inp.scroll = track.stops[3];
+    let t = 0;
+    while (d.glide && t < 2) {
+      stepTourDriver(d, track, inp);
+      t += inp.dt;
+    }
+    expect(t).toBeCloseTo(GLIDE_TIME, 1);
+    expect(d.follow.x).toBe(track.stops[3]);
+  });
+
+  it("gives way when the page is scrolled elsewhere mid-glide", () => {
+    const d = createTourDriver();
+    const inp = { playing: false, scroll: track.stops[2], handoff: 0, reduced: false, dt: 1 / 60 };
+    stepTourDriver(d, track, inp);
+    startGlide(d, track.stops[3]);
+    inp.scroll = track.stops[5];
+    stepTourDriver(d, track, inp);
+    expect(d.glide).toBeNull();
   });
 });
