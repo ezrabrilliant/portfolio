@@ -69,3 +69,14 @@ describe("VoxelGrid", () => {
     expect(() => g.set(5000, 0, 0, 1)).toThrow();
   });
 });
+
+describe("isVisibleSolid", () => {
+  it("counts drawn solid blocks, not invisible barriers", () => {
+    const g = new VoxelGrid();
+    g.set(0, 0, 0, blockId("grass"));
+    g.set(1, 0, 0, blockId("barrier"));
+    expect(g.isVisibleSolid(0.5, 0.5, 0.5)).toBe(true);
+    expect(g.isVisibleSolid(1.5, 0.5, 0.5)).toBe(false);
+    expect(g.isSolid(1.5, 0.5, 0.5)).toBe(true);
+  });
+});

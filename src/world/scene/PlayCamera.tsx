@@ -13,6 +13,8 @@ import { isTeleport, yawBehind } from "./camera/teleport";
 
 /** Seconds over which the entering (tour) look direction eases onto Ezra, instead of snapping on the first frame. */
 const LOOK_BLEND = 0.9;
+/** Rate (per second) the follow position eases toward its goal: quick enough that zooming and turning feel direct. */
+const FOLLOW_EASE = 12;
 /** Seconds of the hero stand-up glide round to behind Ezra (smoothstep, so it starts and lands softly). */
 const SWING = 2.2;
 
@@ -162,13 +164,14 @@ export function PlayCamera() {
     const cut = teleported || closeupCut || (entering && reduced);
     if (entering) ideal.copy(camera.position);
     if (cut) ideal.copy(goal);
-    else ideal.lerp(goal, 1 - Math.exp(-6 * dt));
-    // keep the camera's view of Ezra clear of solid blocks: the boom from his head toward the eased position shortens
-    // and lengthens smoothly (boom.ts), so a block flickering in and out of the line no longer pumps the camera
+    else ideal.lerp(goal, 1 - Math.exp(-FOLLOW_EASE * dt));
+    // keep the camera's view of Ezra clear of the blocks you can see (terrain): the boom from his head toward the eased
+    // position shortens and lengthens smoothly (boom.ts). Invisible barriers (a pavilion post's whole block, a house's
+    // walls) never pull it in: what stands in the line fades instead (SeeThrough)
     const span = Math.hypot(ideal.x - lookAt.x, ideal.y - lookAt.y, ideal.z - lookAt.z);
-    if (entering) boom.length = span;
-    const limit = runtime.built ? probeDistance(lookAt, ideal, runtime.built.grid.isSolid) : span;
-    const len = stepBoom(boom, limit, dt, cut);
+    if (entering) boom.length = boom.prevSpan = span;
+    const limit = runtime.built ? probeDistance(lookAt, ideal, runtime.built.grid.isVisibleSolid) : span;
+    const len = stepBoom(boom, limit, dt, cut, span);
     const k = span > 1e-6 ? Math.min(len, span) / span : 1;
     camera.position.set(lookAt.x + (ideal.x - lookAt.x) * k, lookAt.y + (ideal.y - lookAt.y) * k, lookAt.z + (ideal.z - lookAt.z) * k);
     look.set(lookAt.x, lookAt.y, lookAt.z);

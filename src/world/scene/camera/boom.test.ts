@@ -42,7 +42,8 @@ describe("stepBoom", () => {
 
   it("lets out only after the limit has stayed longer for the hold time", () => {
     const b = createBoom(3);
-    for (let i = 0; i < 12; i++) stepBoom(b, 7, 1 / 60); // 0.2 s
+    const hold = Math.floor(BOOM.holdOut * 60) - 1;
+    for (let i = 0; i < hold; i++) stepBoom(b, 7, 1 / 60);
     expect(b.length).toBe(3);
     for (let i = 0; i < 6; i++) stepBoom(b, 7, 1 / 60);
     expect(b.length).toBeGreaterThan(3);
@@ -55,6 +56,23 @@ describe("stepBoom", () => {
     for (let i = 0; i < 240; i++) seen.push(stepBoom(b, i % 6 < 3 ? 3 : 5, 1 / 60));
     const tail = seen.slice(60);
     expect(Math.max(...tail) - Math.min(...tail)).toBeLessThan(BOOM.slack + 0.01);
+  });
+
+  it("follows the zoom directly when nothing is in the way", () => {
+    const b = createBoom(7);
+    expect(stepBoom(b, 10, 1 / 60, false, 10)).toBe(10);
+    expect(stepBoom(b, 4, 1 / 60, false, 4)).toBe(4);
+  });
+
+  it("lets out to the full length quickly once a block is passed", () => {
+    const b = createBoom(7);
+    stepBoom(b, 3, 1 / 60, true, 7);
+    let t = 0;
+    while (b.length < 6.9 && t < 2) {
+      stepBoom(b, 7, 1 / 60, false, 7);
+      t += 1 / 60;
+    }
+    expect(t).toBeLessThan(0.7);
   });
 
   it("cuts straight to the limit", () => {

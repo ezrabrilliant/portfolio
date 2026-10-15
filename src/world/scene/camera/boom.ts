@@ -40,6 +40,8 @@ const RING: readonly (readonly [number, number])[] = [[0, 0], [1, 0], [-1, 0], [
 /** The camera boom's smoothed length (how far the rendered camera stands from the look point). */
 export interface Boom {
   length: number;
+  /** the full length (no block) on the last step: a boom out at it follows the zoom directly */
+  prevSpan: number;
   /** seconds the limit has stayed clearly longer than the boom (it lets the boom out only after BOOM.holdOut) */
   out: number;
 }
@@ -48,25 +50,35 @@ export const BOOM = {
   /** pulling in: exponential rate per second, and how far the boom may still reach past the limit while it does */
   inRate: 18,
   slack: 0.2,
-  /** letting out: rate per second, after the limit has stayed `hysteresis` longer for `holdOut` seconds */
-  outRate: 3,
+  /** letting out after a block: rate per second, after the limit has stayed `hysteresis` longer for `holdOut` seconds */
+  outRate: 9,
   /** and never faster than this many blocks a second (a wall left behind ends a long way short of the full boom) */
-  outMax: 4,
+  outMax: 14,
   hysteresis: 0.05,
-  holdOut: 0.25,
+  holdOut: 0.08,
 } as const;
 
 export function createBoom(length: number): Boom {
-  return { length, out: 0 };
+  return { length, out: 0, prevSpan: length };
 }
 
 /**
  * Moves the boom toward `limit` (probeDistance of the eased follow position). In: fast but eased, and never more than
  * BOOM.slack past the limit (a wall swung behind Ezra still stops it at once). Out: slowly, and only once the limit has
  * stayed longer for BOOM.holdOut seconds, so a limit that flickers between two lengths no longer pumps the camera in
- * and out. `cut` (a teleport, entering under reduced motion) jumps straight to the limit.
+ * and out. With nothing in the way (`limit` reaches `span`, the unblocked length) and the boom already out, it simply
+ * is the span: zooming is never held back. `cut` (a teleport, entering under reduced motion) jumps straight to the limit.
  */
-export function stepBoom(b: Boom, limit: number, dt: number, cut = false): number {
+export function stepBoom(b: Boom, limit: number, dt: number, cut = false, span = Infinity): number {
+  // nothing in the way and the boom already out at the full length (or past it): it follows the zoom as it is, with no
+  // hold or easing of its own (the follow position eases already)
+  if (!cut && limit >= span - 1e-6 && b.length >= Math.min(b.prevSpan, span) - BOOM.hysteresis) {
+    b.length = span;
+    b.out = 0;
+    b.prevSpan = span;
+    return b.length;
+  }
+  b.prevSpan = span;
   if (cut) {
     b.length = limit;
     b.out = 0;

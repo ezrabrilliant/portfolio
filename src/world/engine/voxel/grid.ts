@@ -35,6 +35,16 @@ export class VoxelGrid {
     return id !== 0 && (blockDef(id)?.solid ?? false);
   };
 
+  /**
+   * Solid and drawn: terrain, stone, planks. Invisible barrier blocks (buildings' and crossings' collision, coarser than
+   * what is drawn) are left out: the Play camera holds back only at what you can see, and fades the rest.
+   */
+  isVisibleSolid: IsSolid = (x, y, z) => {
+    const id = this.get(Math.floor(x), Math.floor(y), Math.floor(z));
+    const def = id !== 0 ? blockDef(id) : undefined;
+    return !!def && def.solid && def.visible;
+  };
+
   forEach(cb: (x: number, y: number, z: number, id: BlockId) => void): void {
     for (const [k, id] of this.cells) {
       const z = (k % SPAN) - OFFSET;

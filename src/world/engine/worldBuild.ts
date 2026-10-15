@@ -8,7 +8,7 @@ import type { IsSolid } from "@/world/engine/types";
 import { ColliderSet, type Collider } from "@/world/engine/physics/colliders";
 
 export interface BuiltWorld {
-  /** terrain, buildings and crossings: what the body and the Play camera both collide with */
+  /** terrain, buildings and crossings: what the body collides with (the Play camera only with its visible blocks) */
   grid: VoxelGrid;
   /** props as their drawn shapes: the body collides with them, the camera does not */
   props: ColliderSet;
