@@ -3,7 +3,7 @@ import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import { runtime } from "@/world/state/runtime";
 import { useWorld } from "@/world/state/store";
-import { LEG, pickAnim, poseFor } from "./ezra/anim";
+import { LEG, blendPose, neutralPose, pickAnim, poseFor, stepEase, takeoffStretch, withStepTuck } from "./ezra/anim";
 import { EZRA_CAP, EZRA_FIT, EZRA_HEAD, EZRA_REACH } from "@/world/engine/physics/ezraModel";
 import { closeupBlend, ezraCloseupHidden } from "./camera/closeupBlend";
 import type { EzraCloseupHold } from "./camera/closeupBlend";
@@ -25,6 +25,8 @@ export function Ezra() {
   const cast = useWorld((s) => s.quality === "high");
   const reduced = useWorld((s) => s.reducedMotion);
   const root = useRef<THREE.Group>(null);
+  /** the pose as drawn: it blends toward each frame's state pose (anim.ts blendPose) */
+  const drawn = useMemo(neutralPose, []);
   const body = useRef<THREE.Group>(null);
   const legL = useRef<THREE.Group>(null);
   const legR = useRef<THREE.Group>(null);
@@ -73,17 +75,22 @@ export function Ezra() {
     // seated, he turns his head half way toward the hero's tour camera (World aims the seat at it)
     const toViewer = seat ? seat.viewerHeading - seat.heading : 0;
     const look = 0.5 * Math.atan2(Math.sin(toViewer), Math.cos(toViewer));
-    const pose = poseFor(anim, state.clock.elapsedTime, runtime.animPhase, { standUp: runtime.standUp, reduced, look });
+    // a step up: the model catches up with the body, legs tucked (anim.ts); then every state's pose blends in, and a jump
+    // stretches him for its first moment (reduced motion: no catch-up, no stretch; poses still blend)
+    runtime.stepOffset = stepEase(runtime.stepOffset, dt, reduced);
+    const target = withStepTuck(poseFor(anim, state.clock.elapsedTime, runtime.animPhase, { standUp: runtime.standUp, reduced, look }), runtime.stepOffset);
+    // seated and standing up keep their own exact poses (the stand-up hand-off already has no pop)
+    const pose = anim === "sit" || anim === "standUp" || anim === "ride" ? Object.assign(drawn, target) : blendPose(drawn, target, dt);
     if (seated && runtime.seat) {
       root.current.position.set(runtime.seat.pos.x, runtime.seat.pos.y, runtime.seat.pos.z);
       root.current.rotation.y = runtime.seat.heading;
     } else {
-      root.current.position.set(p.pos.x, p.pos.y, p.pos.z);
+      root.current.position.set(p.pos.x, p.pos.y + runtime.stepOffset, p.pos.z);
       root.current.rotation.y = runtime.heading;
     }
     body.current.position.y = pose.bodyY;
     body.current.position.z = pose.bodyZ;
-    body.current.scale.y = pose.squash;
+    body.current.scale.y = pose.squash * (anim === "jump" ? takeoffStretch(runtime.airTime, reduced) : 1);
     body.current.rotation.x = pose.lean;
     legL.current.rotation.x = pose.legL;
     legR.current.rotation.x = pose.legR;

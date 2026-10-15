@@ -117,11 +117,14 @@ export function poseFor(
       return { ...NEUTRAL, legL: s, legR: -s, armL: -s * 1.1, armR: s * 1.1, bodyY: Math.abs(s) * 0.07, lean: 0.18 };
     }
     case "jump":
-      return { ...NEUTRAL, legL: -0.5, legR: 0.3, armL: -0.9, armR: -0.9, armSpread: 0.3 };
+      // rising: one knee up, arms swung up and out
+      return { ...NEUTRAL, legL: -0.7, legR: 0.25, kneeL: 0.9, kneeR: 0.2, armL: -2.2, armR: -1.6, armSpread: 0.35 };
     case "fall":
-      return { ...NEUTRAL, legL: 0.2, legR: -0.2, armL: -0.4, armR: -0.4, armSpread: 0.6 };
+      // falling: legs reaching down for the ground, arms out for balance
+      return { ...NEUTRAL, legL: -0.15, legR: 0.15, kneeL: 0.25, kneeR: 0.25, armL: -1.1, armR: -1.1, armSpread: 0.75 };
     case "land":
-      return { ...NEUTRAL, squash: 0.82, bodyY: -0.06, armSpread: 0.25 };
+      // touch-down: knees give, body squashed low, arms dropping (the pose blend springs him back up)
+      return { ...NEUTRAL, legL: -0.35, legR: -0.35, kneeL: 0.7, kneeR: 0.7, squash: 0.84, bodyY: -0.08, armSpread: 0.35, lean: 0.12 };
     case "sit":
       return sitPose(t, k.reduced, look);
     case "ride":
@@ -142,4 +145,49 @@ export function poseFor(
       return { ...NEUTRAL, armL: -2.9 * stretch, armR: -2.9 * stretch, squash: 1 + 0.04 * stretch, headPitch: -0.25 * stretch };
     }
   }
+}
+
+/** How fast the model catches up after a step up (per second, exponential): about 0.1 s to close nine tenths. */
+export const STEP_CATCH_UP = 24;
+
+/** The step-up offset (≤ 0) one frame later: eased out toward 0, snapped there once it is under a millimetre. */
+export function stepEase(offset: number, dt: number, reduced: boolean): number {
+  if (reduced) return 0;
+  const next = offset * Math.exp(-STEP_CATCH_UP * dt);
+  return next > -1e-3 ? 0 : next;
+}
+
+/**
+ * A step up's knee tuck on top of any pose: while the model still catches up (offset < 0) the legs fold as in a quick
+ * hop, so the feet lift over the block's edge instead of sinking through it.
+ */
+export function withStepTuck(p: Pose, offset: number): Pose {
+  const k = Math.min(1, Math.max(0, -offset));
+  if (k === 0) return p;
+  return { ...p, legL: p.legL - 0.9 * k, legR: p.legR - 0.6 * k, kneeL: p.kneeL + 1.3 * k, kneeR: p.kneeR + 1.0 * k, armSpread: p.armSpread + 0.2 * k };
+}
+
+/** Seconds the take-off stretch lasts after a jump starts. */
+export const TAKEOFF_S = 0.16;
+
+/** The jump's take-off stretch: up to 6 % taller right at the push-off, gone by TAKEOFF_S. */
+export function takeoffStretch(airTime: number, reduced: boolean): number {
+  if (reduced || airTime >= TAKEOFF_S) return 1;
+  return 1 + 0.06 * (1 - airTime / TAKEOFF_S);
+}
+
+/** Rate (per second) the drawn pose eases toward the state's pose: states blend instead of snapping. */
+export const POSE_BLEND = 16;
+
+/** Eases `cur` toward `target` in place (the walk and run cycles still read through: 16/s follows a stride closely). */
+export function blendPose(cur: Pose, target: Pose, dt: number): Pose {
+  const u = 1 - Math.exp(-POSE_BLEND * dt);
+  const out = mix(cur, target, u);
+  Object.assign(cur, out);
+  return cur;
+}
+
+/** A fresh copy of the neutral pose (the blend's starting point). */
+export function neutralPose(): Pose {
+  return { ...NEUTRAL };
 }

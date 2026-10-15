@@ -82,6 +82,7 @@ export function PlayerController() {
         tmp.fade = Math.min(1, tmp.fade + dt / 0.25);
         if (tmp.fade === 1) {
           respawn(p);
+          runtime.stepOffset = 0;
           runtime.particles.burst({ x: p.pos.x, y: p.pos.y + 0.2, z: p.pos.z }, "dust", { count: 14 });
           tmp.fading = "in";
         }
@@ -111,6 +112,7 @@ export function PlayerController() {
         const island = runtime.islandById(tr.to);
         const spot = arrivalSpot(built.blocked, island, runtime.tourPath?.stops.find((s) => s.id === tr.to));
         Object.assign(p.pos, spot.pos);
+        runtime.stepOffset = 0;
         Object.assign(p.lastSafe, spot.pos);
         p.vel.x = p.vel.y = p.vel.z = 0;
         p.onGround = true;
@@ -176,6 +178,7 @@ export function PlayerController() {
       p.locked = false;
     }
 
+    const before = p.pos.y;
     const r = stepCharacter(p, input, dt, {
       isSolid: built.grid.isSolid,
       colliders: built.props,
@@ -193,6 +196,9 @@ export function PlayerController() {
     runtime.moving = runtime.speed > 0.3;
     runtime.animPhase += runtime.speed * dt * 1.7;
 
+    // a step up climbs at once in the physics; the model catches up (Ezra.tsx), never more than a block behind
+    if (r.stepped && !r.jumped) runtime.stepOffset = Math.max(-1.2, runtime.stepOffset - Math.max(0, p.pos.y - before));
+    runtime.airTime = r.jumped ? 0 : runtime.airTime + dt;
     if (r.jumped) playSfx("jump");
     if (r.landed) {
       runtime.landTimer = 0.14;

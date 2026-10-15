@@ -76,6 +76,13 @@ export const runtime = {
   speed: 0,
   animPhase: 0,
   landTimer: 0,
+  /**
+   * How far Ezra's model is drawn below his body after a step up (≤ 0): the physics climbs a block at once, the model
+   * catches up over a moment (anim.ts stepEase), knees tucked like a hop. PlayerController adds each step, Ezra.tsx eases it.
+   */
+  stepOffset: 0,
+  /** Seconds since he left the ground on a jump (anim.ts: the take-off stretch), or a large number. */
+  airTime: 99,
   /** Closeup targets by id (each LiveScreen registers itself). */
   closeups: new Map<string, CloseupTarget>(),
   /** The open closeup; openCloseup / closeCloseup write it together with the store's closeupId. */

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { LEG, STAND_UP_SECONDS, pickAnim, poseFor } from "./anim";
+import { LEG, STAND_UP_SECONDS, TAKEOFF_S, blendPose, neutralPose, pickAnim, poseFor, stepEase, takeoffStretch, withStepTuck } from "./anim";
 import { SEAT_INSET } from "./seat";
 import type { AnimInput, Pose } from "./anim";
 
@@ -149,3 +149,42 @@ describe("leg clearance at the rim", () => {
   });
 });
 
+
+describe("smoothing a step up and a jump", () => {
+  it("catches the model up after a step in about a tenth of a second, and snaps to rest", () => {
+    let o = -1;
+    let t = 0;
+    while (o < -0.1 && t < 1) {
+      o = stepEase(o, 1 / 60, false);
+      t += 1 / 60;
+    }
+    expect(t).toBeLessThan(0.12);
+    for (let i = 0; i < 60; i++) o = stepEase(o, 1 / 60, false);
+    expect(o).toBe(0);
+    expect(stepEase(-1, 1 / 60, true)).toBe(0);
+  });
+
+  it("tucks the knees while the model catches up, not at rest", () => {
+    const p = poseFor("walk", 0, 0, { standUp: 0, reduced: false });
+    expect(withStepTuck(p, 0)).toBe(p);
+    const tucked = withStepTuck(p, -0.8);
+    expect(tucked.kneeL).toBeGreaterThan(p.kneeL);
+    expect(tucked.legL).toBeLessThan(p.legL);
+  });
+
+  it("stretches a jump only at its push-off", () => {
+    expect(takeoffStretch(0, false)).toBeCloseTo(1.06, 9);
+    expect(takeoffStretch(TAKEOFF_S, false)).toBe(1);
+    expect(takeoffStretch(0, true)).toBe(1);
+  });
+
+  it("blends a pose toward its target instead of snapping", () => {
+    const cur = neutralPose();
+    const land = poseFor("land", 0, 0, { standUp: 0, reduced: false });
+    blendPose(cur, land, 1 / 60);
+    expect(cur.squash).toBeLessThan(1);
+    expect(cur.squash).toBeGreaterThan(land.squash);
+    for (let i = 0; i < 60; i++) blendPose(cur, land, 1 / 60);
+    expect(cur.squash).toBeCloseTo(land.squash, 3);
+  });
+});
