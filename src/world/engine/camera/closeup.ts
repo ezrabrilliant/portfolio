@@ -11,7 +11,10 @@ export const CLOSEUP_GLIDE = 0.8;
 export const CLOSEUP_HUD_PX = 96;
 /** CSS px at the bottom of the canvas the closeup's Back button covers (world.css .hud-back, plus air). */
 export const CLOSEUP_BACK_PX = 84;
-/** The closeup camera's near plane stops this far in front of the face: everything nearer the camera is clipped. */
+/**
+ * How far in front of the face a closeup clears what covers it (seeThroughShader's face clip: only what stands over the
+ * face's own rectangle, so props beside it stay whole).
+ */
 export const CLOSEUP_NEAR_MARGIN = 0.25;
 
 /**
@@ -54,6 +57,27 @@ export function clampPan(pan: number, limit: number): number {
 }
 
 /**
+ * The face's up and right in world space for a face looking along `n` (unit): world Y made perpendicular to the normal
+ * (a face looking straight up or down takes −z as its up), right = up × normal.
+ */
+export function faceFrame(n: Vec3): { up: Vec3; right: Vec3 } {
+  let ux = -n.y * n.x;
+  let uy = 1 - n.y * n.y;
+  let uz = -n.y * n.z;
+  const ul = Math.hypot(ux, uy, uz);
+  if (ul > 1e-6) {
+    ux /= ul;
+    uy /= ul;
+    uz /= ul;
+  } else {
+    ux = 0;
+    uy = 0;
+    uz = -1;
+  }
+  return { up: { x: ux, y: uy, z: uz }, right: { x: uy * n.z - uz * n.y, y: uz * n.x - ux * n.z, z: ux * n.y - uy * n.x } };
+}
+
+/**
  * Camera pose square on to a flat target (centre, facing `normal`, size in world units) at closeupDistance, lifted by
  * the inset so the target sits centred in the frame below the HUD, and slid by `view.pan` along the face's horizontal.
  * The face's up is world Y made perpendicular to the normal, its right is up × normal. The sketch's stopPose with FOV_T,
@@ -78,23 +102,9 @@ export function closeupPose(
   const nx = ok ? normal.x / len : 0;
   const ny = ok ? normal.y / len : 0;
   const nz = ok ? normal.z / len : 1;
-  // the face's up: world Y minus its part along the normal (a face looking straight up or down takes −z as its up)
-  let ux = -ny * nx;
-  let uy = 1 - ny * ny;
-  let uz = -ny * nz;
-  const ul = Math.hypot(ux, uy, uz);
-  if (ul > 1e-6) {
-    ux /= ul;
-    uy /= ul;
-    uz /= ul;
-  } else {
-    ux = 0;
-    uy = 0;
-    uz = -1;
-  }
-  const rx = uy * nz - uz * ny;
-  const ry = uz * nx - ux * nz;
-  const rz = ux * ny - uy * nx;
+  const { up, right } = faceFrame({ x: nx, y: ny, z: nz });
+  const ux = up.x, uy = up.y, uz = up.z;
+  const rx = right.x, ry = right.y, rz = right.z;
   // a lift of (top − bottom) × the half frame height puts the face's centre in the middle of the frame between the HUD
   // and the Back button
   const lift = (top - bottom) * d * tanY;
@@ -123,17 +133,6 @@ export function stepCloseupBlend(k: number, active: boolean, dt: number, reduced
 export function closeupWeight(k: number): number {
   const x = Math.min(1, Math.max(0, k));
   return x * x * x * (x * (x * 6 - 15) + 10);
-}
-
-/**
- * The camera's near plane during a closeup: from the default `base` (weight 0) toward CLOSEUP_NEAR_MARGIN in front of
- * the face (weight 1), eased by the weight cubed so the clip only reaches far once the camera is nearly square on.
- * Never below `base`. `faceDistance` is the camera's distance to the face's plane.
- */
-export function closeupNear(base: number, faceDistance: number, weight: number): number {
-  const clip = Math.max(base, faceDistance - CLOSEUP_NEAR_MARGIN);
-  const w = Math.min(1, Math.max(0, weight));
-  return base + (clip - base) * w * w * w;
 }
 
 /**

@@ -29,6 +29,7 @@ export function SeeThrough() {
     const p = runtime.player.pos;
     seeThroughUniforms.uSeeFrom.value.copy(camera.position);
     seeThroughUniforms.uSeeTo.value.set(p.x, p.y + CHEST, p.z);
+    seeThroughUniforms.uSeeBody.value.set(p.x, p.y, p.z);
   });
   return null;
 }

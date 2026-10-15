@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import type { Vec3 } from "@/world/engine/types";
 import {
-  CLOSEUP_FILL, CLOSEUP_GLIDE, CLOSEUP_HUD_PX, CLOSEUP_NEAR_MARGIN, clampPan, closeupExitCut, closeupNear, closeupPanLimit,
-  closeupPans, closeupPose, closeupWeight, stepCloseupBlend,
+  CLOSEUP_FILL, CLOSEUP_GLIDE, CLOSEUP_HUD_PX, clampPan, closeupExitCut, closeupPanLimit,
+  closeupPans, closeupPose, closeupWeight, faceFrame, stepCloseupBlend,
 } from "./closeup";
 
 const FOV = 40; // the world camera's vertical fov (WorldCanvas, framing.ts TOUR_FOV)
@@ -155,22 +155,6 @@ describe("closeupPose", () => {
   });
 });
 
-describe("closeupNear", () => {
-  it("eases the near plane from its default to just in front of the face, never below the default", () => {
-    expect(closeupNear(0.1, 3.4, 0)).toBe(0.1);
-    expect(closeupNear(0.1, 3.4, 1)).toBeCloseTo(3.4 - CLOSEUP_NEAR_MARGIN, 9);
-    expect(closeupNear(0.1, 0.2, 1)).toBe(0.1);
-    expect(closeupNear(0.1, -2, 1)).toBe(0.1);
-    let prev = 0;
-    for (let w = 0; w <= 1; w += 0.1) {
-      const near = closeupNear(0.1, 9.4, w);
-      expect(near).toBeGreaterThanOrEqual(prev);
-      expect(near).toBeLessThanOrEqual(9.4 - CLOSEUP_NEAR_MARGIN);
-      prev = near;
-    }
-  });
-});
-
 describe("closeup blend", () => {
   it("glides in over CLOSEUP_GLIDE seconds and back out", () => {
     let k = 0;
@@ -218,5 +202,13 @@ describe("closeupExitCut", () => {
     expect(last.open).toBe(false);
     // the edge was consumed: turning reduced motion on afterwards does not cut late
     expect(closeupExitCut(last, false, true)).toBe(false);
+  });
+});
+
+describe("faceFrame", () => {
+  it("gives an upright face world up and a right that completes it", () => {
+    const { up, right } = faceFrame({ x: 0, y: 0, z: 1 });
+    expect(up).toEqual({ x: -0, y: 1, z: -0 });
+    expect(right.x).toBeCloseTo(1, 9);
   });
 });

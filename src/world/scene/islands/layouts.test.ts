@@ -57,9 +57,12 @@ const ROBOT_FACE = 0.08;
  * what they cap, and must hang under it instead ("hang every ceiling-only column …" below).
  */
 const groundCells = (id: string) => FOOTPRINTS[id].filter(([, y]) => y < BODY_ROWS);
-/** An island's prop colliders in the tests' block coordinates (local cell x spans [x − 0.5, x + 0.5): shifted by 0.5). */
+/**
+ * An island's solid prop colliders (the ones that stop Ezra; boards, signs and posts pass) in the tests' block
+ * coordinates (local cell x spans [x − 0.5, x + 0.5): shifted by 0.5).
+ */
 const localProps = (id: string) =>
-  new ColliderSet((PROP_BOXES[id] ?? []).map((b) => ({ x: b.x + 0.5, y: b.y, z: b.z + 0.5, hx: b.sx / 2, hy: b.sy / 2, hz: b.sz / 2, ry: b.ry, what: b.what })));
+  new ColliderSet((PROP_BOXES[id] ?? []).filter((b) => !b.pass).map((b) => ({ x: b.x + 0.5, y: b.y, z: b.z + 0.5, hx: b.sx / 2, hy: b.sy / 2, hz: b.sz / 2, ry: b.ry, what: b.what })));
 
 const CORE = 0.35;
 /** Ground cells (rows 0..BODY_ROWS − 1) a prop's collider reaches into: where its drawn shape stands at body height. */
@@ -269,20 +272,21 @@ describe("board and sign collision", () => {
   };
   const along = (b: (typeof boards)[number], t: number) => ({ x: b.at.x + t * Math.cos(b.ry), z: b.at.z - t * Math.sin(b.ry) });
 
-  it("leave no gap between the posts: Ezra (0.6 wide) can't stand anywhere on the post-to-post line", () => {
-    const leaks: string[] = [];
+  it("let Ezra walk through every board, sign and map board: nothing solid across its middle", () => {
+    const blocked: string[] = [];
     for (const b of boards) {
       const isSolid = solidOf(b.id);
       const props = localProps(b.id);
-      for (let t = -b.half; t <= b.half + 1e-9; t += 0.05) {
+      // its ends may stand by something solid (Orbit's info board by a crate): the middle block of it is the way through
+      for (let t = -0.5; t <= 0.5 + 1e-9; t += 0.05) {
         const p = along(b, t);
-        if (!characterCollides(isSolid, p.x + 0.5, 0, p.z + 0.5, DEFAULT_PARAMS, props)) {
-          leaks.push(`${b.id} ${b.what} at t=${t.toFixed(2)}`);
+        if (characterCollides(isSolid, p.x + 0.5, 0, p.z + 0.5, DEFAULT_PARAMS, props)) {
+          blocked.push(`${b.id} ${b.what} at t=${t.toFixed(2)}`);
           break;
         }
       }
     }
-    expect(leaks).toEqual([]);
+    expect(blocked).toEqual([]);
   });
 
   it("collide every panel up to its drawn top edge, and no higher", () => {
@@ -575,8 +579,8 @@ describe("what Ezra could walk or jump into, on every island", () => {
   function gaps(id: string): Map<string, number> {
     const found = new Map<string, number>();
     const note = (key: string, by: number) => found.set(key, Math.max(found.get(key) ?? 0, by));
-    const overhead = new Set(OVERHEAD[id] ?? []);
-    const slabs = visualsOf(id).map((v) => ({ what: v.what, f: footprintOf(v.slab), over: overhead.has(v) }));
+    // boards and signs are walked through by design (they fade around him): only what hangs overhead is checked
+    const slabs = (OVERHEAD[id] ?? []).map((v) => ({ what: v.what, f: footprintOf(v.slab), over: true }));
     for (const { px, pz, y, lift } of footing(id)) {
       const at = `(${Math.round(px)},${Math.round(pz)})${y > 0 ? ` on a ledge ${y} up` : ""}`;
       for (const { what, f, over } of slabs) {

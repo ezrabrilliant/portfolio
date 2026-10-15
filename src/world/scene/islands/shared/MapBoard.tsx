@@ -22,7 +22,7 @@ export function MapBoard({ placement, at }: { placement: IslandPlacement; at: { 
   const app = useMemo(() => mapApp(runtime.layout, placement.id, startTravel), [placement.id]);
   return (
     <>
-      <group position={islandFrame(placement)}>
+      <group position={islandFrame(placement)} userData={{ passable: true }}>
         <mesh
           geometry={POST_GEO}
           material={POST_MAT}

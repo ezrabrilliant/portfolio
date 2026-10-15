@@ -156,7 +156,7 @@ function BotScreen() {
   const texture = useCanvasTexture(640, 246, drawBotScreen, []);
   const { x, z, w, h, y, ry } = EZRA.screen;
   return (
-    <group position={[x, 0, z]} rotation={[0, ry, 0]}>
+    <group position={[x, 0, z]} rotation={[0, ry, 0]} userData={{ passable: true }}>
       <mesh geometry={SCREEN_GEO} material={SCREEN_MAT} castShadow />
       <mesh position={[0, y + h / 2 - 0.2, 0.055]}>
         <planeGeometry args={[w, h]} />

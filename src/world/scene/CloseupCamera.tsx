@@ -1,7 +1,11 @@
 import { useEffect, useMemo } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
-import { CLOSEUP_BACK_PX, CLOSEUP_HUD_PX, clampPan, closeupNear, closeupPanLimit, closeupPose } from "@/world/engine/camera/closeup";
+import { CLOSEUP_BACK_PX, CLOSEUP_HUD_PX, clampPan, closeupPanLimit, closeupPose, faceFrame } from "@/world/engine/camera/closeup";
+import { seeThroughUniforms } from "./seeThroughShader";
+
+/** The face clip reaches this far past the face on every side (LiveScreen's bezel rim and a hair). */
+const FACE_RIM = 0.12;
 import type { Vec3 } from "@/world/engine/types";
 import { runtime } from "@/world/state/runtime";
 import { useWorld } from "@/world/state/store";
@@ -61,8 +65,9 @@ export function CloseupCamera() {
     const target = st.clock.id !== null ? runtime.closeups.get(st.clock.id) : undefined;
     if (w <= 0 || !target) {
       // nothing open, the glide out has landed, the target unmounted, or a fast travel arrived: the base camera is the
-      // camera, with its own near plane
+      // camera, with its own near plane, and nothing is cleared
       setNear(st.baseNear);
+      seeThroughUniforms.uFace.value = 0;
       return;
     }
     // the HUD covers the canvas's top CLOSEUP_HUD_PX and the Back button its bottom CLOSEUP_BACK_PX: the target is fitted
@@ -89,7 +94,16 @@ export function CloseupCamera() {
     const nl = Math.hypot(normal.x, normal.y, normal.z) || 1;
     const face =
       ((camera.position.x - center.x) * normal.x + (camera.position.y - center.y) * normal.y + (camera.position.z - center.z) * normal.z) / nl;
-    setNear(closeupNear(st.baseNear, face, w));
+    // clear what covers the face (seeThroughShader): only over its rectangle, so props beside it keep their shape
+    const { up, right } = faceFrame({ x: normal.x / nl, y: normal.y / nl, z: normal.z / nl });
+    const u = seeThroughUniforms;
+    u.uFace.value = w;
+    u.uFaceC.value.set(center.x, center.y, center.z);
+    u.uFaceN.value.set(normal.x / nl, normal.y / nl, normal.z / nl);
+    u.uFaceR.value.set(right.x, right.y, right.z);
+    u.uFaceU.value.set(up.x, up.y, up.z);
+    u.uFaceHalf.value.set(target.size.w / 2 + FACE_RIM, target.size.h / 2 + FACE_RIM);
+    if (face < 0) u.uFace.value = 0;
     runtime.cameraPos.x = camera.position.x;
     runtime.cameraPos.y = camera.position.y;
     runtime.cameraPos.z = camera.position.z;

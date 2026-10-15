@@ -119,7 +119,7 @@ function PriceBoard({ placement, data }: { placement: IslandPlacement; data: Gti
   return (
     <>
       <group position={islandFrame(placement)}>
-        <group position={[x, 0, z]} rotation={[0, ry, 0]}>
+        <group position={[x, 0, z]} rotation={[0, ry, 0]} userData={{ passable: true }}>
           {[-1, 1].map((s) => (
             <mesh key={s} position={[s * (w / 2 - 0.3), y / 2, -0.08]} castShadow>
               <boxGeometry args={[0.16, y, 0.16]} />

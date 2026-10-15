@@ -26,7 +26,7 @@ export function InfoBoard({
   const boardH = rows.height;
   const top = infoBoardTop(rows);
   return (
-    <group position={islandFrame(placement)}>
+    <group position={islandFrame(placement)} userData={{ passable: true }}>
       <group position={[at.x, 0, at.z]} rotation={[0, rotationY, 0]} scale={scale}>
         {[-1, 1].map((s) => (
           // post front face (z = -0.05 + 0.07) stays behind the board's front face (z = 0.05): no z-fighting

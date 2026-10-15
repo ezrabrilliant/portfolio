@@ -45,7 +45,7 @@ export function Signpost({
   const hitD = 2 * (Math.abs(sin) * HIT_HX + Math.abs(cos) * HIT_HZ) * scale;
   return (
     <>
-      <group position={islandFrame(placement)}>
+      <group position={islandFrame(placement)} userData={{ passable: true }}>
         <group position={[at.x, 0, at.z]} rotation={[0, rotationY, 0]} scale={scale}>
           <mesh position={[0, POST_H / 2, 0]} castShadow>
             <boxGeometry args={[POST_W, POST_H, POST_W]} />

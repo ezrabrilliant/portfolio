@@ -1,5 +1,8 @@
 import * as THREE from "three";
 
+/** Only what stands this far or more in front of the face counts as covering it (the bezel and face sit closer). */
+const FACE_FRONT = "0.03";
+
 /**
  * Props between the Play camera and Ezra fade out (dithered) instead of pushing the camera in (spec: voxel controls §1).
  * One set of uniforms for every patched material: a capsule from the camera to Ezra's chest. Fragments inside it are
@@ -11,7 +14,19 @@ export const seeThroughUniforms = {
   uSeeTo: { value: new THREE.Vector3() },
   /** 0 = off (tour, closeups), 1 = on */
   uSeeOn: { value: 0 },
+  /** Ezra's feet: a board or sign he walks through (passable, colliders.ts) fades around his body */
+  uSeeBody: { value: new THREE.Vector3() },
+  /** the closeup's face (CloseupCamera): what stands over its rectangle, between it and the camera, is cleared */
+  uFace: { value: 0 },
+  uFaceC: { value: new THREE.Vector3() },
+  uFaceN: { value: new THREE.Vector3(0, 0, 1) },
+  uFaceR: { value: new THREE.Vector3(1, 0, 0) },
+  uFaceU: { value: new THREE.Vector3(0, 1, 0) },
+  uFaceHalf: { value: new THREE.Vector2() },
 };
+
+/** Around Ezra's body, a passable prop fades within this horizontal radius, from his feet to just over his head. */
+export const BODY_FADE = { radius: 0.75, top: 2.4 } as const;
 
 /** Radius of the capsule around the camera → chest line, in blocks. */
 export const SEE_RADIUS = 0.9;
@@ -29,6 +44,13 @@ varying vec3 vSeeWorld;
 uniform vec3 uSeeFrom;
 uniform vec3 uSeeTo;
 uniform float uSeeOn;
+uniform vec3 uSeeBody;
+uniform float uFace;
+uniform vec3 uFaceC;
+uniform vec3 uFaceN;
+uniform vec3 uFaceR;
+uniform vec3 uFaceU;
+uniform vec2 uFaceHalf;
 float seeBayer(vec2 p) {
   vec2 q = mod(floor(p), 4.0);
   float i = q.x + q.y * 4.0;
@@ -37,12 +59,29 @@ float seeBayer(vec2 p) {
 }
 `;
 const FRAGMENT_BODY = `
+  if (uFace > 0.0) {
+    // a closeup: whatever stands in front of the face and over its rectangle (seen from the camera) is cleared, dithered
+    // in with the glide; props beside the face stay whole (the camera's near plane no longer cuts them)
+    vec3 toP = vSeeWorld - uFaceC;
+    vec3 ray = vSeeWorld - cameraPosition;
+    float dn = dot(ray, uFaceN);
+    if (dot(toP, uFaceN) > ${FACE_FRONT} && dn < -1e-4) {
+      vec3 x = cameraPosition + ray * (dot(uFaceC - cameraPosition, uFaceN) / dn) - uFaceC;
+      if (abs(dot(x, uFaceR)) < uFaceHalf.x && abs(dot(x, uFaceU)) < uFaceHalf.y && uFace * uFace * uFace > seeBayer(gl_FragCoord.xy)) discard;
+    }
+  }
   if (uSeeOn > 0.5) {
     vec3 seg = uSeeTo - uSeeFrom;
     float t = clamp(dot(vSeeWorld - uSeeFrom, seg) / max(dot(seg, seg), 1e-4), 0.0, 1.0);
     float d = length(vSeeWorld - (uSeeFrom + seg * t));
     // fully faded near the axis, none at the radius; and none right at Ezra's end, so what he stands against stays solid
     float fade = (1.0 - smoothstep(${(SEE_RADIUS * 0.45).toFixed(3)}, ${SEE_RADIUS.toFixed(3)}, d)) * (1.0 - smoothstep(0.82, 0.97, t)) * 0.85;
+#ifdef SEE_PASSABLE
+    vec2 off = vSeeWorld.xz - uSeeBody.xz;
+    float h = vSeeWorld.y - uSeeBody.y;
+    float body = (1.0 - smoothstep(${(BODY_FADE.radius * 0.6).toFixed(3)}, ${BODY_FADE.radius.toFixed(3)}, length(off))) * step(-0.1, h) * step(h, ${BODY_FADE.top.toFixed(3)});
+    fade = max(fade, body * 0.8);
+#endif
     if (fade > seeBayer(gl_FragCoord.xy)) discard;
   }
 `;
@@ -63,14 +102,18 @@ export function patchSeeThroughShader(shader: ShaderLike): void {
 
 const patched = new WeakSet<THREE.Material>();
 
-/** Patches one material once (later calls do nothing). Only lit and basic mesh materials take it. */
-export function applySeeThrough(m: THREE.Material): void {
+/**
+ * Patches one material once (later calls do nothing). Only lit and basic mesh materials take it. `passable`: the
+ * material belongs to a board or sign Ezra walks through (userData.passable on an ancestor), which also fades around
+ * his body.
+ */
+export function applySeeThrough(m: THREE.Material, passable = false): void {
   if (patched.has(m)) return;
   // troika's text material derives from a base material (its prototype) and owns onBeforeCompile through a getter that
   // calls whatever is set on it, so wrapping it recursed forever: patch the base, which troika compiles first
   if ((m as THREE.Material & { isDerivedMaterial?: boolean }).isDerivedMaterial) {
     patched.add(m);
-    applySeeThrough(Object.getPrototypeOf(m) as THREE.Material);
+    applySeeThrough(Object.getPrototypeOf(m) as THREE.Material, passable);
     m.needsUpdate = true;
     return;
   }
@@ -80,19 +123,24 @@ export function applySeeThrough(m: THREE.Material): void {
   m.onBeforeCompile = (shader, renderer) => {
     prev.call(m, shader, renderer);
     patchSeeThroughShader(shader);
+    if (passable) shader.fragmentShader = `#define SEE_PASSABLE\n${shader.fragmentShader}`;
   };
   const prevKey = m.customProgramCacheKey.bind(m);
-  m.customProgramCacheKey = () => `${prevKey()}|see`;
+  m.customProgramCacheKey = () => `${prevKey()}|see${passable ? "|pass" : ""}`;
   m.needsUpdate = true;
 }
 
-/** Walks the scene and patches every mesh material, skipping subtrees marked userData.noSeeThrough. */
-export function patchSceneSeeThrough(root: THREE.Object3D): void {
+/**
+ * Walks the scene and patches every mesh material, skipping subtrees marked userData.noSeeThrough; under one marked
+ * userData.passable (boards and signs) they also fade around Ezra's body.
+ */
+export function patchSceneSeeThrough(root: THREE.Object3D, passable = false): void {
   if (root.userData.noSeeThrough) return;
+  const pass = passable || root.userData.passable === true;
   const mesh = root as THREE.Mesh;
   if (mesh.isMesh) {
     const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
-    for (const m of mats) if (m) applySeeThrough(m);
+    for (const m of mats) if (m) applySeeThrough(m, pass);
   }
-  for (const c of root.children) patchSceneSeeThrough(c);
+  for (const c of root.children) patchSceneSeeThrough(c, pass);
 }
