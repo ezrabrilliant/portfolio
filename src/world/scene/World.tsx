@@ -19,6 +19,7 @@ import { Lights } from "./Lights";
 import { ParticlesRenderer } from "./ParticlesRenderer";
 import { openCloseup } from "./closeupState";
 import { PlayCamera } from "./PlayCamera";
+import { SeeThrough } from "./SeeThrough";
 import { PlayerController } from "./PlayerController";
 import { RoomEnv } from "./RoomEnv";
 import { Sky } from "./Sky";
@@ -106,6 +107,8 @@ export function World() {
       <TourCamera />
       {/* after both cameras (and before crossings and Ezra): blends their pose toward the screen in closeup and back */}
       <CloseupCamera />
+      {/* after every camera: fades props on the camera → Ezra line */}
+      <SeeThrough />
       {/* crossings after the controllers and cameras: the minecart and pads read this frame's ride and tour progress */}
       {runtime.layout.crossings.map((c) => {
         const key = `crossing-${c.from}-${c.to}`;

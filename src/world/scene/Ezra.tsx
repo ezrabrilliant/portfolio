@@ -118,7 +118,7 @@ export function Ezra() {
   });
 
   return (
-    <group ref={root}>
+    <group ref={root} userData={{ noSeeThrough: true }}>
       <group ref={body}>
         <mesh geometry={GEO.body} material={MAT} castShadow={cast} receiveShadow={cast} />
         {/* legs pivot at the hips, knees LEG.knee lower (the rim-clearance tests use the same rig); each gown skirt

@@ -8,7 +8,7 @@ import { useWorld } from "@/world/state/store";
 import { orbitInput } from "@/world/input/orbit";
 import { followGate } from "./camera/followGate";
 import type { FollowGate } from "./camera/followGate";
-import { pullIn } from "./camera/pullIn";
+import { createBoom, probeDistance, stepBoom } from "./camera/boom";
 import { isTeleport, yawBehind } from "./camera/teleport";
 
 /** Seconds over which the entering (tour) look direction eases onto Ezra, instead of snapping on the first frame. */
@@ -24,6 +24,9 @@ export function PlayCamera() {
   const cam = useMemo(() => createFollowCam(), []);
   const goal = useMemo(() => new THREE.Vector3(), []);
   const look = useMemo(() => new THREE.Vector3(), []);
+  /** the eased follow position before any pull-in (only the rendered camera is pulled in: see boom.ts) */
+  const ideal = useMemo(() => new THREE.Vector3(), []);
+  const boom = useMemo(() => createBoom(7), []);
   const track = useMemo(
     () => ({
       prev: new THREE.Vector3(),
@@ -156,13 +159,18 @@ export function PlayCamera() {
     // reduced motion: the frame a closeup ends, cut from its pose to the follow pose instead of easing back (CloseupCamera
     // cuts its own blend to 0 then, and CloseupController's exits run before this)
     const closeupCut = closeupExitCut(track.closeup, runtime.closeup !== null, reduced);
-    if (teleported || closeupCut || (entering && reduced)) camera.position.copy(goal);
-    else camera.position.lerp(goal, 1 - Math.exp(-6 * dt));
-    // keep the camera's own ray to Ezra clear: snap in front of a block at once, ease back out via the lerp
-    if (runtime.built) {
-      const safe = pullIn(lookAt, camera.position, runtime.built.grid.isSolid);
-      camera.position.set(safe.x, safe.y, safe.z);
-    }
+    const cut = teleported || closeupCut || (entering && reduced);
+    if (entering) ideal.copy(camera.position);
+    if (cut) ideal.copy(goal);
+    else ideal.lerp(goal, 1 - Math.exp(-6 * dt));
+    // keep the camera's view of Ezra clear of solid blocks: the boom from his head toward the eased position shortens
+    // and lengthens smoothly (boom.ts), so a block flickering in and out of the line no longer pumps the camera
+    const span = Math.hypot(ideal.x - lookAt.x, ideal.y - lookAt.y, ideal.z - lookAt.z);
+    if (entering) boom.length = span;
+    const limit = runtime.built ? probeDistance(lookAt, ideal, runtime.built.grid.isSolid) : span;
+    const len = stepBoom(boom, limit, dt, cut);
+    const k = span > 1e-6 ? Math.min(len, span) / span : 1;
+    camera.position.set(lookAt.x + (ideal.x - lookAt.x) * k, lookAt.y + (ideal.y - lookAt.y) * k, lookAt.z + (ideal.z - lookAt.z) * k);
     look.set(lookAt.x, lookAt.y, lookAt.z);
     if (entering) {
       // where the tour camera was looking, at Ezra's depth
