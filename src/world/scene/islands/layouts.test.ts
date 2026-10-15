@@ -27,7 +27,9 @@ import { stallBlocks } from "./monosuko/blocks";
 import { pavilionBlocks, phoneBody } from "./peduli/blocks";
 import { plazaPropBlocks } from "./plaza/blocks";
 import { INFO_BOARD, SCREEN_BEZEL, SIGNPOST, SIGNPOST_FACE, infoBoardTop } from "./shared/boardGeometry";
-import { islandFrame } from "./shared/local";
+import { islandFrame, type Cell } from "./shared/local";
+import { PROP_BOXES } from "./colliders";
+import { ColliderSet } from "@/world/engine/physics/colliders";
 import { treeBlocks, type PropBlock } from "./shared/props";
 import { projectById } from "./shared/project";
 import { infoBoardRows, miniBoardLines } from "./shared/text";
@@ -55,10 +57,40 @@ const ROBOT_FACE = 0.08;
  * what they cap, and must hang under it instead ("hang every ceiling-only column …" below).
  */
 const groundCells = (id: string) => FOOTPRINTS[id].filter(([, y]) => y < BODY_ROWS);
+/** An island's prop colliders in the tests' block coordinates (local cell x spans [x − 0.5, x + 0.5): shifted by 0.5). */
+const localProps = (id: string) =>
+  new ColliderSet((PROP_BOXES[id] ?? []).map((b) => ({ x: b.x + 0.5, y: b.y, z: b.z + 0.5, hx: b.sx / 2, hy: b.sy / 2, hz: b.sz / 2, ry: b.ry, what: b.what })));
+
+const CORE = 0.35;
+/** Ground cells (rows 0..BODY_ROWS − 1) a prop's collider reaches into: where its drawn shape stands at body height. */
+const propCells = (id: string): Cell[] => {
+  const props = localProps(id);
+  const r = Math.ceil(byId[id].radius * 1.25) + 2;
+  const out: Cell[] = [];
+  for (let x = -r; x <= r; x++) for (let z = -r; z <= r; z++) {
+    for (let y = 0; y < BODY_ROWS; y++) {
+      // a prop counts in the cell its shape reaches the middle (0.3 square) of (as the old barriers took a post's nearest cell);
+      // one grazing an edge (a bezel's end, a crate's corner) leaves it free
+      if (props.hits({ x0: x + CORE, y0: y, z0: z + CORE, x1: x + 1 - CORE, y1: y + 1, z1: z + 1 - CORE })) {
+        if (!PROP_EDGES[id]?.includes(`${x},${z}`)) out.push([x, 0, z]);
+        break;
+      }
+    }
+  }
+  return out;
+};
+/**
+ * Prop edges the cell-core count catches that the old nearest-cell barriers never did, each placed and checked in the
+ * tour views long before props collided as their shapes, at the edge of Orbit's bounce pad square: the right crate
+ * (x 2.53–3.28) over the middle of (3, 0), and the turned top crate of the stack's corner (to x 2.9) in (3, 1).
+ */
+const PROP_EDGES: Record<string, string[]> = { "orbit-store": ["3,0", "3,1"] };
+/** Everything standing on an island: its voxel collision and its props' ground cells. */
+const placed = (id: string): Cell[] => [...FOOTPRINTS[id], ...propCells(id)];
 
 describe("island prop footprints", () => {
   it("exist for every tour island", () => {
-    for (const id of layout.tourOrder) expect(FOOTPRINTS[id]?.length ?? 0, id).toBeGreaterThan(0);
+    for (const id of layout.tourOrder) expect((FOOTPRINTS[id]?.length ?? 0) + (PROP_BOXES[id]?.length ?? 0), id).toBeGreaterThan(0);
   });
 
   /**
@@ -71,7 +103,7 @@ describe("island prop footprints", () => {
     for (const id of layout.tourOrder) {
       const r = byId[id].radius * 0.78;
       // ceiling-only columns over the rim are checked against what they cap instead, where that is known
-      const cells = OVERHEAD_ISLANDS.includes(id) ? groundCells(id) : FOOTPRINTS[id];
+      const cells = OVERHEAD_ISLANDS.includes(id) ? [...groundCells(id), ...propCells(id)] : placed(id);
       for (const [x, , z] of cells) {
         if (PAST_RIM[id]?.includes(`${x},${z}`)) continue;
         expect(Math.hypot(x, z), `${id} (${x},${z})`).toBeLessThanOrEqual(r);
@@ -82,7 +114,7 @@ describe("island prop footprints", () => {
   it("stand on the Web & Apps islands on grass with grass on all four sides (never on the rim of the real terrain)", () => {
     for (const id of WEB) {
       const grass = grassOf(id);
-      for (const [x, , z] of groundCells(id)) {
+      for (const [x, , z] of [...groundCells(id), ...propCells(id)]) {
         const ok = [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1]].every(([dx, dz]) => grass.has(`${x + dx},${z + dz}`));
         expect(ok, `${id} (${x},${z})`).toBe(true);
       }
@@ -100,7 +132,7 @@ describe("island prop footprints", () => {
       for (const [id, anchor] of [[c.from, c.a], [c.to, c.b]] as const) {
         const a = toLocal(id, anchor);
         const clear = byId[id].kind === "mini" ? MINI_ANCHOR_CLEARANCE : 2;
-        for (const [x, , z] of FOOTPRINTS[id]) {
+        for (const [x, , z] of placed(id)) {
           if (NEAR_ANCHOR[id]?.includes(`${x},${z}`)) continue;
           expect(Math.hypot(x - a.x, z - a.z), `${id} (${x},${z}) vs ${c.kind}`).toBeGreaterThanOrEqual(clear);
         }
@@ -117,7 +149,7 @@ describe("island prop footprints", () => {
       for (const [id, anchor] of [[c.from, c.a], [c.to, c.b]] as const) {
         for (const s of [1.05, -1.05]) {
           const post = toLocal(id, { x: anchor.x + side.x * s, z: anchor.z + side.z * s });
-          for (const [x, , z] of FOOTPRINTS[id]) {
+          for (const [x, , z] of placed(id)) {
             const inside = Math.abs(post.x - x) < 0.6 && Math.abs(post.z - z) < 0.6;
             expect(inside, `${id} (${x},${z}) holds a rope post of ${c.from} → ${c.to}`).toBe(false);
           }
@@ -152,7 +184,7 @@ describe("island prop footprints", () => {
     }
     expect(furniture.length).toBeGreaterThan(0);
     for (const f of furniture) {
-      for (const [x, , z] of FOOTPRINTS[f.id]) {
+      for (const [x, , z] of placed(f.id)) {
         // gap between the cell's square and the furniture's square; negative = they overlap
         const gap = Math.max(Math.abs(x - f.x), Math.abs(z - f.z)) - 0.5 - f.half;
         expect(gap, `${f.id} (${x},${z}) vs ${f.what}`).toBeGreaterThanOrEqual(0);
@@ -180,7 +212,7 @@ describe("island prop footprints", () => {
     };
     for (const id of WEB) {
       const grass = grassOf(id);
-      const blocked = new Set(groundCells(id).map(([x, , z]) => `${x},${z}`));
+      const blocked = new Set([...groundCells(id), ...propCells(id)].map(([x, , z]) => `${x},${z}`));
       const heads = layout.crossings.flatMap((c) => [[c.from, c.a], [c.to, c.b]] as const).filter(([i]) => i === id).map(([, a]) => toLocal(id, a));
       const goals = [...heads.map((a) => ({ x: Math.round(a.x), z: Math.round(a.z) })), ...(stands[id] ? [stands[id]!] : [])];
       const start = goals[0];
@@ -231,8 +263,6 @@ describe("board and sign collision", () => {
       ["web-plaza", PLAZA.map], ["pos-monosuko", MONOSUKO.map], ["bee-furniture-crm", BEE.map], ["pedulipasal", PEDULI.map],
     ] as const).map(([id, m]) => ({ id, what: "map board", at: m, half: MAP_HALF_SPAN, ry: m.ry, top: mapTop })),
   ];
-  // an island's footprint as an IsSolid in island-local blocks: local cell x spans [x − 0.5, x + 0.5) around the
-  // frame, so a frame position px sits in block floor(px + 0.5)
   const solidOf = (id: string) => {
     const set = new Set(FOOTPRINTS[id].map(([x, y, z]) => `${x},${y},${z}`));
     return (x: number, y: number, z: number) => set.has(`${x},${y},${z}`);
@@ -243,9 +273,10 @@ describe("board and sign collision", () => {
     const leaks: string[] = [];
     for (const b of boards) {
       const isSolid = solidOf(b.id);
+      const props = localProps(b.id);
       for (let t = -b.half; t <= b.half + 1e-9; t += 0.05) {
         const p = along(b, t);
-        if (!characterCollides(isSolid, p.x + 0.5, 0, p.z + 0.5)) {
+        if (!characterCollides(isSolid, p.x + 0.5, 0, p.z + 0.5, DEFAULT_PARAMS, props)) {
           leaks.push(`${b.id} ${b.what} at t=${t.toFixed(2)}`);
           break;
         }
@@ -254,28 +285,17 @@ describe("board and sign collision", () => {
     expect(leaks).toEqual([]);
   });
 
-  it("reach the panel's top row, so he can't jump onto the barrier inside the panel", () => {
-    const short: string[] = [];
+  it("collide every panel up to its drawn top edge, and no higher", () => {
+    const off: string[] = [];
     for (const b of boards) {
       const mid = along(b, 0);
-      const cx = Math.round(mid.x), cz = Math.round(mid.z);
-      const top = Math.max(-1, ...FOOTPRINTS[b.id].filter(([x, , z]) => x === cx && z === cz).map(([, y]) => y));
-      if (top < Math.floor(b.top)) short.push(`${b.id} ${b.what}: panel top ${b.top.toFixed(2)}, barrier top row ${top}`);
+      const tops = (PROP_BOXES[b.id] ?? [])
+        .filter((p) => Math.hypot(p.x - mid.x, p.z - mid.z) < 0.35 && p.sx > 0.5)
+        .map((p) => p.y + p.sy / 2);
+      // a map board's bezel stands its rim above the face's top edge
+      if (!tops.some((t) => t > b.top - 0.02 && t < b.top + 0.1)) off.push(`${b.id} ${b.what}: panel top ${b.top.toFixed(2)}, prop tops ${tops.map((t) => t.toFixed(2)).join(" ") || "none"}`);
     }
-    expect(short).toEqual([]);
-  });
-
-  it("stop every board's barrier on the Web & Apps islands and Ezra Bot at its panel's top row: no invisible row above", () => {
-    const ours = boards.filter((b) => OVERHEAD_ISLANDS.includes(b.id));
-    expect(ours).toHaveLength(11);
-    const tall: string[] = [];
-    for (const b of ours) {
-      const mid = along(b, 0);
-      const cx = Math.round(mid.x), cz = Math.round(mid.z);
-      const top = Math.max(-1, ...FOOTPRINTS[b.id].filter(([x, , z]) => x === cx && z === cz).map(([, y]) => y));
-      if (top > Math.floor(b.top)) tall.push(`${b.id} ${b.what}: panel top ${b.top.toFixed(2)}, barrier top row ${top}`);
-    }
-    expect(tall).toEqual([]);
+    expect(off).toEqual([]);
   });
 
   it("keep MINI_SIGN_SCALE between half and full size", () => {
@@ -480,8 +500,9 @@ describe("what Ezra could walk or jump into, on every island", () => {
     const grass = grassOf(id);
     const cells = new Set(FOOTPRINTS[id].map((c) => c.join(",")));
     const solid = (x: number, y: number, z: number) => (y < 0 ? y === -1 && grass.has(`${x},${z}`) : cells.has(`${x},${y},${z}`));
+    const props = localProps(id);
     // island-local position → block coordinates: local cell x spans [x − 0.5, x + 0.5)
-    const collides = (px: number, y: number, pz: number) => characterCollides(solid, px + 0.5, y, pz + 0.5);
+    const collides = (px: number, y: number, pz: number) => characterCollides(solid, px + 0.5, y, pz + 0.5, DEFAULT_PARAMS, props);
     const columns = (px: number, pz: number) => {
       const out: [number, number][] = [];
       for (let x = Math.floor(px + 0.5 - HALF + 1e-6); x <= Math.floor(px + 0.5 + HALF - 1e-6); x++) {
@@ -537,7 +558,16 @@ describe("what Ezra could walk or jump into, on every island", () => {
           if (r > y + 6) break;
         }
       }
-      return { px, pz, y, lift: Math.min(y + H + JUMP_RISE, ceiling) - (y + H) };
+      // a prop over him stops his model's top (the physics tests props against MODEL_TOP, not his box)
+      const tall = Math.max(H, MODEL_TOP);
+      let propLift = JUMP_RISE;
+      for (let d = 0.02; d <= JUMP_RISE + 1e-9; d += 0.02) {
+        if (props.hits({ x0: px + 0.5 - HALF, y0: y + d, z0: pz + 0.5 - HALF, x1: px + 0.5 + HALF, y1: y + d + tall, z1: pz + 0.5 + HALF })) {
+          propLift = d - 0.02;
+          break;
+        }
+      }
+      return { px, pz, y, lift: Math.min(Math.min(y + H + JUMP_RISE, ceiling) - (y + H), propLift) };
     });
   }
 
@@ -585,17 +615,12 @@ describe("what Ezra could walk or jump into, on every island", () => {
    * with how far his model stands or rises in, so a new gap, a deeper one or a closed one all show up here.
    */
   const OPEN: { id: string; what: string; at: string[]; upTo: number }[] = [
-    // the crown's corner block (3.0 up) over (−3, −2), 1.55 from the minecart anchor
-    { id: "web-plaza", what: "rises into the tree crown", at: ["(-3,-2)", "(-3,-1)", "(-4,-1)", "(-4,-2)"], upTo: 0.6 },
-    // the screen's left end (x −1.5…−1.78, 1.86 up) over (−2, −2): 1.12 from the west bridge anchor, on a rope post
-    // (the stall's right post closes the right end). Standing there the model's top is 0.24 into the bezel's end, and a
-    // jump carries it 1.74 in
-    { id: "pos-monosuko", what: "stands in the screen", at: ["(-2,-2)"], upTo: 0.24 },
-    { id: "pos-monosuko", what: "rises into the screen", at: ["(-2,-2)"], upTo: 1.74 },
+    // the screen's ends (x ±1.5–1.78, 1.86 up) over (±2, −2): 1.62 / 1.12 from the bridge anchors, (−2, −2) on a rope post.
+    // Standing there the model's top is 0.24 into the bezel's end, and a jump carries it 1.74 in
+    { id: "pos-monosuko", what: "stands in the screen", at: ["(2,-2)", "(-2,-2)"], upTo: 0.24 },
+    { id: "pos-monosuko", what: "rises into the screen", at: ["(2,-2)", "(-2,-2)"], upTo: 1.74 },
     // the front-left eave (2.59 up) over (−2, 0), 1.14 from the POS bridge anchor
     { id: "bee-furniture-crm", what: "rises into the shed roof", at: ["(-2,0)"], upTo: 1.02 },
-    // the bubbles' right half (2.35 up) over the minecart station (no barrier over its platform)
-    { id: "ezra-bot", what: "rises into the chat bubbles", at: ["(3,0)", "(3,1)", "(4,0)", "(4,1)", "(5,0)", "(5,1)"], upTo: 1.15 },
   ];
 
   it("never stand Ezra's model in a board, sign or anything overhead, nor let a jump lift it into one", () => {

@@ -26,7 +26,7 @@ function enterPlay() {
   p.vel.x = p.vel.y = p.vel.z = 0;
   p.jumpTimer = 0;
   const seat = runtime.seat;
-  const solid = runtime.built?.grid.isSolid;
+  const solid = runtime.built?.blocked;
   if (enterKind(world.activeIsland, runtime.seated) === "standUp" && seat && solid && !characterCollides(solid, seat.pos.x, seat.pos.y, seat.pos.z)) {
     // stand up where he sat; the stand-up animation unlocks him. He is on the ground already, so the first
     // unlocked step must not report a landing (squash, dust, sound)

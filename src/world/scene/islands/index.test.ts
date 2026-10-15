@@ -6,6 +6,7 @@ import { VoxelGrid } from "@/world/engine/voxel/grid";
 import { ISLANDS } from "./index";
 import { FRAMING, tourStopFor } from "./framing";
 import { FOOTPRINTS } from "./layouts";
+import { PROP_BOXES } from "./colliders";
 
 const WEB = [WEB_PLAZA_ID, "pos-monosuko", "bee-furniture-crm", "pedulipasal"];
 
@@ -30,7 +31,7 @@ describe("island registry", () => {
       const p = layout.islands.find((i) => i.id === id)!;
       const grid = new VoxelGrid();
       ISLANDS[id].stamp?.(grid, p);
-      expect(FOOTPRINTS[id].length, id).toBeGreaterThan(0);
+      expect(FOOTPRINTS[id].length + PROP_BOXES[id].length, id).toBeGreaterThan(0);
       for (const [x, y, z] of FOOTPRINTS[id]) expect(grid.get(p.origin.x + x, p.origin.y + 1 + y, p.origin.z + z), `${id} (${x},${y},${z})`).toBe(blockId("barrier"));
     }
     const components = WEB.map((id) => ISLANDS[id].Component);

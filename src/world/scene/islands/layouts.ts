@@ -1,12 +1,10 @@
-import { worldCopy } from "@/config/portfolio";
 import { DEFAULT_PARAMS, MODEL_TOP } from "@/world/engine/physics/character";
 import { EZRA_REACH } from "@/world/engine/physics/ezraModel";
 import { layoutLines } from "./voxelFont";
 import { INFO_BOARD, SCREEN_BEZEL, SIGNPOST, SIGNPOST_FACE, infoBoardTop } from "./shared/boardGeometry";
 import { boxCells, postCells, type Cell } from "./shared/local";
-import { projectById } from "./shared/project";
 import { treeBlocks } from "./shared/props";
-import { infoBoardRows, miniBoardLines } from "./shared/text";
+import { infoBoardRows } from "./shared/text";
 
 /**
  * Single source of island prop positions (island-local, fronts face +z).
@@ -82,8 +80,6 @@ export function crownSlabs(t: { x: number; z: number; h: number; seed: number })
 }
 
 export const INFO_HALF_SPAN = INFO_BOARD.width / 2 - INFO_BOARD.postInset; // InfoBoard posts at ±1.0
-// InfoBoard collision rows: the panel ends ≤ 2.83 above the grass (the hero's wrapped title; layouts.test checks every board)
-const INFO_ROWS = 3;
 
 // From the tour camera the title needs the flag on its left and the (2.83-tall, wrapped-title) board on its right, with
 // no overlap: at cell 0.13 the island is ~4 px too narrow for both, at 0.12 each side keeps ~16 px. Ezra sits on the
@@ -342,28 +338,6 @@ export function bubbleSlabs(): Slab[] {
   ]);
 }
 
-const rot = (dx: number, ry: number) => ({ x: dx * Math.cos(ry), z: -dx * Math.sin(ry) });
-
-/**
- * Collision for a panel on two posts: the post-to-post line sampled every 0.5 block, `rows` rows tall (up to the
- * panel's top row). The panels hang low (InfoBoard from 1.0, the Petak sign from 0.55): posts alone left a gap Ezra's
- * 0.6-wide body walked through, and a barrier lower than the panel top could be jumped onto from a prop.
- */
-function boardSpan(at: { x: number; z: number }, halfSpan: number, ry: number, rows = 2): Cell[] {
-  const n = Math.ceil((2 * halfSpan) / 0.5);
-  const seen = new Set<string>();
-  const out: Cell[] = [];
-  for (let i = 0; i <= n; i++) {
-    const o = rot(-halfSpan + (2 * halfSpan * i) / n, ry);
-    for (const c of postCells(at.x + o.x, at.z + o.z, rows)) {
-      const key = c.join();
-      if (seen.has(key)) continue;
-      seen.add(key);
-      out.push(c);
-    }
-  }
-  return out;
-}
 
 function titleCells(t: { x: number; z: number; cell: number; lines: readonly string[] }): Cell[] {
   const half = (layoutLines(t.lines).width * t.cell) / 2;
@@ -371,7 +345,6 @@ function titleCells(t: { x: number; z: number; cell: number; lines: readonly str
   return boxCells(Math.round(t.x - half), Math.round(t.x + half), 0, 1, z, z);
 }
 
-const trunk = (t: { x: number; z: number; h: number }): Cell[] => boxCells(t.x, t.x, 0, t.h - 1, t.z, t.z);
 /**
  * Within this of a cell's centre, what hangs overhead is in reach of Ezra's model at its widest (MODEL_REACH, the
  * mortarboard's board) while his box stands in the cell.
@@ -403,17 +376,6 @@ export function slabCells(s: Slab, rows?: number): Cell[] {
     }
   }
   return out;
-}
-
-/** Cells without repeats, in their first order. */
-function unique(cells: Cell[]): Cell[] {
-  const seen = new Set<string>();
-  return cells.filter((c) => {
-    const key = c.join();
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
 }
 
 /** An InfoBoard's panel (boardGeometry.ts INFO_BOARD, scaled whole): from its post tops to the top edge its rows need. */
@@ -474,26 +436,6 @@ export function signSlabs(l: { x: number; z: number; ry: number }, scale = 1): S
   ];
 }
 
-/** A map board's barrier: every cell its bezel or post stands in, rows 0–1 (its top is 1.75 up). */
-const mapCells = (m: { x: number; z: number; ry: number }): Cell[] => unique(mapSlabs(m).flatMap((sl) => slabCells(sl, 2)));
-/** A Signpost's barrier: every cell its face or post stands in, up to the row the face's top is in. */
-const signCells = (l: { x: number; z: number; ry: number }, scale = 1): Cell[] => {
-  const [face, post] = signSlabs(l, scale);
-  const rows = Math.ceil(footprintOf(face).y1);
-  return unique([...slabCells(face, rows), ...slabCells(post, rows)]);
-};
-/** An InfoBoard's barrier: every cell its panel or a post stands in, up to the row its top is in (`rows` to set another height). */
-function infoCells(b: { x: number; z: number; ry: number }, title: string, lines: readonly string[], scale = 1, rows?: number): Cell[] {
-  const panel = infoSlab(b, title, lines, scale);
-  const top = rows ?? Math.ceil(footprintOf(panel).y1);
-  return unique([panel, ...infoPostSlabs(b, scale)].flatMap((sl) => slabCells(sl, top)));
-}
-/** A mini's InfoBoard, scaled by MINI_BOARD_SCALE. */
-function miniInfo(id: string, b: { x: number; z: number; ry: number }): Cell[] {
-  const p = projectById(id);
-  return infoCells(b, p.title, miniBoardLines(p), MINI_BOARD_SCALE);
-}
-
 /**
  * Ceiling cells under overhead slabs, so no jump puts Ezra's model through them: in each cell where his box would put his
  * model (MODEL_REACH either side of him) under a slab, the rows from the highest one that still stops the model's top
@@ -533,23 +475,19 @@ function withCaps(cells: Cell[], caps: Cell[]): Cell[] {
   return out;
 }
 
-/** Every island's prop cells, from the spots above (FOOTPRINTS). */
+/**
+ * Every island's voxel collision: its buildings, walls, counters, roofs and the stair (FOOTPRINTS). Everything thin or
+ * free-standing (trees, posts, boards, signs, map boards, crates, the gentong) collides as its drawn shape instead
+ * (colliders.ts PROP_BOXES), so Ezra walks between them and the Play camera passes them by.
+ */
 function buildFootprints(): Record<string, Cell[]> {
   return {
   hero: [
-    ...trunk(HERO.tree),
-    ...postCells(HERO.flag.x, HERO.flag.z, 3),
-    ...infoCells(HERO.info, worldCopy.location, [worldCopy.heroLine], 1, INFO_ROWS),
     ...titleCells(HERO.title),
-    ...mapCells(HERO.map),
   ],
   gtid: [
     ...GTID.chart.heights.flatMap((h, i) => boxCells(GTID.chart.x0 + i, GTID.chart.x0 + i, 0, h - 1, GTID.chart.z, GTID.chart.z)),
-    ...boardSpan(GTID.board, GTID.board.w / 2 - 0.3, GTID.board.ry, 5), // the panel spans 1.62–4.28
     ...titleCells(GTID.title),
-    ...infoCells(GTID.info, GTID.info.title, projectById("gtid").stats ?? [], 1, INFO_ROWS),
-    ...signCells(GTID.link),
-    ...mapCells(GTID.map),
   ],
   "petak-umpet": [
     ...boxCells(PETAK.house.x0, PETAK.house.x0 + PETAK.house.w - 1, 0, 5, PETAK.house.z0, PETAK.house.z0 + PETAK.house.d - 1),
@@ -559,49 +497,17 @@ function buildFootprints(): Record<string, Cell[]> {
     [PETAK.house.x0 + 1, 0, PETAK.house.z0 + PETAK.house.d],
     [PETAK.house.x0 + 1, 1, PETAK.house.z0 + PETAK.house.d],
     [PETAK.house.x0 + 1, 0, PETAK.house.z0 + PETAK.house.d + 1],
-    ...PETAK.trees.flatMap(trunk),
-    ...trunk(PETAK.banana),
-    ...PETAK.lanterns.flatMap((l) => postCells(l.x, l.z)),
-    ...postCells(PETAK.gentong.x, PETAK.gentong.z, 1),
-    ...postCells(PETAK.jemuran.x0, PETAK.jemuran.z),
-    ...postCells(PETAK.jemuran.x1, PETAK.jemuran.z),
-    ...boardSpan(PETAK.sign, PETAK.sign.w / 2 - 0.3, PETAK.sign.ry), // the panel spans 0.55–1.95
-    ...infoCells(PETAK.info, PETAK.info.title, projectById("petak-umpet").stats ?? [], 1, INFO_ROWS),
-    ...signCells(PETAK.link),
-    ...mapCells(PETAK.map),
   ],
   "orbit-store": [
     ...boxCells(-1, 1, 0, 1, -1, 1),
-    ...ORBIT.crates.flatMap((c) => postCells(c.x, c.z, c.stack > 0 ? 2 : 1)),
-    ...infoCells(ORBIT.info, ORBIT.info.title, projectById("orbit-store").stats ?? [], 1, INFO_ROWS),
-    ...signCells(ORBIT.link),
-    ...mapCells(ORBIT.map),
   ],
-  "ezra-bot": withCaps(
-    [
-      ...boxCells(-2, 0, 0, 3, 0, 0),
-      // the torso and head (robot.d deep around z 0.2, face plates ~0.08 more) reach 0.28 into row z 1 from x −1.95
-      // to −0.45: walking up to the robot or jumping in front of it put Ezra's face into its chest and head
-      ...boxCells(-2, -1, 0, 3, 1, 1),
-      ...boardSpan(EZRA.screen, EZRA.screen.w / 2 - 0.25, EZRA.screen.ry), // the panel spans 0.73–1.87
-      ...infoCells(EZRA.info, EZRA.info.title, projectById("ezra-bot").stats ?? []), // one stat: the panel ends 1.92 up
-      ...signCells(EZRA.link),
-      ...mapCells(EZRA.map),
-    ],
-    // the bubbles' right half, (3, 1) and (4, 1), hangs over the minecart station (and (4, 1) in its 2-block ring)
-    capCells(bubbleSlabs(), [[3, 1], [4, 1]]),
-  ),
-  "web-plaza": withCaps(
-    [
-      ...boardSpan(PLAZA.sign, PLAZA.sign.w / 2 - 0.1, PLAZA.sign.ry, 3), // the panel spans 1.65–2.75
-      ...trunk(PLAZA.tree),
-      ...PLAZA.lamps.flatMap((l) => postCells(l.x, l.z)),
-      ...mapCells(PLAZA.map),
-    ],
-    // the crown's lowest layer is 3.0 up: rows 2–3 under it keep the hair below it. Its corner (−3, −2) lies in the
-    // minecart's 2-block ring (a 4-tall trunk would lift the crown out of reach, but cut its top off the desktop view)
-    capCells(crownSlabs(PLAZA.tree), [[-3, -2]]),
-  ),
+  "ezra-bot": [
+    ...boxCells(-2, 0, 0, 3, 0, 0),
+    // the torso and head (robot.d deep around z 0.2, face plates ~0.08 more) reach 0.28 into row z 1 from x −1.95
+    // to −0.45: walking up to the robot or jumping in front of it put Ezra's face into its chest and head
+    ...boxCells(-2, -1, 0, 3, 1, 1),
+  ],
+  "web-plaza": [],
   "pos-monosuko": [
     ...boxCells(MONOSUKO.stall.x0, MONOSUKO.stall.x1, 0, MONOSUKO.stall.wallRows - 1, MONOSUKO.stall.wallZ, MONOSUKO.stall.wallZ),
     ...boxCells(MONOSUKO.stall.x0, MONOSUKO.stall.x1, 0, 0, MONOSUKO.stall.counterZ, MONOSUKO.stall.counterZ),
@@ -609,42 +515,22 @@ function buildFootprints(): Record<string, Cell[]> {
     // nor lets him onto an invisible ledge above it. The screen's ends (x ±1.5–1.78) hang over (±2, −2), in the
     // bridges' clearance rings: no ceiling there (layouts.test lists the gap)
     ...boxCells(Math.round(MONOSUKO.grill.x), Math.round(MONOSUKO.grill.x), 1, 2, Math.round(MONOSUKO.grill.z), Math.round(MONOSUKO.grill.z)),
-    ...postCells(MONOSUKO.table.x, MONOSUKO.table.z, 1),
-    ...postCells(-MONOSUKO.posts.x, MONOSUKO.posts.zLeft),
-    ...postCells(MONOSUKO.posts.x, MONOSUKO.posts.zRight),
-    ...miniInfo("pos-monosuko", MONOSUKO.info),
-    ...signCells(MONOSUKO.link, MINI_SIGN_SCALE),
-    ...mapCells(MONOSUKO.map),
   ],
   "bee-furniture-crm": withCaps(
     [
       ...boxCells(BEE.shed.x0, BEE.shed.x1, 0, BEE.shed.rows - 1, BEE.shed.z0, BEE.shed.z0), // back wall: the bench stands against it
       ...boxCells(BEE.shed.x0, BEE.shed.x0, 0, BEE.shed.rows - 1, BEE.shed.z1, BEE.shed.z1), // left wall's front end
       ...postCells(BEE.shed.x1 + 0.4, BEE.shed.z1 + 0.4, BEE.shed.rows), // front-right roof post
-      // two rows: on top of a one-row log pile Ezra's head stood in the roof's left eave (x −1.7 to −1.5)
-      ...postCells(BEE.logs.x, BEE.logs.z, 2),
-      ...postCells(BEE.monitor.x, BEE.monitor.z),
-      ...miniInfo("bee-furniture-crm", BEE.info),
-      ...signCells(BEE.link, MINI_SIGN_SCALE),
-      ...mapCells(BEE.map),
     ],
-    // under the roof (eaves 0.2–0.29 past the shed on every side) and the monitor (bezel 2.31–4.59 up, x 0.02–3.58):
-    // Ezra still walks under both in rows 0–1. The roof's front-left corner (−2, 0) lies in the bridge's clearance ring
-    capCells([...beeRoofPlanks(), screenSlab(BEE.screen)], [[-2, 0]]),
+    // under the roof (eaves 0.2–0.29 past the shed on every side): Ezra still walks under it in rows 0–1. The roof's
+    // front-left corner (−2, 0) lies in the bridge's clearance ring
+    capCells(beeRoofPlanks(), [[-2, 0]]),
   ),
   pedulipasal: [
     ...boxCells(PEDULI.pavilion.x0, PEDULI.pavilion.x1, 0, 2, PEDULI.pavilion.z0, PEDULI.pavilion.z0), // the shelf row, back posts at its ends
     ...boxCells(PEDULI.pavilion.x0, PEDULI.pavilion.x0, 0, 2, PEDULI.pavilion.z1, PEDULI.pavilion.z1), // front posts
     ...boxCells(PEDULI.pavilion.x1, PEDULI.pavilion.x1, 0, 2, PEDULI.pavilion.z1, PEDULI.pavilion.z1),
-    // the scales (1.3 high) and their table: two rows, so Ezra can't step up into them. Boxed in by the front posts and
-    // the shelf, nothing reaches the top row. The roof's eave (0.2–0.3 past these cells) is high enough to need no
-    // ceiling (PEDULI.roof)
-    ...postCells(PEDULI.scales.x, PEDULI.scales.z, 2),
     ...boxCells(0, 1, 0, 3, 1, 1), // the plinth and the phone on it (x −0.05–1.55, 3.7 tall)
-    ...trunk(PEDULI.tree),
-    ...miniInfo("pedulipasal", PEDULI.info),
-    ...signCells(PEDULI.link, MINI_SIGN_SCALE),
-    ...mapCells(PEDULI.map),
   ],
   };
 }

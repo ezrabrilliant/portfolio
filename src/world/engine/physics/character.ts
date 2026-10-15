@@ -1,5 +1,6 @@
 import type { IsSolid, Vec3 } from "@/world/engine/types";
 import { EZRA_REACH } from "./ezraModel";
+import type { Aabb, ColliderSet } from "./colliders";
 
 export interface CharacterParams {
   width: number; height: number; walkSpeed: number; runSpeed: number; accel: number;
@@ -40,8 +41,8 @@ export function createCharacter(pos: Vec3): CharacterState {
   };
 }
 
-/** Does the character's AABB (feet centre at x, y, z) overlap any solid block? */
-export function characterCollides(isSolid: IsSolid, x: number, y: number, z: number, p: CharacterParams = DEFAULT_PARAMS): boolean {
+/** Does the character's AABB (feet centre at x, y, z) overlap any solid block, or a prop collider? */
+export function characterCollides(isSolid: IsSolid, x: number, y: number, z: number, p: CharacterParams = DEFAULT_PARAMS, colliders?: ColliderSet): boolean {
   const hw = p.width / 2;
   const x0 = Math.floor(x - hw + EPS), x1 = Math.floor(x + hw - EPS);
   const y0 = Math.floor(y + EPS), y1 = Math.floor(y + p.height - EPS);
@@ -53,30 +54,66 @@ export function characterCollides(isSolid: IsSolid, x: number, y: number, z: num
       }
     }
   }
-  return false;
+  return colliders ? hitsProp(colliders, x, y, z, p) : false;
+}
+
+const PROP_BOX: Aabb = { x0: 0, y0: 0, z0: 0, x1: 0, y1: 0, z1: 0 };
+
+/**
+ * Props are tested against Ezra's model height, not his box's: a board's panel then stops his hair and mortarboard
+ * (MODEL_TOP) instead of letting them through, with no invisible rows standing in for it.
+ */
+function propBox(x: number, y: number, z: number, p: CharacterParams): Aabb {
+  const hw = p.width / 2;
+  PROP_BOX.x0 = x - hw; PROP_BOX.x1 = x + hw;
+  PROP_BOX.y0 = y; PROP_BOX.y1 = y + Math.max(p.height, MODEL_TOP);
+  PROP_BOX.z0 = z - hw; PROP_BOX.z1 = z + hw;
+  return PROP_BOX;
+}
+
+function hitsProp(colliders: ColliderSet, x: number, y: number, z: number, p: CharacterParams): boolean {
+  return colliders.hits(propBox(x, y, z, p));
+}
+
+/** Iterations of the sweeps against props: the last free point ends within delta / 2^SWEEP of the contact. */
+const SWEEP = 14;
+
+/** The largest fraction f in [0, 1] of the move from free to blocked for which `free(f)` holds (free(0) is assumed). */
+function sweep(free: (f: number) => boolean): number {
+  let lo = 0, hi = 1;
+  for (let i = 0; i < SWEEP; i++) {
+    const mid = (lo + hi) / 2;
+    if (free(mid)) lo = mid;
+    else hi = mid;
+  }
+  return lo;
 }
 
 function approach(v: number, target: number, maxDelta: number): number {
   return v < target ? Math.min(v + maxDelta, target) : Math.max(v - maxDelta, target);
 }
 
-/** Moves along x or z; tries a ≤ stepHeight step-up when grounded, else snaps to the blocking face. Returns true if it stepped. */
-function moveAxis(s: CharacterState, axis: "x" | "z", delta: number, isSolid: IsSolid, p: CharacterParams, canStep: boolean): boolean {
+/** Moves along x or z; tries a ≤ stepHeight step-up when grounded, else stops at the blocking face. Returns true if it stepped. */
+function moveAxis(s: CharacterState, axis: "x" | "z", delta: number, isSolid: IsSolid, p: CharacterParams, canStep: boolean, colliders?: ColliderSet): boolean {
   if (delta === 0) return false;
   const pos = s.pos;
   const nx = axis === "x" ? pos.x + delta : pos.x;
   const nz = axis === "z" ? pos.z + delta : pos.z;
-  if (!characterCollides(isSolid, nx, pos.y, nz, p)) {
+  if (!characterCollides(isSolid, nx, pos.y, nz, p, colliders)) {
     pos.x = nx; pos.z = nz;
     return false;
   }
   if (canStep) {
+    // up a block, or onto the top of the prop in the way (a gentong, a crate)
     const stepY = Math.floor(pos.y + SKIN) + 1;
-    if (stepY - pos.y <= p.stepHeight + SKIN
-      && !characterCollides(isSolid, pos.x, stepY, pos.z, p)
-      && !characterCollides(isSolid, nx, stepY, nz, p)) {
-      pos.x = nx; pos.z = nz; pos.y = stepY;
-      return true;
+    const propTop = colliders ? colliders.topOf(propBox(nx, pos.y, nz, p)) : -Infinity;
+    for (const y of [propTop + SKIN, stepY]) {
+      if (y > pos.y && y - pos.y <= p.stepHeight + SKIN
+        && !characterCollides(isSolid, pos.x, y, pos.z, p, colliders)
+        && !characterCollides(isSolid, nx, y, nz, p, colliders)) {
+        pos.x = nx; pos.z = nz; pos.y = y;
+        return true;
+      }
     }
   }
   const hw = p.width / 2;
@@ -86,14 +123,19 @@ function moveAxis(s: CharacterState, axis: "x" | "z", delta: number, isSolid: Is
   const cx = axis === "x" ? contact : pos.x;
   const cz = axis === "z" ? contact : pos.z;
   const forward = delta > 0 ? contact > cur : contact < cur;
-  if (forward && !characterCollides(isSolid, cx, pos.y, cz, p)) { pos.x = cx; pos.z = cz; }
+  if (forward && !characterCollides(isSolid, cx, pos.y, cz, p, colliders)) { pos.x = cx; pos.z = cz; }
+  else if (colliders && hitsProp(colliders, nx, pos.y, nz, p)) {
+    // a prop in the way: stop flush against it (the block snap above only knows block faces)
+    const f = sweep((t) => !characterCollides(isSolid, axis === "x" ? cur + delta * t : pos.x, pos.y, axis === "z" ? cur + delta * t : pos.z, p, colliders));
+    pos[axis] = cur + delta * f;
+  }
   s.vel[axis] = 0;
   return false;
 }
 
 export function stepCharacter(
   s: CharacterState, input: CharacterInput, dt: number,
-  world: { isSolid: IsSolid; killY: number }, p: CharacterParams = DEFAULT_PARAMS,
+  world: { isSolid: IsSolid; killY: number; colliders?: ColliderSet }, p: CharacterParams = DEFAULT_PARAMS,
 ): StepResult {
   const res: StepResult = { landed: false, jumped: false, fellOut: false, stepped: false };
   if (s.locked) return res;
@@ -124,24 +166,38 @@ export function stepCharacter(
     s.vel.y = Math.max(s.vel.y - p.gravity * h, -MAX_FALL);
 
     const canStep = s.onGround;
-    if (moveAxis(s, "x", s.vel.x * h, world.isSolid, p, canStep)) res.stepped = true;
-    if (moveAxis(s, "z", s.vel.z * h, world.isSolid, p, canStep)) res.stepped = true;
+    const props = world.colliders;
+    if (moveAxis(s, "x", s.vel.x * h, world.isSolid, p, canStep, props)) res.stepped = true;
+    if (moveAxis(s, "z", s.vel.z * h, world.isSolid, p, canStep, props)) res.stepped = true;
 
     const wasGround = s.onGround;
     const ny = s.pos.y + s.vel.y * h;
-    if (!characterCollides(world.isSolid, s.pos.x, ny, s.pos.z, p)) {
+    if (!characterCollides(world.isSolid, s.pos.x, ny, s.pos.z, p, props)) {
       s.pos.y = ny;
       s.onGround = false;
     } else if (s.vel.y < 0) {
-      const landY = Math.floor(ny + EPS) + 1;
-      if (landY <= s.pos.y + SKIN && !characterCollides(world.isSolid, s.pos.x, landY, s.pos.z, p)) s.pos.y = landY;
+      const from = s.pos.y;
+      if (props && hitsProp(props, s.pos.x, ny, s.pos.z, p)) {
+        // landing on a prop's top: as low as stays free
+        const f = sweep((t) => !characterCollides(world.isSolid, s.pos.x, from + (ny - from) * t, s.pos.z, p, props));
+        s.pos.y = from + (ny - from) * f;
+      } else {
+        const landY = Math.floor(ny + EPS) + 1;
+        if (landY <= s.pos.y + SKIN && !characterCollides(world.isSolid, s.pos.x, landY, s.pos.z, p, props)) s.pos.y = landY;
+      }
       s.vel.y = 0;
       s.onGround = true;
       if (!wasGround) res.landed = true;
     } else {
-      const head = Math.floor(ny + p.height - EPS);
-      const cy = head - p.height - SKIN;
-      if (cy >= s.pos.y - SKIN && !characterCollides(world.isSolid, s.pos.x, cy, s.pos.z, p)) s.pos.y = cy;
+      const from = s.pos.y;
+      if (props && hitsProp(props, s.pos.x, ny, s.pos.z, p)) {
+        const f = sweep((t) => !characterCollides(world.isSolid, s.pos.x, from + (ny - from) * t, s.pos.z, p, props));
+        s.pos.y = from + (ny - from) * f;
+      } else {
+        const head = Math.floor(ny + p.height - EPS);
+        const cy = head - p.height - SKIN;
+        if (cy >= s.pos.y - SKIN && !characterCollides(world.isSolid, s.pos.x, cy, s.pos.z, p, props)) s.pos.y = cy;
+      }
       s.vel.y = 0;
     }
 

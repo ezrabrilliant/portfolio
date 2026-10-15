@@ -4,21 +4,22 @@ import { buildLayout } from "@/world/engine/gen/layout";
 import { blockId } from "@/world/engine/voxel/blocks";
 import { buildWorld } from "@/world/engine/worldBuild";
 import { stampCrossings } from "@/world/scene/crossings/stamp";
-import { milestoneCells, milestoneSpotsFor } from "./placement";
+import { milestoneCells, milestoneSpotsFor, pillarCollider } from "./placement";
 import { stampMilestones } from "./stamp";
 
 const layout = buildLayout(worldProjects);
 const years = milestones.map((m) => m.year);
-const built = buildWorld(layout, [(g) => stampCrossings(g, layout), (g) => stampMilestones(g, layout, years)]);
 const spots = milestoneSpotsFor(layout, years);
+const built = buildWorld(layout, [(g) => stampCrossings(g, layout), (g) => stampMilestones(g, layout, years)], spots.map(pillarCollider));
 
 describe("stampMilestones", () => {
-  it("makes every pillar solid for two rows above its ground", () => {
+  it("leaves the pillars out of the grid (the camera passes them) and blocks their cells for the body", () => {
     for (const s of spots) {
       const x = Math.floor(s.pos.x), z = Math.floor(s.pos.z);
-      expect(built.grid.get(x, s.pos.y, z), `${s.year}`).toBe(blockId("barrier"));
-      expect(built.grid.get(x, s.pos.y + 1, z), `${s.year}`).toBe(blockId("barrier"));
-      expect(built.grid.isSolid(x, s.pos.y + 2, z), `${s.year}`).toBe(false);
+      expect(built.grid.isSolid(x, s.pos.y, z), `${s.year}`).toBe(false);
+      expect(built.blocked(x, s.pos.y, z), `${s.year}`).toBe(true);
+      expect(built.blocked(x, s.pos.y + 1, z), `${s.year}`).toBe(true);
+      expect(built.blocked(x, s.pos.y + 3, z), `${s.year}`).toBe(false);
     }
   });
 

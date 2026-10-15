@@ -1,6 +1,7 @@
 import type { Crossing, IslandPlacement, WorldLayout } from "@/world/engine/gen/layout";
 import type { Vec3 } from "@/world/engine/types";
 import type { BlockName } from "@/world/engine/voxel/blocks";
+import type { Collider } from "@/world/engine/physics/colliders";
 import { VIEW_F } from "@/world/scene/islands/types";
 
 /** The crossing the year milestones stand along (spec §7.1): the tour's first bridge. */
@@ -70,30 +71,14 @@ export function tourTravelWeights(layout: WorldLayout): number[] {
 
 export interface WorldCell { x: number; y: number; z: number; block: BlockName }
 
-/** Columns under the pillar's turned plinth (sampled a little inside its edges, so a corner grazing a cell skips it). */
-export function pillarColumns(spot: MilestoneSpot): { x: number; z: number }[] {
-  const cos = Math.cos(spot.ry);
-  const sin = Math.sin(spot.ry);
-  const hw = PILLAR_FOOT.w / 2 - 0.05;
-  const hd = PILLAR_FOOT.d / 2 - 0.05;
-  const seen = new Map<string, { x: number; z: number }>();
-  const N = 16;
-  for (let i = 0; i <= N; i++) {
-    for (let j = 0; j <= N; j++) {
-      const lx = -hw + (2 * hw * i) / N;
-      const lz = -hd + (2 * hd * j) / N;
-      // Three's turn about +y: x' = x cos + z sin, z' = −x sin + z cos
-      const x = Math.floor(spot.pos.x + lx * cos + lz * sin);
-      const z = Math.floor(spot.pos.z - lx * sin + lz * cos);
-      seen.set(`${x},${z}`, { x, z });
-    }
-  }
-  return [...seen.values()].sort((a, b) => a.x - b.x || a.z - b.z);
+/** The pillar as one prop collider: its plinth's footprint, its full height, turned with its plaque. */
+export function pillarCollider(spot: MilestoneSpot): Collider {
+  return { x: spot.pos.x, y: spot.pos.y + PILLAR_H / 2, z: spot.pos.z, hx: PILLAR_FOOT.w / 2, hy: PILLAR_H / 2, hz: PILLAR_FOOT.d / 2, ry: spot.ry, what: `milestone ${spot.year}` };
 }
 
 /**
  * World cells a milestone occupies: an own stone's 3 × 3 slab one row under its top plus a keel block under its middle
- * (real stone, meshed with the nearest island's terrain), then two barrier rows over every column under the pillar.
+ * (real stone, meshed with the nearest island's terrain). The pillar itself collides as a prop (pillarCollider).
  */
 export function milestoneCells(spot: MilestoneSpot): WorldCell[] {
   const x = Math.floor(spot.pos.x);
@@ -104,6 +89,5 @@ export function milestoneCells(spot: MilestoneSpot): WorldCell[] {
     for (let ix = -1; ix <= 1; ix++) for (let iz = -1; iz <= 1; iz++) out.push({ x: x + ix, y: y - 1, z: z + iz, block: "stone" });
     out.push({ x, y: y - 2, z, block: "stone" });
   }
-  for (const c of pillarColumns(spot)) out.push({ ...c, y, block: "barrier" }, { ...c, y: y + 1, block: "barrier" });
   return out;
 }

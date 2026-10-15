@@ -31,6 +31,8 @@ import { SteppingStones } from "./crossings/SteppingStones";
 import { stampCrossings } from "./crossings/stamp";
 import { Milestones } from "./milestones/Milestones";
 import { stampMilestones } from "./milestones/stamp";
+import { milestoneSpotsFor, pillarCollider } from "./milestones/placement";
+import { islandColliders } from "./islands/colliders";
 
 function build(): BuiltWorld {
   const stamps: Array<(grid: VoxelGrid) => void> = runtime.layout.islands.map(
@@ -41,6 +43,9 @@ function build(): BuiltWorld {
     (grid: VoxelGrid) => stampCrossings(grid, runtime.layout),
     // after the crossings: the pillars and the floating stone never take a bridge or stepping-stone cell
     (grid: VoxelGrid) => stampMilestones(grid, runtime.layout, milestones.map((m) => m.year)),
+  ], [
+    ...runtime.layout.islands.flatMap((p) => islandColliders(p.id, p)),
+    ...milestoneSpotsFor(runtime.layout, milestones.map((m) => m.year)).map(pillarCollider),
   ]);
   runtime.built = built;
   // Ezra sits on the hero island's rim on the side of the hero's tour camera, clear of stamped props (so this runs
@@ -51,7 +56,7 @@ function build(): BuiltWorld {
     const top = islandTop(hero);
     const cam = ISLANDS.hero?.tourStop(hero).camera;
     const toViewer = cam ? { x: cam.x - top.x, z: cam.z - top.z } : { x: -VIEW_F.x, z: -VIEW_F.z };
-    runtime.seat = findSeat(shape, hero.origin, toViewer, built.grid.isSolid);
+    runtime.seat = findSeat(shape, hero.origin, toViewer, built.blocked);
     Object.assign(runtime.player.pos, runtime.seat.pos);
     Object.assign(runtime.player.lastSafe, islandTop(hero));
     runtime.heading = runtime.seat.heading;

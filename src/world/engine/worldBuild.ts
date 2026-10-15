@@ -4,8 +4,19 @@ import { mulberry32 } from "@/world/engine/gen/rng";
 import { blockId } from "@/world/engine/voxel/blocks";
 import { VoxelGrid } from "@/world/engine/voxel/grid";
 import { buildBatch, type InstanceBatch } from "@/world/engine/voxel/mesher";
+import type { IsSolid } from "@/world/engine/types";
+import { ColliderSet, type Collider } from "@/world/engine/physics/colliders";
 
-export interface BuiltWorld { grid: VoxelGrid; batches: Record<string, InstanceBatch>; shapes: Record<string, IslandShape> }
+export interface BuiltWorld {
+  /** terrain, buildings and crossings: what the body and the Play camera both collide with */
+  grid: VoxelGrid;
+  /** props as their drawn shapes: the body collides with them, the camera does not */
+  props: ColliderSet;
+  /** a cell the grid fills or a prop reaches into: where nothing may land, sit or be placed */
+  blocked: IsSolid;
+  batches: Record<string, InstanceBatch>;
+  shapes: Record<string, IslandShape>;
+}
 
 function inBox(isl: IslandPlacement, x: number, y: number, z: number): boolean {
   const reach = Math.ceil(isl.radius * 1.25) + 3;
@@ -13,7 +24,7 @@ function inBox(isl: IslandPlacement, x: number, y: number, z: number): boolean {
     && y >= isl.origin.y - isl.depth - 1 && y <= isl.origin.y + 24;
 }
 
-export function buildWorld(layout: WorldLayout, extraStamps: Array<(grid: VoxelGrid) => void> = []): BuiltWorld {
+export function buildWorld(layout: WorldLayout, extraStamps: Array<(grid: VoxelGrid) => void> = [], colliders: readonly Collider[] = []): BuiltWorld {
   const grid = new VoxelGrid();
   const shapes: Record<string, IslandShape> = {};
   for (const isl of layout.islands) {
@@ -38,5 +49,7 @@ export function buildWorld(layout: WorldLayout, extraStamps: Array<(grid: VoxelG
   for (const isl of layout.islands) {
     batches[isl.id] = buildBatch(grid, (x, y, z) => owner(x, y, z) === isl.id, mulberry32(isl.seed));
   }
-  return { grid, batches, shapes };
+  const props = new ColliderSet(colliders);
+  const blocked: IsSolid = (x, y, z) => grid.isSolid(x, y, z) || props.touchesCell(x, y, z);
+  return { grid, props, blocked, batches, shapes };
 }

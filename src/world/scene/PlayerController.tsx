@@ -109,7 +109,7 @@ export function PlayerController() {
         runtime.hidden = true;
       } else if (event === "arrive") {
         const island = runtime.islandById(tr.to);
-        const spot = arrivalSpot(built.grid.isSolid, island, runtime.tourPath?.stops.find((s) => s.id === tr.to));
+        const spot = arrivalSpot(built.blocked, island, runtime.tourPath?.stops.find((s) => s.id === tr.to));
         Object.assign(p.pos, spot.pos);
         Object.assign(p.lastSafe, spot.pos);
         p.vel.x = p.vel.y = p.vel.z = 0;
@@ -178,6 +178,7 @@ export function PlayerController() {
 
     const r = stepCharacter(p, input, dt, {
       isSolid: built.grid.isSolid,
+      colliders: built.props,
       killY: runtime.killY,
     });
     if (runtime.dropping && p.onGround) runtime.dropping = false;

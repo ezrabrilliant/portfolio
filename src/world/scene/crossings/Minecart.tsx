@@ -29,7 +29,7 @@ export function Minecart({ crossing }: { crossing: Crossing }) {
   const to = runtime.islandById(crossing.to);
   const ends = useMemo(() => railEnds(crossing, from, to), [crossing, from, to]);
   // laid against the islands' real terrain (World builds the grid before its children render)
-  const rail = useMemo(() => minecartRail(ends, runtime.built?.grid.isSolid ?? (() => false)), [ends]);
+  const rail = useMemo(() => minecartRail(ends, runtime.built?.blocked ?? (() => false)), [ends]);
   const duration = useMemo(() => Math.min(6, Math.max(4, railLength(rail) / 6)), [rail]);
   const cast = useWorld((s) => s.quality === "high");
   const wood = useRef<THREE.InstancedMesh>(null); // sleepers, then trestle legs
@@ -73,7 +73,7 @@ export function Minecart({ crossing }: { crossing: Crossing }) {
     const p = new THREE.Vector3();
     const look = new THREE.Matrix4();
     const up = new THREE.Vector3(0, 1, 0);
-    const isSolid = runtime.built?.grid.isSolid ?? (() => false);
+    const isSolid = runtime.built?.blocked ?? (() => false);
     for (let i = 0; i < SAMPLES; i++) {
       const u = (i + 0.5) / SAMPLES;
       const c = railPoint(rail, u);
