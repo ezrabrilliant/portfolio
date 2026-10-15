@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { rampHeight } from "@/world/engine/physics/ramps";
 import { worldProjects } from "@/config/portfolio";
 import { buildLayout } from "@/world/engine/gen/layout";
 import type { IslandPlacement } from "@/world/engine/gen/layout";
@@ -6,8 +7,7 @@ import { buildRail, railPoint, railTangent } from "@/world/engine/traversal/rail
 import { buildWorld } from "@/world/engine/worldBuild";
 import { characterCollides, createCharacter, stepCharacter } from "@/world/engine/physics/character";
 import type { Vec3 } from "@/world/engine/types";
-import { bridgeCells, bridgeDeck, bridgePlanks, inset, minecartRail, padPair, railEnds, railLength, steppingStones } from "./geometry";
-import type { DeckPlank } from "./geometry";
+import { bridgeCells, bridgeDeck, bridgePlanks, bridgeRamp, inset, minecartRail, padPair, railEnds, railLength, steppingStones } from "./geometry";
 import { stampCrossings } from "./stamp";
 
 const a = { x: 0, y: 1, z: 0 };
@@ -32,9 +32,11 @@ describe("bridgeCells", () => {
 });
 
 describe("bridgePlanks", () => {
-  it("lies flush with the stepped walking surface", () => {
+  it("lies on the ramp between the anchors, tilted with it", () => {
+    const r = bridgeRamp(a, b);
     for (const p of bridgePlanks(a, b)) {
-      expect(Math.abs(p.y + 0.09 - Math.round(p.y + 0.09))).toBeLessThan(1e-9);
+      expect(p.y + 0.09).toBeCloseTo(rampHeight(r, p.x, p.z)!, 9);
+      expect(Math.tan(p.pitch)).toBeCloseTo((b.y - a.y) / Math.hypot(b.x - a.x, b.z - a.z), 9);
       expect(p.s).toBeGreaterThanOrEqual(0);
       expect(p.s).toBeLessThanOrEqual(1);
     }
@@ -178,85 +180,49 @@ describe("every minecart in the world", () => {
   }
 });
 
-describe("bridgeDeck on the stamped world", () => {
+describe("bridges as ramps on the stamped world", () => {
   const layout = buildLayout(worldProjects);
-  const world = buildWorld(layout, [(g) => stampCrossings(g, layout)]);
-  const isSolid = world.grid.isSolid;
   const bridges = layout.crossings.filter((x) => x.kind === "bridge");
-
-  /** Height a character centred at (x, z) stands at (searching ±2 around `near`), or NaN in the air. */
-  const floorAt = (x: number, z: number, near: number) => {
-    for (let y = near + 2; y >= near - 2; y--) if (!characterCollides(isSolid, x, y, z) && characterCollides(isSolid, x, y - 0.01, z)) return y;
-    return NaN;
-  };
-  /** Top of the plank drawn under along-fraction `s` (planks are evenly spaced, one every ~0.5 block). */
-  const visibleTop = (deck: DeckPlank[], s: number) => deck[Math.round(Math.min(1, Math.max(0, s)) * (deck.length - 1))].y + 0.09;
-  /** Lengths (blocks along the bridge) of the stretches where the two heights differ. */
-  const mismatchRuns = (samples: { d: number; bad: boolean }[]) => {
-    const runs: number[] = [];
-    let start = -1;
-    for (const { d, bad } of samples) {
-      if (bad && start < 0) start = d;
-      if (!bad && start >= 0) {
-        runs.push(d - start);
-        start = -1;
-      }
-    }
-    if (start >= 0) runs.push(samples[samples.length - 1].d - start);
-    return runs;
-  };
+  const world = buildWorld(layout, [(g) => stampCrossings(g, layout)], [], bridges.map((c) => bridgeRamp(c.a, c.b)));
+  const isSolid = world.grid.isSolid;
 
   for (const c of bridges) {
     const deck = bridgeDeck(c.a, c.b, world.grid);
-    const len = Math.hypot(c.b.x - c.a.x, c.b.z - c.a.z);
-    const ux = (c.b.x - c.a.x) / len;
-    const uz = (c.b.z - c.a.z) / len;
+    const ramp = bridgeRamp(c.a, c.b);
     const tag = `${c.from} → ${c.to}`;
 
-    it(`lays every plank top where Ezra stands at that plank (${tag})`, () => {
-      for (const p of deck) {
-        const top = p.y + 0.09;
-        expect(characterCollides(isSolid, p.x, top, p.z)).toBe(false);
-        expect(characterCollides(isSolid, p.x, top - 0.01, p.z)).toBe(true);
-      }
+    it(`lays the planks on the ramp, lying on the islands at the ends and over the gap between (${tag})`, () => {
+      for (const p of deck) expect(p.y + 0.09).toBeCloseTo(rampHeight(ramp, p.x, p.z)!, 9);
       expect(deck[0].grounded && deck[deck.length - 1].grounded).toBe(true);
       expect(deck.some((p) => !p.grounded)).toBe(true);
     });
 
-    it(`shows each step within half a plank of the collision step along the centreline (${tag})`, () => {
-      const samples: { d: number; bad: boolean }[] = [];
-      for (let d = 0; d <= len; d += 0.02) {
-        const x = c.a.x + ux * d;
-        const z = c.a.z + uz * d;
-        const top = visibleTop(deck, d / len);
-        // a NaN floor (nothing to stand on) counts as a mismatch
-        samples.push({ d, bad: !(Math.abs(floorAt(x, z, Math.round(top)) - top) <= 0.01) });
-      }
-      for (const run of mismatchRuns(samples)) expect(run).toBeLessThanOrEqual(0.3);
-    });
-
-    it(`keeps Ezra's feet on the visible planks while he walks across and back (${tag})`, () => {
+    it(`walks Ezra across and back on the planks: never a fall, never more than a hair off the deck (${tag})`, () => {
       const walk = (from: Vec3, to: Vec3) => {
         const p = createCharacter({ ...from });
         const dx = to.x - from.x;
         const dz = to.z - from.z;
         const l = Math.hypot(dx, dz);
         const input = { moveX: dx / l, moveZ: dz / l, run: false, jump: false };
-        const samples: { d: number; bad: boolean }[] = [];
+        let worst = 0;
         for (let i = 0; i < 60 * 8; i++) {
-          stepCharacter(p, input, 1 / 60, { isSolid, killY: -50 });
+          const r = stepCharacter(p, input, 1 / 60, { isSolid, killY: -50, ramps: world.ramps });
           expect(p.pos.y).toBeGreaterThan(Math.min(from.y, to.y) - 0.5); // never falls off
           const d = (p.pos.x - from.x) * (dx / l) + (p.pos.z - from.z) * (dz / l);
           if (d >= l) break;
-          const s = ((p.pos.x - c.a.x) * ux + (p.pos.z - c.a.z) * uz) / len;
-          // in the air he is dropping down a step (the stair's own motion), not standing above the deck
-          samples.push({ d, bad: p.onGround && !(Math.abs(p.pos.y - visibleTop(deck, s)) <= 0.01) });
+          // off the islands' grass (standing on no block), on the deck: on it all the way, no hop or drop
+          const h = rampHeight(ramp, p.pos.x, p.pos.z);
+          const onBlock = characterCollides(isSolid, p.pos.x, p.pos.y - 0.02, p.pos.z);
+          if (h !== null && !onBlock && i > 5) {
+            expect(p.onGround, `${tag} at ${d.toFixed(2)}`).toBe(true);
+            expect(r.landed).toBe(false);
+            worst = Math.max(worst, Math.abs(p.pos.y - h));
+          }
         }
-        return mismatchRuns(samples);
+        return worst;
       };
-      // runs ≤ half a plank (the deck samples his standing height every ~0.5 block) + about a frame of walking
-      const runs = [...walk(c.a, c.b), ...walk(c.b, c.a)];
-      for (const run of runs) expect(run).toBeLessThanOrEqual(0.4);
+      expect(walk(c.a, c.b)).toBeLessThan(0.01);
+      expect(walk(c.b, c.a)).toBeLessThan(0.01);
     });
   }
 });

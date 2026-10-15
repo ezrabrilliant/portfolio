@@ -9,7 +9,7 @@ import { bridgeDeck, bridgePlanks } from "./geometry";
 import type { DeckPlank } from "./geometry";
 import { PLANK, WOOD, ropeMat, unitBox } from "./materials";
 
-// planks, step risers and posts are one instanced draw, coloured per instance; the deck's ends lie on the
+// planks and posts are one instanced draw, coloured per instance; the deck's ends lie on the
 // islands' grass with their tops flush with it, so pull the whole deck forward in depth
 const deckMat = new THREE.MeshStandardMaterial({ color: "#ffffff", roughness: 0.9, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1 });
 const PLANK_SIZE: [number, number, number] = [2.1, 0.18, 0.42];
@@ -28,12 +28,6 @@ export function Bridge({ crossing }: { crossing: Crossing }) {
     const grid = runtime.built?.grid;
     return grid ? bridgeDeck(crossing.a, crossing.b, grid) : bridgePlanks(crossing.a, crossing.b).map((p) => ({ ...p, grounded: false }));
   }, [crossing]);
-  // a board standing in the gap wherever the deck steps a block, so the stairs read as one bridge
-  const risers = useMemo(() => {
-    const out: number[] = [];
-    for (let i = 0; i + 1 < planks.length; i++) if (Math.abs(planks[i + 1].y - planks[i].y) > 0.5) out.push(i);
-    return out;
-  }, [planks]);
   // sway only over the gap: 0 on planks lying on island grass, easing to 1 within 1.5 blocks of them
   const sway = useMemo(
     () =>
@@ -45,35 +39,24 @@ export function Bridge({ crossing }: { crossing: Crossing }) {
     [planks, len],
   );
   const offsets = useMemo(() => new Float32Array(planks.length), [planks]);
-  const count = planks.length + risers.length + 4;
+  const count = planks.length + 4;
   const tmp = useMemo(
-    () => ({ m: new THREE.Matrix4(), q: new THREE.Quaternion(), p: new THREE.Vector3(), s: new THREE.Vector3(), up: new THREE.Vector3(0, 1, 0), dirty: true }),
+    () => ({ m: new THREE.Matrix4(), q: new THREE.Quaternion(), e: new THREE.Euler(0, 0, 0, "YXZ"), p: new THREE.Vector3(), s: new THREE.Vector3(), up: new THREE.Vector3(0, 1, 0), dirty: true }),
     [],
   );
 
-  /** Writes the planks and risers (the only instances that move); posts are written once. */
+  /** Writes the planks (the only instances that move); posts are written once. */
   const writeDeck = () => {
     const mesh = ref.current;
     if (!mesh) return;
     for (let i = 0; i < planks.length; i++) {
       const pl = planks[i];
-      tmp.q.setFromAxisAngle(tmp.up, pl.yaw);
+      // turned along the bridge and tilted with its ramp (a turn of -pitch about x lifts the plank's far end)
+      tmp.q.setFromEuler(tmp.e.set(-pl.pitch, pl.yaw, 0));
       tmp.p.set(pl.x, pl.y + offsets[i], pl.z);
       tmp.s.set(PLANK_SIZE[0], PLANK_SIZE[1], PLANK_SIZE[2]);
       tmp.m.compose(tmp.p, tmp.q, tmp.s);
       mesh.setMatrixAt(i, tmp.m);
-    }
-    for (let k = 0; k < risers.length; k++) {
-      const i = risers[k];
-      const lo = planks[i].y < planks[i + 1].y ? i : i + 1;
-      const hi = lo === i ? i + 1 : i;
-      const bottom = planks[lo].y - 0.09 + offsets[lo];
-      const top = planks[hi].y + 0.09 + offsets[hi];
-      tmp.q.setFromAxisAngle(tmp.up, planks[i].yaw);
-      tmp.p.set((planks[i].x + planks[i + 1].x) / 2, (bottom + top) / 2, (planks[i].z + planks[i + 1].z) / 2);
-      tmp.s.set(PLANK_SIZE[0], top - bottom, 0.08);
-      tmp.m.compose(tmp.p, tmp.q, tmp.s);
-      mesh.setMatrixAt(planks.length + k, tmp.m);
     }
     mesh.instanceMatrix.needsUpdate = true;
   };
@@ -83,9 +66,9 @@ export function Bridge({ crossing }: { crossing: Crossing }) {
     if (!mesh) return;
     const color = new THREE.Color();
     const yaw = Math.atan2(ux, uz);
-    for (let i = 0; i < planks.length + risers.length; i++) mesh.setColorAt(i, color.set(PLANK));
+    for (let i = 0; i < planks.length; i++) mesh.setColorAt(i, color.set(PLANK));
     color.set(WOOD);
-    let k = planks.length + risers.length;
+    let k = planks.length;
     for (const e of [crossing.a, crossing.b]) {
       for (const side of [POST_SIDE, -POST_SIDE]) {
         tmp.q.setFromAxisAngle(tmp.up, yaw);

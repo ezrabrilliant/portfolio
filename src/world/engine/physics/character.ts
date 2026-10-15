@@ -1,6 +1,7 @@
 import type { IsSolid, Vec3 } from "@/world/engine/types";
 import { EZRA_REACH } from "./ezraModel";
 import type { Aabb, ColliderSet } from "./colliders";
+import { RAMP_SNAP, type RampSet } from "./ramps";
 
 export interface CharacterParams {
   width: number; height: number; walkSpeed: number; runSpeed: number; accel: number;
@@ -135,7 +136,7 @@ function moveAxis(s: CharacterState, axis: "x" | "z", delta: number, isSolid: Is
 
 export function stepCharacter(
   s: CharacterState, input: CharacterInput, dt: number,
-  world: { isSolid: IsSolid; killY: number; colliders?: ColliderSet }, p: CharacterParams = DEFAULT_PARAMS,
+  world: { isSolid: IsSolid; killY: number; colliders?: ColliderSet; ramps?: RampSet }, p: CharacterParams = DEFAULT_PARAMS,
 ): StepResult {
   const res: StepResult = { landed: false, jumped: false, fellOut: false, stepped: false };
   if (s.locked) return res;
@@ -172,7 +173,15 @@ export function stepCharacter(
 
     const wasGround = s.onGround;
     const ny = s.pos.y + s.vel.y * h;
-    if (!characterCollides(world.isSolid, s.pos.x, ny, s.pos.z, p, props)) {
+    // a ramp (a bridge's deck) under him: walking up lifts him onto it, walking down keeps him on it (no fall), and a
+    // drop onto it lands there. Not while rising from a jump
+    const ramp = world.ramps && s.vel.y <= 0 ? world.ramps.surfaceAt(s.pos.x, s.pos.z, s.pos.y) : null;
+    if (ramp !== null && ny <= ramp + (wasGround ? RAMP_SNAP : 0) && !characterCollides(world.isSolid, s.pos.x, ramp, s.pos.z, p, props)) {
+      s.pos.y = ramp;
+      s.vel.y = 0;
+      s.onGround = true;
+      if (!wasGround) res.landed = true;
+    } else if (!characterCollides(world.isSolid, s.pos.x, ny, s.pos.z, p, props)) {
       s.pos.y = ny;
       s.onGround = false;
     } else if (s.vel.y < 0) {

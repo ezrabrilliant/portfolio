@@ -182,6 +182,7 @@ export function PlayerController() {
     const r = stepCharacter(p, input, dt, {
       isSolid: built.grid.isSolid,
       colliders: built.props,
+      ramps: built.ramps,
       killY: runtime.killY,
     });
     if (runtime.dropping && p.onGround) runtime.dropping = false;

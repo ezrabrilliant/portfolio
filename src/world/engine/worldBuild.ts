@@ -6,12 +6,15 @@ import { VoxelGrid } from "@/world/engine/voxel/grid";
 import { buildBatch, type InstanceBatch } from "@/world/engine/voxel/mesher";
 import type { IsSolid } from "@/world/engine/types";
 import { ColliderSet, type Collider } from "@/world/engine/physics/colliders";
+import { RampSet, type Ramp } from "@/world/engine/physics/ramps";
 
 export interface BuiltWorld {
   /** terrain, buildings and crossings: what the body collides with (the Play camera only with its visible blocks) */
   grid: VoxelGrid;
   /** props as their drawn shapes: the body collides with them, the camera does not */
   props: ColliderSet;
+  /** walkable slopes (the bridges' decks) */
+  ramps: RampSet;
   /** a cell the grid fills or a prop reaches into: where nothing may land, sit or be placed */
   blocked: IsSolid;
   batches: Record<string, InstanceBatch>;
@@ -24,7 +27,7 @@ function inBox(isl: IslandPlacement, x: number, y: number, z: number): boolean {
     && y >= isl.origin.y - isl.depth - 1 && y <= isl.origin.y + 24;
 }
 
-export function buildWorld(layout: WorldLayout, extraStamps: Array<(grid: VoxelGrid) => void> = [], colliders: readonly Collider[] = []): BuiltWorld {
+export function buildWorld(layout: WorldLayout, extraStamps: Array<(grid: VoxelGrid) => void> = [], colliders: readonly Collider[] = [], ramps: readonly Ramp[] = []): BuiltWorld {
   const grid = new VoxelGrid();
   const shapes: Record<string, IslandShape> = {};
   for (const isl of layout.islands) {
@@ -51,5 +54,5 @@ export function buildWorld(layout: WorldLayout, extraStamps: Array<(grid: VoxelG
   }
   const props = new ColliderSet(colliders);
   const blocked: IsSolid = (x, y, z) => grid.isSolid(x, y, z) || props.touchesCell(x, y, z);
-  return { grid, props, blocked, batches, shapes };
+  return { grid, props, ramps: new RampSet(ramps), blocked, batches, shapes };
 }

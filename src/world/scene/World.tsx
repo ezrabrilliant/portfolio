@@ -29,6 +29,7 @@ import { BouncePad } from "./crossings/BouncePad";
 import { Minecart } from "./crossings/Minecart";
 import { SteppingStones } from "./crossings/SteppingStones";
 import { stampCrossings } from "./crossings/stamp";
+import { bridgeRamp } from "./crossings/geometry";
 import { Milestones } from "./milestones/Milestones";
 import { stampMilestones } from "./milestones/stamp";
 import { milestoneSpotsFor, pillarCollider } from "./milestones/placement";
@@ -46,7 +47,7 @@ function build(): BuiltWorld {
   ], [
     ...runtime.layout.islands.flatMap((p) => islandColliders(p.id, p)),
     ...milestoneSpotsFor(runtime.layout, milestones.map((m) => m.year)).map(pillarCollider),
-  ]);
+  ], runtime.layout.crossings.filter((c) => c.kind === "bridge").map((c) => bridgeRamp(c.a, c.b)));
   runtime.built = built;
   // Ezra sits on the hero island's rim on the side of the hero's tour camera, clear of stamped props (so this runs
   // after the island and crossing stamps); seated, he turns his head toward that camera (seat.viewerHeading)

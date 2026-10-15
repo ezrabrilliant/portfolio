@@ -1,9 +1,12 @@
 import type { WorldLayout } from "@/world/engine/gen/layout";
 import type { VoxelGrid } from "@/world/engine/voxel/grid";
 import { blockId } from "@/world/engine/voxel/blocks";
-import { bridgeCells, steppingStones } from "./geometry";
+import { steppingStones } from "./geometry";
 
-/** Invisible collision for bridge decks and stepping stones (their meshes are drawn by the components). */
+/**
+ * Invisible collision for the stepping stones (SteppingStones draws them). Bridge decks are ramps (geometry.ts
+ * bridgeRamp), walked on through the physics' RampSet, not stairs of blocks.
+ */
 export function stampCrossings(grid: VoxelGrid, layout: WorldLayout): void {
   const barrier = blockId("barrier");
   const put = (x: number, y: number, z: number) => {
@@ -11,7 +14,6 @@ export function stampCrossings(grid: VoxelGrid, layout: WorldLayout): void {
   };
   for (const c of layout.crossings) {
     if (c.kind !== "bridge") continue;
-    for (const cell of bridgeCells(c.a, c.b)) put(cell.x, cell.y, cell.z);
     for (const s of steppingStones(c.a, c.b)) put(s.x, s.y, s.z);
   }
 }
