@@ -2,7 +2,7 @@ import { hexToRgb } from "@/world/engine/color";
 import { mulberry32, type Rng } from "@/world/engine/gen/rng";
 import type { Vec3 } from "@/world/engine/types";
 
-export type ParticlePreset = "debris" | "dust" | "confetti" | "leaves" | "sparkle";
+export type ParticlePreset = "debris" | "dust" | "confetti" | "leaves" | "sparkle" | "grass" | "chips" | "grit";
 
 export interface ParticlePool {
   readonly capacity: number;
@@ -10,7 +10,7 @@ export interface ParticlePool {
   positions: Float32Array;
   scales: Float32Array;
   colors: Float32Array;
-  burst(at: Vec3, preset: ParticlePreset, opts?: { color?: string; count?: number }): void;
+  burst(at: Vec3, preset: ParticlePreset, opts?: { color?: string; count?: number; ring?: boolean; speedScale?: number }): void;
   step(dt: number): void;
 }
 
@@ -24,6 +24,10 @@ const PRESETS: Record<ParticlePreset, Preset> = {
   dust: { count: 6, speed: [0.4, 1.2], up: [0.3, 1.0], life: [0.35, 0.6], size: [0.08, 0.16], gravity: -0.5, drag: 2.5, colors: ["#d8cfbf", "#cfc4b0"] },
   confetti: { count: 40, speed: [3, 6], up: [5, 8], life: [1.2, 2.0], size: [0.08, 0.14], gravity: 9, drag: 1.2, colors: ["#3D62F8", "#FA5D19", "#ffffff", "#8ea769", "#f2c14e"] },
   leaves: { count: 8, speed: [0.5, 1.5], up: [0.2, 0.8], life: [1.4, 2.2], size: [0.1, 0.16], gravity: 2.5, drag: 1.8, colors: ["#6e8e57", "#7a9862", "#82a068"] },
+  // footfalls by surface (scene/ezra/footfall.ts): green bits off the grass, wood chips off planks, grey grit off stone
+  grass: { count: 3, speed: [0.4, 1.1], up: [0.6, 1.4], life: [0.3, 0.5], size: [0.05, 0.09], gravity: 6, drag: 2.2, colors: ["#7f995d", "#97ae73", "#8a6849"] },
+  chips: { count: 3, speed: [0.5, 1.3], up: [0.8, 1.6], life: [0.3, 0.5], size: [0.04, 0.08], gravity: 9, drag: 1.6, colors: ["#b98f62", "#8a6649", "#c69d6e"] },
+  grit: { count: 3, speed: [0.4, 1.0], up: [0.4, 1.0], life: [0.3, 0.5], size: [0.04, 0.08], gravity: 4, drag: 2.4, colors: ["#b5afa5", "#a19b91"] },
   sparkle: { count: 5, speed: [0.2, 0.6], up: [0.2, 0.6], life: [0.5, 0.9], size: [0.05, 0.09], gravity: -0.3, drag: 1.0, colors: ["#bfe3ff", "#ffffff"] },
 };
 
@@ -65,11 +69,12 @@ export function createParticlePool(capacity = 800, rng: Rng = mulberry32(7)): Pa
         let i: number;
         if (pool.alive < capacity) i = pool.alive++;
         else { i = cursor; cursor = (cursor + 1) % capacity; }
-        const a = rng() * Math.PI * 2;
-        const sp = range(P.speed);
+        // a ring spreads its puffs evenly round the point, low and outward (a landing)
+        const a = opts.ring ? (k / n) * Math.PI * 2 + rng() * 0.3 : rng() * Math.PI * 2;
+        const sp = range(P.speed) * (opts.speedScale ?? 1);
         positions[i * 3] = at.x; positions[i * 3 + 1] = at.y; positions[i * 3 + 2] = at.z;
         velocities[i * 3] = Math.cos(a) * sp;
-        velocities[i * 3 + 1] = range(P.up);
+        velocities[i * 3 + 1] = opts.ring ? range(P.up) * 0.35 : range(P.up);
         velocities[i * 3 + 2] = Math.sin(a) * sp;
         const L = range(P.life);
         life[i] = L; maxLife[i] = L;

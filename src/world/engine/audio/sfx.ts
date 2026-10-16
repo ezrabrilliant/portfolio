@@ -1,5 +1,5 @@
 export type SfxName =
-  | "click" | "hover" | "punch" | "burst" | "jump" | "land" | "step" | "print" | "chat" | "link" | "bounce" | "cart" | "pop" | "poof";
+  | "click" | "hover" | "punch" | "burst" | "jump" | "land" | "step" | "stepWood" | "print" | "chat" | "link" | "bounce" | "cart" | "pop" | "poof";
 
 // ZzFX parameter order: volume, randomness, frequency, attack, sustain, release, shape, shapeCurve,
 // slide, deltaSlide, pitchJump, pitchJumpTime, repeatTime, noise, modulation, bitCrush, delay, sustainVolume, decay, tremolo
@@ -11,6 +11,8 @@ export const SFX_PRESETS: Record<SfxName, (number | undefined)[]> = {
   jump: [0.5, 0, 300, 0, 0.04, 0.12, 0, 1, 12],
   land: [0.5, 0.05, 110, 0, 0.02, 0.08, 4, 1, -2],
   step: [0.25, 0.2, 140, 0, 0.005, 0.04, 4],
+  // a hollow knock on a bridge plank
+  stepWood: [0.3, 0.08, 330, 0, 0.004, 0.06, 1, 1.4, -6],
   print: [0.4, 0, 520, 0, 0.3, 0.05, 2, 1, 0, 0, 0, 0, 0.05, 0.5],
   chat: [0.4, 0, 880, 0.01, 0.05, 0.1, 0, 1, 0, 0, 440, 0.05],
   link: [0.4, 0, 660, 0, 0.06, 0.15, 0, 1, 0, 0, 220, 0.06],

@@ -13,6 +13,10 @@ import { consumeTouch, touchInput } from "@/world/input/touch";
 import { advanceRide, rideHeading } from "./crossings/ride";
 import { cutsStandUp, holdDropInput, islandUnder } from "./modes";
 import { arrivalSpot, stepTravel, travelFade } from "./travel";
+import { RUN_TRAIL_EVERY, footfalls, landingRing, surfaceOfBlock, type Surface } from "./ezra/footfall";
+import { blockDef } from "@/world/engine/voxel/blocks";
+import type { BuiltWorld } from "@/world/engine/worldBuild";
+import type { Vec3 } from "@/world/engine/types";
 
 const TAU = Math.PI * 2;
 function dampAngle(a: number, b: number, lambda: number, dt: number): number {
@@ -33,6 +37,16 @@ function setFade(opacity: number) {
   if (el) el.style.opacity = String(opacity);
 }
 
+/** What Ezra stands on: a bridge's ramp is wood, a prop's top wood, else the drawn block under his feet. */
+function surfaceUnder(built: BuiltWorld, pos: Vec3): Surface {
+  const ramp = built.ramps.surfaceAt(pos.x, pos.z, pos.y);
+  if (ramp !== null && Math.abs(ramp - pos.y) < 0.05) return "wood";
+  const id = built.grid.get(Math.floor(pos.x), Math.floor(pos.y - 0.05), Math.floor(pos.z));
+  const def = id ? blockDef(id) : undefined;
+  if (!def) return "wood"; // nothing drawn under him: a prop's top (a crate, a table, a gentong)
+  return def.visible ? surfaceOfBlock(def.name) : "stone"; // invisible: the stepping stones
+}
+
 export function PlayerController() {
   const camera = useThree((s) => s.camera);
   const tmp = useMemo(
@@ -40,6 +54,8 @@ export function PlayerController() {
       dir: new THREE.Vector3(),
       input: { moveX: 0, moveZ: 0, run: false, jump: false } as CharacterInput,
       stepTimer: 0,
+      /** the highest his feet reached since he last stood (a landing's ring grows with the drop) */
+      peak: 0,
       fade: 0,
       fading: false as false | "out" | "in",
       ride: null as Ride | null,
@@ -197,23 +213,44 @@ export function PlayerController() {
     if (!p.locked && Math.hypot(input.moveX, input.moveZ) > 0.05) runtime.heading = dampAngle(runtime.heading, Math.atan2(input.moveX, input.moveZ), 12, dt);
     runtime.speed = Math.hypot(p.vel.x, p.vel.z);
     runtime.moving = runtime.speed > 0.3;
+    const prevPhase = runtime.animPhase;
     runtime.animPhase += runtime.speed * dt * 1.7;
 
     // a step up climbs at once in the physics; the model catches up (Ezra.tsx), never more than a block behind
     if (r.stepped && !r.jumped) runtime.stepOffset = Math.max(-1.2, runtime.stepOffset - Math.max(0, p.pos.y - before));
     runtime.airTime = r.jumped ? 0 : runtime.airTime + dt;
     if (r.jumped) playSfx("jump");
+    if (!p.onGround) tmp.peak = Math.max(tmp.peak, p.pos.y);
+    const surface = p.onGround || r.landed ? surfaceUnder(built, p.pos) : "grass";
+    const puff = surface === "wood" ? "chips" : surface === "stone" ? "grit" : "grass";
+    const feet = { x: p.pos.x, y: p.pos.y + 0.05, z: p.pos.z };
     if (r.landed) {
       runtime.landTimer = 0.14;
-      runtime.particles.burst({ x: p.pos.x, y: p.pos.y + 0.1, z: p.pos.z }, "dust", { count: 8 });
-      playSfx("land");
+      // a dust ring that grows with the drop (footfall.ts), and bits of what he landed on
+      const ring = landingRing(tmp.peak - p.pos.y);
+      if (ring) runtime.particles.burst(feet, "dust", { count: ring.count, ring: true, speedScale: ring.speed });
+      runtime.particles.burst(feet, puff, { count: 4 });
+      playSfx(surface === "wood" ? "stepWood" : "land");
     }
+    if (p.onGround) tmp.peak = p.pos.y;
+    // a puff of what he walks on at every footfall; steps sound when he runs, and always on planks
+    if (p.onGround && runtime.moving && footfalls(prevPhase, runtime.animPhase) > 0) {
+      const running = runtime.speed > 5.5;
+      runtime.particles.burst(feet, puff, { count: running ? 3 : 2 });
+      if (surface === "wood") playSfx("stepWood");
+      else if (running) playSfx("step");
+    }
+    // running: a thin trail of dust behind his heels
     if (p.onGround && runtime.speed > 5.5) {
       tmp.stepTimer -= dt;
       if (tmp.stepTimer <= 0) {
-        tmp.stepTimer = 0.28;
-        runtime.particles.burst({ x: p.pos.x, y: p.pos.y + 0.05, z: p.pos.z }, "dust", { count: 3 });
-        playSfx("step");
+        tmp.stepTimer = RUN_TRAIL_EVERY;
+        const back = 0.25;
+        runtime.particles.burst(
+          { x: p.pos.x - Math.sin(runtime.heading) * back, y: p.pos.y + 0.04, z: p.pos.z - Math.cos(runtime.heading) * back },
+          "dust",
+          { count: 1, speedScale: 0.4 },
+        );
       }
     }
     if (r.fellOut && !tmp.fading) tmp.fading = "out";

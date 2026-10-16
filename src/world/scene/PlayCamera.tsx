@@ -9,6 +9,7 @@ import { orbitInput } from "@/world/input/orbit";
 import { followGate } from "./camera/followGate";
 import type { FollowGate } from "./camera/followGate";
 import { createBoom, probeDistance, stepBoom } from "./camera/boom";
+import { ZOOM_BIAS, zoomBiasTarget } from "./camera/zoomBias";
 import { isTeleport, yawBehind } from "./camera/teleport";
 
 /** Seconds over which the entering (tour) look direction eases onto Ezra, instead of snapping on the first frame. */
@@ -29,6 +30,8 @@ export function PlayCamera() {
   /** the eased follow position before any pull-in (only the rendered camera is pulled in: see boom.ts) */
   const ideal = useMemo(() => new THREE.Vector3(), []);
   const boom = useMemo(() => createBoom(7), []);
+  /** adaptive zoom: the eased factor, and how long he has stood still by something usable */
+  const bias = useMemo(() => ({ k: 1, nearFor: 0 }), []);
   const track = useMemo(
     () => ({
       prev: new THREE.Vector3(),
@@ -157,6 +160,13 @@ export function PlayCamera() {
     // updateFollowCam already looks 1.4 above the target, so pass the feet: the look-at then sits
     // inside Ezra's own (always free) AABB, which is what pullIn needs as its starting point
     const { position, lookAt } = updateFollowCam(cam, p, g.heading, g.follow, dt, orbit);
+    // adaptive zoom: stretch or shorten the boom a little (never under reduced motion)
+    bias.nearFor = runtime.focusId !== null && !runtime.moving ? bias.nearFor + dt : 0;
+    const want = reduced ? 1 : zoomBiasTarget(runtime.speed > 5.5, bias.nearFor);
+    bias.k += (want - bias.k) * (1 - Math.exp(-ZOOM_BIAS.rate * dt));
+    position.x = lookAt.x + (position.x - lookAt.x) * bias.k;
+    position.y = lookAt.y + (position.y - lookAt.y) * bias.k;
+    position.z = lookAt.z + (position.z - lookAt.z) * bias.k;
     goal.set(position.x, position.y, position.z);
     // reduced motion: the frame a closeup ends, cut from its pose to the follow pose instead of easing back (CloseupCamera
     // cuts its own blend to 0 then, and CloseupController's exits run before this)
