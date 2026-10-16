@@ -30,6 +30,9 @@ export interface WorldState {
   /** The HUD's island map overlay (MapOverlay) is open: world input waits behind it. */
   mapOpen: boolean;
   setMapOpen(open: boolean): void;
+  /** Ezra Bot's chat (BotChat) is open: world input waits behind it. */
+  botOpen: boolean;
+  setBotOpen(open: boolean): void;
 }
 
 const inBrowser = typeof window !== "undefined" && typeof window.matchMedia === "function";
@@ -94,6 +97,10 @@ export const useWorld = create<WorldState>()((set, get) => ({
   closeupId: null,
   setCloseup: (closeupId) => {
     if (get().closeupId !== closeupId) set({ closeupId });
+  },
+  botOpen: false,
+  setBotOpen: (botOpen) => {
+    if (get().botOpen !== botOpen) set({ botOpen });
   },
   mapOpen: false,
   setMapOpen: (mapOpen) => {

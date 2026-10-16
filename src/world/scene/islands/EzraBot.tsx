@@ -243,7 +243,10 @@ export function EzraBotIsland({ placement }: { placement: IslandPlacement }) {
         position={worldTuple(placement, EZRA.robot.x, 1.9, EZRA.robot.z)}
         size={[2.4, 3.8, 1.4]}
         radius={3}
-        onActivate={advance}
+        onActivate={() => {
+          advance();
+          useWorld.getState().setBotOpen(true);
+        }}
       />
       <InfoBoard placement={placement} at={EZRA.info} rotationY={EZRA.info.ry} title={EZRA.info.title} lines={project.stats ?? []} />
       <Signpost id="ezra-link" placement={placement} at={EZRA.link} rotationY={EZRA.link.ry} label="Add to Discord" url={project.links.discord} />

@@ -87,7 +87,7 @@ export function InteractionController() {
   );
   useFrame((_, dt) => {
     const s = useWorld.getState();
-    if (runtime.closeup || s.mapOpen) return;
+    if (runtime.closeup || s.mapOpen || s.botOpen) return;
     glint.t += dt;
     const shed = (it: Parameters<typeof glintPoint>[0], every: number) => {
       if (Math.random() > dt / every) return;

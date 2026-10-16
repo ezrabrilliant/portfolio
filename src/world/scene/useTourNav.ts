@@ -11,7 +11,7 @@ import { stepTour, swipeDir } from "./tour/tourStep";
 export function useTourNav(enabled: boolean) {
   useEffect(() => {
     if (!enabled) return;
-    const idle = () => useWorld.getState().mode === "tour" && !runtime.closeup && !useWorld.getState().mapOpen;
+    const idle = () => useWorld.getState().mode === "tour" && !runtime.closeup && !useWorld.getState().mapOpen && !useWorld.getState().botOpen;
     const onKey = (e: KeyboardEvent) => {
       if (e.code !== "ArrowLeft" && e.code !== "ArrowRight") return;
       if (!idle() || isTypingTarget(e.target) || e.ctrlKey || e.metaKey || e.altKey) return;

@@ -5,7 +5,7 @@ export const config = {
     name: "Ezra",
     lastName: "Brilliant",
     fullName: "Ezra Brilliant",
-    title: "Business Information Systems Student",
+    title: "Business Information Systems Graduate",
     subtitle: "Mobile App Developer",
     description:
       "Building innovative digital solutions that bridge technology and business through mobile apps and data-driven systems.",

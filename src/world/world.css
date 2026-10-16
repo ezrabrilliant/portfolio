@@ -252,3 +252,46 @@ html.world-playing, html.world-playing body { overflow: hidden; }
   .hud-back { min-height: 44px; bottom: max(10px, env(safe-area-inset-bottom)); }
   .title-card { top: 14%; }
 }
+
+/* Ezra Bot's chat (BotChat): a Discord-dark card over a dimmed world */
+.bot-overlay {
+  position: fixed; inset: 0; z-index: 12; display: grid; place-items: center; padding: 16px;
+  background: rgba(13, 20, 24, 0.45); animation: map-in 0.2s ease both;
+}
+.bot-card {
+  display: flex; flex-direction: column; width: min(100%, 440px); height: min(620px, calc(100dvh - 32px));
+  background: #2b2d31; color: #dbdee1; border-radius: 12px; overflow: hidden; box-shadow: 0 12px 40px rgba(13, 20, 24, 0.5);
+  font: 400 15px/1.45 "Schibsted Grotesk", system-ui, sans-serif;
+}
+.bot-head { display: flex; align-items: center; gap: 8px; padding: 12px 14px; background: #232428; }
+.bot-avatar { width: 28px; height: 28px; border-radius: 50%; background: #e9ebe6; box-shadow: inset 0 -8px 0 #1d2226; }
+.bot-name { font-weight: 700; color: #f2f3f5; }
+.bot-tag { font: 700 10px/1 system-ui; background: #5865f2; color: #fff; padding: 3px 5px; border-radius: 4px; }
+.bot-close { margin-left: auto; width: 36px; height: 36px; border: 0; border-radius: 50%; background: transparent; color: #b5bac1; font-size: 24px; cursor: pointer; }
+.bot-close:hover, .bot-close:focus-visible { background: #35373c; color: #fff; outline: none; }
+.bot-lines { flex: 1; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+.bot-line { align-self: flex-start; max-width: 85%; background: #383a40; border-radius: 12px 12px 12px 4px; padding: 8px 12px; }
+.bot-line p { margin: 0; }
+.bot-line--you { align-self: flex-end; background: #5865f2; color: #fff; border-radius: 12px 12px 4px 12px; }
+.bot-link { display: inline-block; margin-top: 6px; color: #00a8fc; font-weight: 700; text-decoration: none; }
+.bot-link:hover { text-decoration: underline; }
+.bot-typing { display: flex; gap: 4px; padding: 12px 14px; }
+.bot-typing span { width: 7px; height: 7px; border-radius: 50%; background: #b5bac1; animation: bot-dot 1s infinite ease-in-out; }
+.bot-typing span:nth-child(2) { animation-delay: 0.15s; }
+.bot-typing span:nth-child(3) { animation-delay: 0.3s; }
+@keyframes bot-dot { 0%, 80%, 100% { opacity: 0.3; transform: translateY(0); } 40% { opacity: 1; transform: translateY(-3px); } }
+.bot-chips { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px 14px; border-top: 1px solid #1f2023; }
+.bot-chip { border: 1px solid #4e5058; background: transparent; color: #dbdee1; border-radius: 999px; padding: 6px 10px; font: 600 13px/1 inherit; font-family: inherit; cursor: pointer; }
+.bot-chip:hover, .bot-chip:focus-visible { background: #35373c; outline: none; }
+.bot-ask { display: flex; gap: 8px; padding: 10px 14px 14px; }
+.bot-ask input { flex: 1; min-width: 0; border: 0; border-radius: 8px; background: #383a40; color: #f2f3f5; padding: 11px 12px; font: inherit; }
+.bot-ask input:focus-visible { outline: 2px solid #5865f2; }
+.bot-ask button { width: 44px; border: 0; border-radius: 8px; background: #5865f2; color: #fff; font-size: 16px; cursor: pointer; }
+.bot-form { display: flex; flex-direction: column; gap: 8px; background: #232428; border-radius: 10px; padding: 12px; }
+.bot-form label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; font-weight: 700; color: #b5bac1; text-transform: uppercase; letter-spacing: 0.04em; }
+.bot-form input, .bot-form textarea { border: 0; border-radius: 6px; background: #383a40; color: #f2f3f5; padding: 9px 10px; font: 400 15px/1.4 "Schibsted Grotesk", system-ui, sans-serif; text-transform: none; letter-spacing: 0; resize: vertical; }
+.bot-form input:focus-visible, .bot-form textarea:focus-visible { outline: 2px solid #5865f2; }
+.bot-send { border: 0; border-radius: 8px; background: #23a55a; color: #fff; padding: 10px; font: 700 15px/1 inherit; font-family: inherit; cursor: pointer; }
+.bot-send:disabled { opacity: 0.6; cursor: default; }
+.bot-error { margin: 0; color: #f23f43; font-size: 13px; }
+@media (prefers-reduced-motion: reduce) { .bot-overlay, .bot-typing span { animation: none; } }
