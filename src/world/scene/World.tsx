@@ -32,6 +32,7 @@ import { stampCrossings } from "./crossings/stamp";
 import { bridgeRamp } from "./crossings/geometry";
 import { Milestones } from "./milestones/Milestones";
 import { Critters } from "./critters/Critters";
+import { Gold } from "./gold/Gold";
 import { stampMilestones } from "./milestones/stamp";
 import { milestoneSpotsFor, pillarCollider } from "./milestones/placement";
 import { islandColliders } from "./islands/colliders";
@@ -107,6 +108,7 @@ export function World() {
       })}
       <Milestones />
       <Critters />
+      <Gold />
       <ParticlesRenderer />
       <InteractionController />
       <CloseupController />

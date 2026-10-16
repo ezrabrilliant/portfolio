@@ -7,6 +7,7 @@ import { closeupPans } from "@/world/engine/camera/closeup";
 import { closeCloseup } from "@/world/scene/closeupState";
 import { closeFromBack } from "./backFocus";
 import { TitleCard } from "./TitleCard";
+import { GoldCounter } from "./GoldCounter";
 import { isTypingTarget } from "@/world/input/keyboard";
 import { stepTour } from "@/world/scene/tour/tourStep";
 import { CLOSEUP_HINT_S, HINTS, PLAY_HINT, hintShown, promptPill, type HintSeen } from "./hudHints";
@@ -174,6 +175,7 @@ export function Hud() {
         )}
       </div>
       <div className="hud-tools" role="group" aria-label="Map, sound and help">
+        <GoldCounter />
         <button type="button" className={mapOpen ? "hud-icon hud-icon--on" : "hud-icon"} aria-label="Island map" aria-pressed={mapOpen} title="Island map (M)" disabled={!ready || !!closeupId} onMouseDown={keepFocus} onClick={() => setMapOpen(!mapOpen)}>
           <MapIcon />
         </button>

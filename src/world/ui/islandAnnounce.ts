@@ -8,7 +8,9 @@ export const TITLE_CARD = { delay: 0.55, show: 2.0 } as const;
 export const TITLE_DELAY = { hop: 1.0, map: 1.8, travel: 0.25 } as const;
 
 type Listener = () => void;
-let current: { id: string; at: number; delay: number } | null = null;
+/** An island's arrival (`id`), or a message of its own (`title`, `sub`; `gold` gives it the gold look). */
+export interface Card { id: string; at: number; delay: number; title?: string; sub?: string; gold?: boolean }
+let current: Card | null = null;
 const listeners = new Set<Listener>();
 
 export function announceIsland(id: string, delay: number = TITLE_CARD.delay, now = performance.now()): void {
@@ -21,7 +23,13 @@ export function subscribeTitleCard(l: Listener): () => void {
   return () => listeners.delete(l);
 }
 
-export function titleCardNow(): { id: string; at: number; delay: number } | null {
+/** A message card (a gold block found), shown at once. */
+export function announceCard(title: string, sub: string, gold = false, now = performance.now()): void {
+  current = { id: "", at: now, delay: 0, title, sub, gold };
+  for (const l of listeners) l();
+}
+
+export function titleCardNow(): Card | null {
   return current;
 }
 

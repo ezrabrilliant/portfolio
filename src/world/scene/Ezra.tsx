@@ -10,6 +10,7 @@ import type { EzraCloseupHold } from "./camera/closeupBlend";
 import { EZRA_GEOMETRY as GEO } from "./ezra/geometry";
 import { GOWN_POP_Y } from "./graduation";
 import { GownSkirt, GownSleeve, GraduationCap, GraduationGown } from "./GraduationCap";
+import { CROWN_GEOMETRY, CROWN_MATERIAL } from "./ezra/crown";
 import { capPopScale } from "./milestones/moment";
 
 const MAT = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.9 });
@@ -30,6 +31,7 @@ export function Ezra() {
   /** now and then, standing still, he looks around, stretches, checks his watch, taps a foot or waves (anim.ts) */
   const idle = useMemo(createIdleClock, []);
   const body = useRef<THREE.Group>(null);
+  const crown = useRef<THREE.Mesh>(null);
   const legL = useRef<THREE.Group>(null);
   const legR = useRef<THREE.Group>(null);
   const kneeL = useRef<THREE.Group>(null);
@@ -116,6 +118,8 @@ export function Ezra() {
       o.scale.setScalar(s);
     }
     if (gown.current) gown.current.position.y = GOWN_POP_Y * (1 - s);
+    if (crown.current) crown.current.visible = runtime.crownOn;
+    if (runtime.crownOn && cap.current) cap.current.visible = false;
     const bare = !on || s !== 1;
     if (thighL.current) thighL.current.visible = bare;
     if (thighR.current) thighR.current.visible = bare;
@@ -169,6 +173,8 @@ export function Ezra() {
           <group ref={cap} position={[0, EZRA_CAP.base, 0]} visible={false}>
             <GraduationCap cast={cast} />
           </group>
+          {/* the gold crown (all the gold blocks found): it takes the cap's place */}
+          <mesh ref={crown} geometry={CROWN_GEOMETRY} material={CROWN_MATERIAL} visible={false} castShadow={cast} />
         </group>
         <group ref={gown} visible={false}>
           <GraduationGown cast={cast} />

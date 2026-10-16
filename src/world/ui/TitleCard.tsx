@@ -3,13 +3,16 @@ import { worldProjects } from "@/config/portfolio";
 import { islandTitle } from "@/world/scene/islands/shared/project";
 import { TITLE_CARD, subscribeTitleCard, titleCardNow } from "./islandAnnounce";
 
-/** The island's name, and its project's year when it has one, as the camera arrives (islandAnnounce.ts). */
+/**
+ * The card in the middle of the screen (islandAnnounce.ts): an island's name and its project's year as the camera
+ * arrives, or a message of its own (a gold block found).
+ */
 export function TitleCard() {
   const card = useSyncExternalStore(subscribeTitleCard, titleCardNow, () => null);
-  const [shown, setShown] = useState<string | null>(null);
+  const [shown, setShown] = useState<typeof card>(null);
   useEffect(() => {
     if (!card) return;
-    const on = window.setTimeout(() => setShown(card.id), card.delay * 1000);
+    const on = window.setTimeout(() => setShown(card), card.delay * 1000);
     const off = window.setTimeout(() => setShown(null), (card.delay + TITLE_CARD.show) * 1000);
     return () => {
       window.clearTimeout(on);
@@ -17,11 +20,12 @@ export function TitleCard() {
     };
   }, [card]);
   if (!shown) return null;
-  const year = worldProjects.find((p) => p.id === shown)?.year;
+  const title = shown.title ?? islandTitle(shown.id);
+  const sub = shown.sub ?? worldProjects.find((p) => p.id === shown.id)?.year;
   return (
-    <div className="title-card" role="status" key={card?.at}>
-      <span className="title-card-name">{islandTitle(shown)}</span>
-      {year ? <span className="title-card-year">{year}</span> : null}
+    <div className={shown.gold ? "title-card title-card--gold" : "title-card"} role="status" key={shown.at}>
+      <span className="title-card-name">{title}</span>
+      {sub ? <span className="title-card-year">{sub}</span> : null}
     </div>
   );
 }

@@ -83,6 +83,8 @@ export const runtime = {
    * catches up over a moment (anim.ts stepEase), knees tucked like a hop. PlayerController adds each step, Ezra.tsx eases it.
    */
   stepOffset: 0,
+  /** Ezra wears the gold crown (all the gold blocks found; Gold.tsx, Ezra.tsx) */
+  crownOn: false,
   /** Seconds since he left the ground on a jump (anim.ts: the take-off stretch), or a large number. */
   airTime: 99,
   /** Closeup targets by id (each LiveScreen registers itself). */
