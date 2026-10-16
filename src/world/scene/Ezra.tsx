@@ -3,7 +3,7 @@ import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import { runtime } from "@/world/state/runtime";
 import { useWorld } from "@/world/state/store";
-import { LEG, blendPose, neutralPose, pickAnim, poseFor, stepEase, takeoffStretch, withStepTuck } from "./ezra/anim";
+import { LEG, blendPose, createIdleClock, idleEventPose, neutralPose, pickAnim, poseFor, stepEase, stepIdle, takeoffStretch, withStepTuck } from "./ezra/anim";
 import { EZRA_CAP, EZRA_FIT, EZRA_HEAD, EZRA_REACH } from "@/world/engine/physics/ezraModel";
 import { closeupBlend, ezraCloseupHidden } from "./camera/closeupBlend";
 import type { EzraCloseupHold } from "./camera/closeupBlend";
@@ -27,6 +27,8 @@ export function Ezra() {
   const root = useRef<THREE.Group>(null);
   /** the pose as drawn: it blends toward each frame's state pose (anim.ts blendPose) */
   const drawn = useMemo(neutralPose, []);
+  /** now and then, standing still, he looks around, stretches, checks his watch, taps a foot or waves (anim.ts) */
+  const idle = useMemo(createIdleClock, []);
   const body = useRef<THREE.Group>(null);
   const legL = useRef<THREE.Group>(null);
   const legR = useRef<THREE.Group>(null);
@@ -78,7 +80,9 @@ export function Ezra() {
     // a step up: the model catches up with the body, legs tucked (anim.ts); then every state's pose blends in, and a jump
     // stretches him for its first moment (reduced motion: no catch-up, no stretch; poses still blend)
     runtime.stepOffset = stepEase(runtime.stepOffset, dt, reduced);
-    const target = withStepTuck(poseFor(anim, state.clock.elapsedTime, runtime.animPhase, { standUp: runtime.standUp, reduced, look }), runtime.stepOffset);
+    stepIdle(idle, anim === "idle" && !reduced, dt);
+    const base = poseFor(anim, state.clock.elapsedTime, runtime.animPhase, { standUp: runtime.standUp, reduced, look });
+    const target = withStepTuck(idle.event ? idleEventPose(base, idle.event, idle.t) : base, runtime.stepOffset);
     // seated and standing up keep their own exact poses (the stand-up hand-off already has no pop)
     const pose = anim === "sit" || anim === "standUp" || anim === "ride" ? Object.assign(drawn, target) : blendPose(drawn, target, dt);
     if (seated && runtime.seat) {

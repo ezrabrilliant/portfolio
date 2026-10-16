@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { LEG, STAND_UP_SECONDS, TAKEOFF_S, blendPose, neutralPose, pickAnim, poseFor, stepEase, takeoffStretch, withStepTuck } from "./anim";
+import { IDLE_EVENTS, IDLE_GAP, LEG, STAND_UP_SECONDS, TAKEOFF_S, blendPose, createIdleClock, idleEventPose, neutralPose, pickAnim, poseFor, stepEase, stepIdle, takeoffStretch, withStepTuck } from "./anim";
 import { SEAT_INSET } from "./seat";
 import type { AnimInput, Pose } from "./anim";
 
@@ -186,5 +186,48 @@ describe("smoothing a step up and a jump", () => {
     expect(cur.squash).toBeGreaterThan(land.squash);
     for (let i = 0; i < 60; i++) blendPose(cur, land, 1 / 60);
     expect(cur.squash).toBeCloseTo(land.squash, 3);
+  });
+});
+
+describe("idle events", () => {
+  const rnd = () => 0.5;
+  it("starts an event after standing still a while, ends it, and waits again", () => {
+    const c = createIdleClock();
+    let t = 0;
+    while (!c.event && t < 20) {
+      stepIdle(c, true, 0.1, rnd);
+      t += 0.1;
+    }
+    expect(t).toBeCloseTo(IDLE_GAP.min, 0);
+    const first = c.event!;
+    for (let i = 0; i < 40; i++) stepIdle(c, true, 0.1, rnd);
+    expect(c.event === null || c.event !== first).toBe(true);
+  });
+
+  it("never repeats the same event twice in a row", () => {
+    const c = createIdleClock();
+    let prev: string | null = null;
+    for (let i = 0; i < 2000; i++) {
+      stepIdle(c, true, 0.1, Math.random);
+      if (c.event && c.t === 0) {
+        expect(c.event).not.toBe(prev);
+        prev = c.event;
+      }
+    }
+  });
+
+  it("resets the moment he moves", () => {
+    const c = createIdleClock();
+    for (let i = 0; i < 50; i++) stepIdle(c, true, 0.1, rnd);
+    stepIdle(c, false, 0.1, rnd);
+    expect(c.event).toBeNull();
+    expect(c.still).toBe(0);
+  });
+
+  it("gives every event a pose that differs from standing", () => {
+    const base = neutralPose();
+    for (const e of Object.keys(IDLE_EVENTS) as (keyof typeof IDLE_EVENTS)[]) {
+      expect(idleEventPose(base, e, IDLE_EVENTS[e] * 0.3), e).not.toEqual(base);
+    }
   });
 });

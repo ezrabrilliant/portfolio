@@ -191,3 +191,75 @@ export function blendPose(cur: Pose, target: Pose, dt: number): Pose {
 export function neutralPose(): Pose {
   return { ...NEUTRAL };
 }
+
+/** Little things Ezra does now and then while he stands still (random, never twice in a row). */
+export type IdleEvent = "lookAround" | "stretch" | "watch" | "tapFoot" | "wave";
+/** Seconds each idle event lasts. */
+export const IDLE_EVENTS: Record<IdleEvent, number> = { lookAround: 2.4, stretch: 1.8, watch: 2.0, tapFoot: 1.6, wave: 1.5 };
+/** Seconds of standing still before the first event, and between events (random in this range). */
+export const IDLE_GAP = { min: 3.5, max: 8 } as const;
+
+export interface IdleClock {
+  /** seconds he has stood still */
+  still: number;
+  /** `still` at which the next event starts */
+  next: number;
+  event: IdleEvent | null;
+  /** seconds into the event */
+  t: number;
+  last: IdleEvent | null;
+}
+
+export function createIdleClock(): IdleClock {
+  return { still: 0, next: IDLE_GAP.min, event: null, t: 0, last: null };
+}
+
+const KINDS = Object.keys(IDLE_EVENTS) as IdleEvent[];
+
+/** Advances the idle clock: standing still counts up and starts an event now and then; any other state resets it. */
+export function stepIdle(c: IdleClock, idle: boolean, dt: number, rnd: () => number = Math.random): void {
+  if (!idle) {
+    c.still = 0;
+    c.next = IDLE_GAP.min;
+    c.event = null;
+    c.t = 0;
+    return;
+  }
+  c.still += dt;
+  if (c.event) {
+    c.t += dt;
+    if (c.t >= IDLE_EVENTS[c.event]) {
+      c.last = c.event;
+      c.event = null;
+      c.next = c.still + IDLE_GAP.min + rnd() * (IDLE_GAP.max - IDLE_GAP.min);
+    }
+    return;
+  }
+  if (c.still >= c.next) {
+    const pool = KINDS.filter((k) => k !== c.last);
+    c.event = pool[Math.min(pool.length - 1, Math.floor(rnd() * pool.length))];
+    c.t = 0;
+  }
+}
+
+/** The idle pose with the event at `t` seconds laid over it (the pose blend eases him in and out of it). */
+export function idleEventPose(base: Pose, e: IdleEvent, t: number): Pose {
+  const u = Math.min(1, t / IDLE_EVENTS[e]);
+  switch (e) {
+    case "lookAround":
+      // left, right, back to the front
+      return { ...base, headYaw: 0.75 * Math.sin(2 * Math.PI * u), headPitch: -0.05 };
+    case "stretch": {
+      const s = Math.sin(Math.PI * u);
+      return { ...base, armL: -2.9 * s, armR: -2.9 * s, armSpread: 0.15, squash: 1 + 0.04 * s, headPitch: -0.25 * s };
+    }
+    case "watch":
+      // left wrist up in front of him, head down to it
+      return { ...base, armL: -1.35, armSpread: 0.02, headPitch: 0.35, headYaw: 0.25 };
+    case "tapFoot":
+      return { ...base, legR: -0.12, kneeR: 0.25 * Math.abs(Math.sin(4 * Math.PI * u)), armL: 0.05, armR: 0.05 };
+    case "wave":
+      // right hand up, waving side to side
+      return { ...base, armR: -2.7, armSpread: 0.06 + 0.3 * (0.5 + 0.5 * Math.sin(6 * Math.PI * u)), headYaw: -0.1 };
+  }
+}
