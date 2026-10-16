@@ -31,6 +31,7 @@ import { SteppingStones } from "./crossings/SteppingStones";
 import { stampCrossings } from "./crossings/stamp";
 import { bridgeRamp } from "./crossings/geometry";
 import { Milestones } from "./milestones/Milestones";
+import { Critters } from "./critters/Critters";
 import { stampMilestones } from "./milestones/stamp";
 import { milestoneSpotsFor, pillarCollider } from "./milestones/placement";
 import { islandColliders } from "./islands/colliders";
@@ -105,6 +106,7 @@ export function World() {
         return M ? <M.Component key={`island-${p.id}`} placement={p} /> : null;
       })}
       <Milestones />
+      <Critters />
       <ParticlesRenderer />
       <InteractionController />
       <CloseupController />
