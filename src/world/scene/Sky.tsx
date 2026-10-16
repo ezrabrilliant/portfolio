@@ -217,7 +217,9 @@ function Daylight() {
     if (scene.background instanceof THREE.Color) scene.background.copy(SKY_HORIZON);
     if (scene.fog) scene.fog.color.copy(SKY_HORIZON);
     seeThroughUniforms.uTime.value = clock.elapsedTime;
-    windUniform.value = useWorld.getState().reducedMotion ? 0 : 1;
+    const world = useWorld.getState();
+    windUniform.value = world.reducedMotion ? 0 : 1;
+    seeThroughUniforms.uShadeOn.value = world.quality === "high" ? 1 : 0;
   });
   return null;
 }

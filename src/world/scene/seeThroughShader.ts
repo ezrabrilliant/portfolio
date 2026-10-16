@@ -25,6 +25,8 @@ export const seeThroughUniforms = {
   uFaceHalf: { value: new THREE.Vector2() },
   /** seconds (Sky writes it): drives the drifting cloud shade */
   uTime: { value: 0 },
+  /** 1 = the cloud shade draws (high tier), 0 = skipped (low tier: fewer per-pixel sums on weak GPUs) */
+  uShadeOn: { value: 1 },
 };
 
 /** Cloud shade on lit surfaces: patches `cell` blocks across, drifting `drift` blocks a second, `depth` dark at most. */
@@ -57,6 +59,7 @@ uniform vec3 uFaceR;
 uniform vec3 uFaceU;
 uniform vec2 uFaceHalf;
 uniform float uTime;
+uniform float uShadeOn;
 float seeHash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
 float seeNoise(vec2 p) {
   vec2 i = floor(p), f = fract(p);
@@ -103,7 +106,7 @@ const FRAGMENT_BODY = `
 /** Lit materials: soft cloud shadows drifting over the islands (on the lit colour, before tone mapping). */
 const SHADE_BODY = `
 #ifdef SEE_SHADE
-  {
+  if (uShadeOn > 0.5) {
     vec2 cp = vSeeWorld.xz / ${CLOUD_SHADE.cell.toFixed(1)} + vec2(uTime * ${(CLOUD_SHADE.drift / CLOUD_SHADE.cell).toFixed(4)}, uTime * ${(CLOUD_SHADE.drift * 0.4 / CLOUD_SHADE.cell).toFixed(4)});
     float cloud = smoothstep(0.55, 0.78, seeNoise(cp));
     gl_FragColor.rgb *= 1.0 - ${CLOUD_SHADE.depth.toFixed(2)} * cloud;

@@ -2,7 +2,7 @@ import { Suspense, useRef, useState } from "react";
 import { Canvas } from "@react-three/fiber";
 import { PerformanceMonitor } from "@react-three/drei";
 import { useWorld } from "@/world/state/store";
-import { dprCap } from "@/world/state/quality";
+import { dprCap, slowDpr } from "@/world/state/quality";
 import { createPerfPolicy, perfStep } from "@/world/state/perfPolicy";
 import { TOUR_FOV } from "./islands/framing";
 import { RenderStats } from "./RenderStats";
@@ -15,10 +15,12 @@ import { World } from "./World";
 export default function WorldCanvas() {
   const quality = useWorld((s) => s.quality);
   const setQuality = useWorld((s) => s.setQuality);
-  // adaptive pixel ratio: the device's own, capped by the quality tier, and down to 1 while frames run slow;
+  // adaptive pixel ratio: capped by the quality tier, and lower while frames run slow (down to 0.8 on the low tier);
   // a sustained slowdown switches to the low tier (state/perfPolicy.ts)
   const policy = useRef(createPerfPolicy());
   const [slow, setSlow] = useState(false);
+  // MSAA can only be chosen when the context is made: devices that start on the low tier (phones) go without it
+  const [antialias] = useState(() => quality === "high");
   const onPerf = (event: "incline" | "decline") => {
     if (perfStep(policy.current, event)) setQuality("low");
     setSlow(policy.current.slow);
@@ -27,8 +29,8 @@ export default function WorldCanvas() {
     <Canvas
       // "percentage" = PCFShadowMap ("soft" asks for PCFSoftShadowMap, which three r18x removed and warns about)
       shadows={quality === "high" ? "percentage" : false}
-      dpr={[1, slow ? 1 : dprCap(quality)]}
-      gl={{ antialias: true, powerPreference: "high-performance" }}
+      dpr={slow ? slowDpr(quality) : dprCap(quality)}
+      gl={{ antialias, powerPreference: "high-performance" }}
       camera={{ fov: TOUR_FOV, near: 0.1, far: 600, position: [-12, 14, 22] }}
       onCreated={({ gl, camera }) => {
         gl.toneMappingExposure = 1.05;

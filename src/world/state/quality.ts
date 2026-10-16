@@ -13,8 +13,14 @@ export function pickQuality(d: DeviceInfo): "high" | "low" {
   return "high";
 }
 
-export function dprCap(q: "high" | "low"): number {
-  return q === "high" ? 1.75 : 1.25;
+/** The pixel ratio to render at: the screen's own, capped by the tier (a number fixes it exactly, so never above the screen's). */
+export function dprCap(q: "high" | "low", device: number = typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1): number {
+  return Math.min(device, q === "high" ? 1.75 : 1.25);
+}
+
+/** The pixel ratio while frames run slow: 1 on the high tier, below it on the low tier (fewer pixels to fill). */
+export function slowDpr(q: "high" | "low"): number {
+  return q === "high" ? 1 : 0.8;
 }
 
 export function readDevice(): DeviceInfo {

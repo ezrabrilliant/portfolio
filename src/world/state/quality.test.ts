@@ -23,8 +23,9 @@ describe("pickQuality", () => {
 
 describe("dprCap", () => {
   it("caps pixel ratio per tier", () => {
-    expect(dprCap("high")).toBe(1.75);
-    expect(dprCap("low")).toBe(1.25);
+    expect(dprCap("high", 3)).toBe(1.75);
+    expect(dprCap("high", 1)).toBe(1);
+    expect(dprCap("low", 3)).toBe(1.25);
   });
 });
 

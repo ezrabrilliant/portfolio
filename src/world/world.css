@@ -10,6 +10,9 @@ html.world-playing, html.world-playing body { overflow: hidden; }
 /* 100vw includes the scrollbar, so the canvas keeps its size when Play hides the scrollbar (the tour's
    scrollbar simply draws over its right edge) */
 .world-canvas-wrap { position: fixed; inset: 0; right: auto; width: 100vw; z-index: 0; outline: none; }
+/* as tall as the largest viewport: a phone's address bar showing or hiding while you scroll no longer resizes (and
+   re-allocates) the canvas, which stuttered the scroll; the bar simply covers its bottom edge */
+@supports (height: 100lvh) { .world-canvas-wrap { bottom: auto; height: 100lvh; } }
 .world-canvas-wrap:focus-visible { box-shadow: inset 0 0 0 3px #13212b; }
 .tour-track { position: relative; z-index: -1; width: 1px; pointer-events: none; }
 

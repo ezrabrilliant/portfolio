@@ -6,8 +6,13 @@ import { patchSceneSeeThrough, seeThroughUniforms } from "./seeThroughShader";
 
 /** Height of Ezra's chest above his feet: the capsule's far end. */
 const CHEST = 1.1;
-/** Seconds between scene walks for newly mounted materials (patching is idempotent and cheap). */
-const SCAN_EVERY = 1;
+/**
+ * New materials are patched before they are first drawn, so nothing compiles twice (a recompile is a hitch): the scene
+ * is walked every frame while the world is settling in (fonts, screens and text mount over the first seconds), then
+ * every SCAN_EVERY seconds. Patching is idempotent and the walk is cheap.
+ */
+const SCAN_EVERY = 0.5;
+const SETTLE_S = 12;
 
 /**
  * Keeps the see-through capsule (seeThroughShader.ts) on the Play camera → Ezra line. Mount after the cameras, so it reads
@@ -17,9 +22,9 @@ export function SeeThrough() {
   const scene = useThree((s) => s.scene);
   const camera = useThree((s) => s.camera);
   const scan = useRef(SCAN_EVERY);
-  useFrame((_, dt) => {
+  useFrame(({ clock }, dt) => {
     scan.current += dt;
-    if (scan.current >= SCAN_EVERY) {
+    if (scan.current >= SCAN_EVERY || clock.elapsedTime < SETTLE_S) {
       scan.current = 0;
       patchSceneSeeThrough(scene);
     }
