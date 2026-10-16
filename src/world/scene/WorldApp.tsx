@@ -12,6 +12,7 @@ import { useModeTransitions } from "./useModeTransitions";
 import { useTabCycling } from "./useTabCycling";
 import { useTourNav } from "./useTourNav";
 import { MapOverlay } from "@/world/ui/MapOverlay";
+import { FPS_METER } from "@/world/state/fpsFlag";
 
 // the 3D world (three, R3F, drei and every island) loads as its own chunk; the shell below renders at once and
 // the Loader covers the page until the world reports ready
@@ -56,6 +57,7 @@ export default function WorldApp() {
       <Hud />
       <MobileControls />
       <MapOverlay />
+      {FPS_METER && <div id="fps-meter" className="fps-meter" role="status" />}
       <Loader />
       <SeoMirror />
     </>

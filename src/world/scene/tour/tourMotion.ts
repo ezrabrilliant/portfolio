@@ -338,7 +338,7 @@ export interface TourDriver {
  * island (‹ ›, ← →, a swipe, a pad or cart tapped in the tour); "map" rises until the archipelago shows, then dives
  * onto the destination (a pick on the map).
  */
-export type GlideKind = "hop" | "map";
+export type GlideKind = "hop" | "map" | "intro";
 
 export interface Glide {
   kind: GlideKind;
@@ -356,6 +356,26 @@ export const GLIDE_TIME = 1.5;
 const HOP_MAX = 2.1;
 /** Seconds of a map pick's rise and dive. */
 export const MAP_GLIDE_TIME = 2.4;
+
+/** Seconds of the opening descent from above the clouds onto the first stop. */
+export const INTRO_TIME = 3.2;
+
+/**
+ * The opening moment (polish #9): the camera starts high over the sea of clouds, behind the first stop, and settles
+ * down onto its framing, the island growing out of the clouds below.
+ */
+export function startIntro(d: TourDriver, track: TourTrack): void {
+  if (d.follow.x < 0) return;
+  // it lands where the page is (the top: the first stop's framing), so the scroll keeps the glide
+  const to = d.follow.x;
+  const cam1 = { x: 0, y: 0, z: 0 }, look1 = { x: 0, y: 0, z: 0 };
+  sampleTrack(track, to, cam1, look1);
+  const bx = cam1.x - look1.x, bz = cam1.z - look1.z;
+  const bl = Math.hypot(bx, bz) || 1;
+  const cam0 = { x: cam1.x + (bx / bl) * 14, y: cam1.y + 26, z: cam1.z + (bz / bl) * 14 };
+  const camC = { x: cam1.x + (bx / bl) * 3, y: cam1.y + 7, z: cam1.z + (bz / bl) * 3 };
+  d.glide = { kind: "intro", from: to, to, t: 0, dur: INTRO_TIME, cam0, cam1, camC, look0: { ...look1 }, look1, lookC: { ...look1 } };
+}
 
 /** The glide's ease: a gentle start and a soft landing (ease-in-out sine). */
 export function glideEase(u: number): number {

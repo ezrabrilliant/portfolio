@@ -6,6 +6,8 @@ import { dprCap, slowDpr } from "@/world/state/quality";
 import { createPerfPolicy, perfStep } from "@/world/state/perfPolicy";
 import { TOUR_FOV } from "./islands/framing";
 import { RenderStats } from "./RenderStats";
+import { FpsMeter } from "./FpsMeter";
+import { FPS_METER } from "@/world/state/fpsFlag";
 import { World } from "./World";
 
 /**
@@ -39,6 +41,7 @@ export default function WorldCanvas() {
     >
       <PerformanceMonitor onIncline={() => onPerf("incline")} onDecline={() => onPerf("decline")} />
       {import.meta.env.DEV && <RenderStats />}
+      {FPS_METER && <FpsMeter />}
       <Suspense fallback={null}>
         <World />
       </Suspense>

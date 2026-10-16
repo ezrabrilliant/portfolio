@@ -3,6 +3,7 @@ import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import { runtime } from "@/world/state/runtime";
 import { useWorld } from "@/world/state/store";
+import { INTRO_TIME } from "./tour/tourMotion";
 import { LEG, blendPose, createIdleClock, idleEventPose, neutralPose, pickAnim, poseFor, stepEase, stepIdle, takeoffStretch, withStepTuck } from "./ezra/anim";
 import { EZRA_CAP, EZRA_FIT, EZRA_HEAD, EZRA_REACH } from "@/world/engine/physics/ezraModel";
 import { closeupBlend, ezraCloseupHidden } from "./camera/closeupBlend";
@@ -21,6 +22,9 @@ const MAT = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.9 
 const HEAD_Y = (EZRA_HEAD.pivot + EZRA_REACH.hairTop) / 2;
 const HIDE_NEAR = 0.6;
 const SHOW_FAR = 0.7;
+
+/** How long the opening wave lasts (it fades in and out over its ends). */
+const INTRO_WAVE = INTRO_TIME + 0.8;
 
 export function Ezra() {
   const cast = useWorld((s) => s.quality === "high");
@@ -85,6 +89,13 @@ export function Ezra() {
     stepIdle(idle, anim === "idle" && !reduced, dt);
     const base = poseFor(anim, state.clock.elapsedTime, runtime.animPhase, { standUp: runtime.standUp, reduced, look });
     const target = withStepTuck(idle.event ? idleEventPose(base, idle.event, idle.t) : base, runtime.stepOffset);
+    // the opening moment: he waves from his seat at the camera coming down
+    if (runtime.waveFor > 0) {
+      runtime.waveFor = Math.max(0, runtime.waveFor - dt);
+      const w = Math.min(1, runtime.waveFor / 0.4, (INTRO_WAVE - runtime.waveFor) / 0.4);
+      target.armR = target.armR * (1 - w) + (-2.7) * w;
+      target.armSpread = target.armSpread * (1 - w) + (0.1 + 0.3 * (0.5 + 0.5 * Math.sin(state.clock.elapsedTime * 7))) * w;
+    }
     // seated and standing up keep their own exact poses (the stand-up hand-off already has no pop)
     const pose = anim === "sit" || anim === "standUp" || anim === "ride" ? Object.assign(drawn, target) : blendPose(drawn, target, dt);
     if (seated && runtime.seat) {

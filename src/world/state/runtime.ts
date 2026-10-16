@@ -85,6 +85,8 @@ export const runtime = {
   stepOffset: 0,
   /** Ezra wears the gold crown (all the gold blocks found; Gold.tsx, Ezra.tsx) */
   crownOn: false,
+  /** Seconds Ezra keeps waving from his seat (the opening moment, TourCamera). */
+  waveFor: 0,
   /** Seconds since he left the ground on a jump (anim.ts: the take-off stretch), or a large number. */
   airTime: 99,
   /** Closeup targets by id (each LiveScreen registers itself). */

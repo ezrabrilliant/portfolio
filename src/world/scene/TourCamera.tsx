@@ -7,7 +7,7 @@ import { useWorld } from "@/world/state/store";
 import { ISLANDS } from "./islands";
 import { buildTour, isPortrait } from "./tour/tourBuild";
 import { progressToScroll, refreshScrollMeasure, scrollMeasure, scrollToProgress, stopProgresses } from "./tour/tourMath";
-import { createTourDriver, stepTourDriver, stopAt, trackFor, startGlide, overviewOf } from "./tour/tourMotion";
+import { createTourDriver, stepTourDriver, stopAt, trackFor, startGlide, overviewOf, startIntro, INTRO_TIME } from "./tour/tourMotion";
 import type { DriverInput, TourTrack } from "./tour/tourMotion";
 
 export function TourCamera() {
@@ -39,6 +39,8 @@ export function TourCamera() {
       input: { playing: false, scroll: 0, handoff: 0, reduced: false, dt: 0 } as DriverInput,
       chapter: -1,
       innerH: -1,
+      /** the opening descent has run (or was skipped) */
+      introDone: false,
       fromPos: new THREE.Vector3(),
       fromQ: new THREE.Quaternion(),
       /** a real viewport change: re-measure and keep the tour at the same progress */
@@ -103,6 +105,16 @@ export function TourCamera() {
     inp.handoff = runtime.tourProgress;
     inp.reduced = world.reducedMotion;
     inp.dt = Math.min(rawDt, 1 / 30);
+    // the opening moment: once the world shows, from the top of the page (no deep link), the camera descends from the
+    // clouds onto the hero island while Ezra waves from his seat (reduced motion: the first stop as it is)
+    if (world.ready && !st.introDone) {
+      st.introDone = true;
+      const q = new URLSearchParams(window.location.search);
+      if (!playing && !world.reducedMotion && window.scrollY < 5 && !q.has("stop") && !q.has("closeup") && d.follow.x >= 0) {
+        startIntro(d, track);
+        runtime.waveFor = INTRO_TIME + 0.8;
+      }
+    }
     if (runtime.tourGlide && !playing) {
       startGlide(d, track, runtime.tourGlide.to, runtime.tourGlide.kind, overviewOf(path.stops));
       runtime.tourGlide = null;

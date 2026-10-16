@@ -8,7 +8,7 @@ import { tourStopFor } from "../islands/framing";
 import { defaultTourStop, islandTop } from "../islands/types";
 import { buildTour } from "./tourBuild";
 import { tourVia, trackHeightPx } from "./tourMath";
-import { BLEND_TIME, GLIDE_TIME, MAP_GLIDE_TIME, buildTourTrack, createTourDriver, followProgress, glideEase, nearestTrackProgress, overviewOf, sampleTrack, startGlide, stepTourDriver, stopAt } from "./tourMotion";
+import { BLEND_TIME, GLIDE_TIME, INTRO_TIME, MAP_GLIDE_TIME, startIntro, buildTourTrack, createTourDriver, followProgress, glideEase, nearestTrackProgress, overviewOf, sampleTrack, startGlide, stepTourDriver, stopAt } from "./tourMotion";
 import type { TourTrack } from "./tourMotion";
 
 const layout = buildLayout(worldProjects);
@@ -287,5 +287,24 @@ describe("island-to-island glide", () => {
     inp.scroll = track.stops[5];
     stepTourDriver(d, track, inp);
     expect(d.glide).toBeNull();
+  });
+});
+
+describe("opening descent", () => {
+  const layout = buildLayout(worldProjects);
+  const path = buildTour(layout, (p) => tourStopFor(p), false);
+  const track = buildTourTrack(path);
+  it("starts high above the first stop and lands on its framing", () => {
+    const d = createTourDriver();
+    const inp = { playing: false, scroll: 0, handoff: 0, reduced: false, dt: 1 / 60 };
+    stepTourDriver(d, track, inp);
+    const end = { x: 0, y: 0, z: 0 }, look = { x: 0, y: 0, z: 0 };
+    sampleTrack(track, d.follow.x, end, look);
+    startIntro(d, track);
+    stepTourDriver(d, track, inp);
+    expect(d.cam.y).toBeGreaterThan(end.y + 20);
+    for (let t = 0; t < INTRO_TIME + 0.2; t += inp.dt) stepTourDriver(d, track, inp);
+    expect(d.glide).toBeNull();
+    expect(d.cam.y).toBeCloseTo(end.y, 6);
   });
 });
