@@ -33,6 +33,7 @@ import { bridgeRamp } from "./crossings/geometry";
 import { Milestones } from "./milestones/Milestones";
 import { Critters } from "./critters/Critters";
 import { Gold } from "./gold/Gold";
+import { PlazaBall } from "./ball/PlazaBall";
 import { stampMilestones } from "./milestones/stamp";
 import { milestoneSpotsFor, pillarCollider } from "./milestones/placement";
 import { islandColliders } from "./islands/colliders";
@@ -109,6 +110,7 @@ export function World() {
       <Milestones />
       <Critters />
       <Gold />
+      <PlazaBall />
       <ParticlesRenderer />
       <InteractionController />
       <CloseupController />
