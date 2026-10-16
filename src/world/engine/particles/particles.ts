@@ -2,7 +2,7 @@ import { hexToRgb } from "@/world/engine/color";
 import { mulberry32, type Rng } from "@/world/engine/gen/rng";
 import type { Vec3 } from "@/world/engine/types";
 
-export type ParticlePreset = "debris" | "dust" | "confetti" | "leaves" | "sparkle" | "grass" | "chips" | "grit";
+export type ParticlePreset = "debris" | "dust" | "confetti" | "leaves" | "sparkle" | "grass" | "chips" | "grit" | "glint";
 
 export interface ParticlePool {
   readonly capacity: number;
@@ -28,6 +28,8 @@ const PRESETS: Record<ParticlePreset, Preset> = {
   grass: { count: 3, speed: [0.4, 1.1], up: [0.6, 1.4], life: [0.3, 0.5], size: [0.05, 0.09], gravity: 6, drag: 2.2, colors: ["#7f995d", "#97ae73", "#8a6849"] },
   chips: { count: 3, speed: [0.5, 1.3], up: [0.8, 1.6], life: [0.3, 0.5], size: [0.04, 0.08], gravity: 9, drag: 1.6, colors: ["#b98f62", "#8a6649", "#c69d6e"] },
   grit: { count: 3, speed: [0.4, 1.0], up: [0.4, 1.0], life: [0.3, 0.5], size: [0.04, 0.08], gravity: 4, drag: 2.4, colors: ["#b5afa5", "#a19b91"] },
+  // what can be used: a slow square glint rising off it (scene/interaction/glints.ts)
+  glint: { count: 1, speed: [0.05, 0.15], up: [0.35, 0.6], life: [0.9, 1.3], size: [0.05, 0.08], gravity: -0.1, drag: 0.6, colors: ["#fff4c8", "#ffe28a", "#ffffff"] },
   sparkle: { count: 5, speed: [0.2, 0.6], up: [0.2, 0.6], life: [0.5, 0.9], size: [0.05, 0.09], gravity: -0.3, drag: 1.0, colors: ["#bfe3ff", "#ffffff"] },
 };
 

@@ -7,6 +7,7 @@ import { useWorld } from "@/world/state/store";
 import { sharedKeyboard } from "@/world/input/keyboard";
 import { consumeTouch } from "@/world/input/touch";
 import { inReach } from "@/world/engine/interaction/registry";
+import { GLINT, glintPoint, glinting } from "./interaction/glints";
 
 export function InteractionController() {
   const camera = useThree((s) => s.camera);
@@ -78,6 +79,34 @@ export function InteractionController() {
       el.removeEventListener("pointerleave", onLeave);
     };
   }, [camera, gl, ray]);
+
+  // glints on what can be used (glints.ts): in Play the nearest few, more often once in reach; in the tour the hovered one
+  const glint = useMemo(
+    () => ({ t: 0, rnd: [0, 0, 0] as [number, number, number], touch: typeof window !== "undefined" && window.matchMedia("(pointer: coarse)").matches }),
+    [],
+  );
+  useFrame((_, dt) => {
+    const s = useWorld.getState();
+    if (runtime.closeup || s.mapOpen) return;
+    glint.t += dt;
+    const shed = (it: Parameters<typeof glintPoint>[0], every: number) => {
+      if (Math.random() > dt / every) return;
+      glint.rnd[0] = Math.random();
+      glint.rnd[1] = Math.random();
+      glint.rnd[2] = Math.random();
+      runtime.particles.burst(glintPoint(it, glint.rnd), "glint", { count: 1 });
+    };
+    if (s.mode === "play") {
+      if (runtime.travel) return;
+      for (const g of glinting(runtime.registry.all(), runtime.player.pos)) shed(g.item, g.item.id === runtime.focusId ? GLINT.inReachEvery : GLINT.every);
+    } else if (runtime.hoverId) {
+      const it = runtime.registry.get(runtime.hoverId);
+      if (it) shed(it, GLINT.inReachEvery);
+    } else if (glint.touch) {
+      // phones have no hover: what can be tapped on the island in view glints now and then
+      for (const it of runtime.registry.onIsland(s.activeIsland)) shed(it, GLINT.touchTourEvery);
+    }
+  });
 
   // play: nearest interactable in front of Ezra gets the E prompt
   useFrame(() => {
