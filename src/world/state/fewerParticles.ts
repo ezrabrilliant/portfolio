@@ -3,7 +3,7 @@ import type { ParticlePool, ParticlePreset } from "@/world/engine/particles/part
 type BurstOpts = NonNullable<Parameters<ParticlePool["burst"]>[2]>;
 
 /** The engine presets' default burst sizes (fewerParticles.test.ts pins these to the engine). */
-export const PRESET_COUNTS: Record<ParticlePreset, number> = { debris: 14, dust: 6, confetti: 40, leaves: 8, sparkle: 5, grass: 3, chips: 3, grit: 3, glint: 1 };
+export const PRESET_COUNTS: Record<ParticlePreset, number> = { debris: 14, dust: 6, confetti: 40, leaves: 8, sparkle: 5, grass: 3, chips: 3, grit: 3, glint: 1, hearts: 3, seeds: 10, feathers: 5 };
 
 /** Under prefers-reduced-motion a burst keeps a third of its particles, at least one so the feedback stays. */
 export function reducedCount(n: number): number {

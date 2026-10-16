@@ -2,7 +2,7 @@ import { hexToRgb } from "@/world/engine/color";
 import { mulberry32, type Rng } from "@/world/engine/gen/rng";
 import type { Vec3 } from "@/world/engine/types";
 
-export type ParticlePreset = "debris" | "dust" | "confetti" | "leaves" | "sparkle" | "grass" | "chips" | "grit" | "glint";
+export type ParticlePreset = "debris" | "dust" | "confetti" | "leaves" | "sparkle" | "grass" | "chips" | "grit" | "glint" | "hearts" | "seeds" | "feathers";
 
 export interface ParticlePool {
   readonly capacity: number;
@@ -30,6 +30,10 @@ const PRESETS: Record<ParticlePreset, Preset> = {
   grit: { count: 3, speed: [0.4, 1.0], up: [0.4, 1.0], life: [0.3, 0.5], size: [0.04, 0.08], gravity: 4, drag: 2.4, colors: ["#b5afa5", "#a19b91"] },
   // what can be used: a slow square glint rising off it (scene/interaction/glints.ts)
   glint: { count: 1, speed: [0.05, 0.15], up: [0.35, 0.6], life: [0.9, 1.3], size: [0.05, 0.08], gravity: -0.1, drag: 0.6, colors: ["#fff4c8", "#ffe28a", "#ffffff"] },
+  // the animals: hearts off a petted cat, seeds thrown to the chicken, feathers off a startled one
+  hearts: { count: 3, speed: [0.1, 0.35], up: [0.6, 1.0], life: [0.9, 1.3], size: [0.08, 0.12], gravity: -0.4, drag: 1.2, colors: ["#f06a8a", "#ff8fa8", "#e8475f"] },
+  seeds: { count: 10, speed: [0.3, 0.9], up: [0.8, 1.6], life: [0.6, 0.9], size: [0.03, 0.05], gravity: 9, drag: 1.5, colors: ["#e8c25a", "#d4a63c", "#f2d98a"] },
+  feathers: { count: 5, speed: [0.4, 1.0], up: [0.6, 1.2], life: [1.0, 1.6], size: [0.05, 0.08], gravity: 1.2, drag: 2.5, colors: ["#f6f3ea", "#ece6d8"] },
   sparkle: { count: 5, speed: [0.2, 0.6], up: [0.2, 0.6], life: [0.5, 0.9], size: [0.05, 0.09], gravity: -0.3, drag: 1.0, colors: ["#bfe3ff", "#ffffff"] },
 };
 

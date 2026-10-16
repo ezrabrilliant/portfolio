@@ -32,6 +32,8 @@ import { stampCrossings } from "./crossings/stamp";
 import { bridgeRamp } from "./crossings/geometry";
 import { Milestones } from "./milestones/Milestones";
 import { Critters } from "./critters/Critters";
+import { Ambient } from "./critters/Ambient";
+import { BlobShadow } from "./ezra/BlobShadow";
 import { Gold } from "./gold/Gold";
 import { PlazaBall } from "./ball/PlazaBall";
 import { stampMilestones } from "./milestones/stamp";
@@ -109,6 +111,8 @@ export function World() {
       })}
       <Milestones />
       <Critters />
+      <Ambient />
+      <BlobShadow />
       <Gold />
       <PlazaBall />
       <ParticlesRenderer />

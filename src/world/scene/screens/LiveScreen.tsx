@@ -54,6 +54,9 @@ export interface LiveScreenProps<S> {
  * DEMO_PAUSE after a tap, and is off under reduced motion. Activating it (click, E, Enter) opens the closeup; taps in
  * closeup reach the program via its CloseupTarget.
  */
+/** Ezra within `near` blocks of a screen lights it up by `boost` (its colour past white). */
+const SCREEN_GLOW = { near: 3.5, boost: 0.14 } as const;
+
 export function LiveScreen<S>({
   id,
   placement,
@@ -91,6 +94,8 @@ export function LiveScreen<S>({
   // Keyed on the app too: another program starts from a fresh state (st.s is the old program's)
   const st = useMemo(
     () => ({
+      /** 0..1: how lit the face is by Ezra standing before it */
+      glow: 0,
       canvas: texture.image as HTMLCanvasElement,
       s: null as S | null,
       regions: [] as HitRegion[],
@@ -187,9 +192,18 @@ export function LiveScreen<S>({
     };
   }, [id, placement.id, size.w, size.h, app, st]);
 
-  useFrame(({ clock, camera }) => {
+  useFrame(({ clock, camera }, dt) => {
     const t = clock.elapsedTime;
     st.t = t;
+    // a screen lights up a little while Ezra stands in front of it (Play): the face's colour goes past white
+    const faceMat = face.current?.material as THREE.MeshBasicMaterial | undefined;
+    if (faceMat) {
+      const pp = runtime.player.pos;
+      const c = runtime.closeups.get(id)?.center() ?? pp;
+      const near = useWorld.getState().mode === "play" && Math.hypot(pp.x - c.x, pp.z - c.z) < SCREEN_GLOW.near;
+      st.glow += ((near ? 1 : 0) - st.glow) * (1 - Math.exp(-4 * dt));
+      faceMat.color.setScalar(1 + SCREEN_GLOW.boost * st.glow);
+    }
     // ScreenApp contract: init's `now` is the wall time at clock t = 0
     if (st.s === null) st.s = app.init(new Date(Date.now() - t * 1000));
     const world = useWorld.getState();
