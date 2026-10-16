@@ -33,7 +33,7 @@ export function IslandTerrain({ batch, quality }: { batch: InstanceBatch; qualit
     <instancedMesh
       ref={ref}
       args={[geometry, blockMaterial, batch.count]}
-      userData={{ noSeeThrough: true }}
+      userData={{ seeSolid: true }}
       castShadow={quality === "high"}
       receiveShadow
     />

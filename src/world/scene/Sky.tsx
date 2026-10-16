@@ -1,9 +1,12 @@
 import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
-import { useFrame } from "@react-three/fiber";
+import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { mulberry32 } from "@/world/engine/gen/rng";
 import { useWorld } from "@/world/state/store";
 import { VIEW_R } from "./islands/types";
+import { DAY, daylight, daylightK, mixColor } from "./daylight";
+import { seeThroughUniforms } from "./seeThroughShader";
+import { windUniform } from "./islands/shared/wind";
 
 // Spec sky: #8ab3d1 → #cbdce4. THREE.Color holds linear values; the shaders mix in linear space and
 // convert to the output colour space themselves, so these hexes reach the screen untouched (no tone mapping).
@@ -200,7 +203,23 @@ function CloudSea() {
     const w = uniforms.uCloudWind.value;
     w.set(wrapTile(w.x + VIEW_R.x * WIND_SPEED * delta), wrapTile(w.y + VIEW_R.z * WIND_SPEED * delta));
   });
-  return <instancedMesh ref={ref} args={[geometry, material, boxes.length]} frustumCulled={false} />;
+  return <instancedMesh ref={ref} args={[geometry, material, boxes.length]} frustumCulled={false} userData={{ noSeeThrough: true }} />;
+}
+
+/** Day to golden hour (daylight.ts): the sky gradient, the background and the fog warm together. */
+function Daylight() {
+  const scene = useThree((s) => s.scene);
+  useFrame(({ clock }) => {
+    const k = daylightK(clock.elapsedTime);
+    daylight.k = k;
+    mixColor(SKY_TOP, DAY.skyTop, k);
+    mixColor(SKY_HORIZON, DAY.skyHorizon, k);
+    if (scene.background instanceof THREE.Color) scene.background.copy(SKY_HORIZON);
+    if (scene.fog) scene.fog.color.copy(SKY_HORIZON);
+    seeThroughUniforms.uTime.value = clock.elapsedTime;
+    windUniform.value = useWorld.getState().reducedMotion ? 0 : 1;
+  });
+  return null;
 }
 
 export function Sky() {
@@ -208,6 +227,7 @@ export function Sky() {
     <>
       <color attach="background" args={["#cbdce4"]} />
       <fog attach="fog" args={["#cbdce4", FOG_NEAR, FOG_FAR]} />
+      <Daylight />
       <SkyDome />
       <CloudSea />
     </>

@@ -4,6 +4,7 @@ import * as THREE from "three";
 import { runtime } from "@/world/state/runtime";
 import { useWorld } from "@/world/state/store";
 import { VIEW_F, VIEW_R } from "./islands/types";
+import { DAY, daylight, mixColor } from "./daylight";
 
 // Warm late-afternoon sun, back-left of the tour view and ~32° above the horizon, so shadows run long
 // toward the front-right. Only its direction matters; the distance just keeps the shadow camera clear.
@@ -24,6 +25,7 @@ const AXIS_Y = AXIS_Z.clone().cross(AXIS_X);
 export function Lights() {
   const quality = useWorld((s) => s.quality);
   const sun = useRef<THREE.DirectionalLight>(null);
+  const hemi = useRef<THREE.HemisphereLight>(null);
   const target = useMemo(() => new THREE.Object3D(), []);
   const scratch = useMemo(
     () => ({ focus: new THREE.Vector3(), follow: new THREE.Vector3(), island: new THREE.Vector3(), islandId: "", started: false }),
@@ -58,11 +60,22 @@ export function Lights() {
       AXIS_X.z * sx + AXIS_Y.z * sy + AXIS_Z.z * sz,
     );
     sun.current?.position.copy(target.position).addScaledVector(SUN_DIR, SUN_DISTANCE);
+    // day to golden hour (daylight.ts)
+    const k = daylight.k;
+    if (sun.current) {
+      mixColor(sun.current.color, DAY.sun, k);
+      sun.current.intensity = DAY.sunIntensity[0] + (DAY.sunIntensity[1] - DAY.sunIntensity[0]) * k;
+    }
+    if (hemi.current) {
+      mixColor(hemi.current.color, DAY.hemiSky, k);
+      mixColor(hemi.current.groundColor, DAY.hemiGround, k);
+      hemi.current.intensity = DAY.hemiIntensity[0] + (DAY.hemiIntensity[1] - DAY.hemiIntensity[0]) * k;
+    }
   });
   const hi = quality === "high";
   return (
     <>
-      <hemisphereLight args={["#dce7ef", "#a08c6d", 1.2]} />
+      <hemisphereLight ref={hemi} args={["#dce7ef", "#a08c6d", 1.2]} />
       <primitive object={target} />
       <directionalLight
         ref={sun}

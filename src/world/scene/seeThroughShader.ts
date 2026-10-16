@@ -23,7 +23,12 @@ export const seeThroughUniforms = {
   uFaceR: { value: new THREE.Vector3(1, 0, 0) },
   uFaceU: { value: new THREE.Vector3(0, 1, 0) },
   uFaceHalf: { value: new THREE.Vector2() },
+  /** seconds (Sky writes it): drives the drifting cloud shade */
+  uTime: { value: 0 },
 };
+
+/** Cloud shade on lit surfaces: patches `cell` blocks across, drifting `drift` blocks a second, `depth` dark at most. */
+export const CLOUD_SHADE = { cell: 16, drift: 0.9, depth: 0.16 } as const;
 
 /** Around Ezra's body, a passable prop fades within this horizontal radius, from his feet to just over his head. */
 export const BODY_FADE = { radius: 0.75, top: 2.4 } as const;
@@ -51,6 +56,13 @@ uniform vec3 uFaceN;
 uniform vec3 uFaceR;
 uniform vec3 uFaceU;
 uniform vec2 uFaceHalf;
+uniform float uTime;
+float seeHash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+float seeNoise(vec2 p) {
+  vec2 i = floor(p), f = fract(p);
+  vec2 u = f * f * (3.0 - 2.0 * f);
+  return mix(mix(seeHash(i), seeHash(i + vec2(1.0, 0.0)), u.x), mix(seeHash(i + vec2(0.0, 1.0)), seeHash(i + vec2(1.0, 1.0)), u.x), u.y);
+}
 float seeBayer(vec2 p) {
   vec2 q = mod(floor(p), 4.0);
   float i = q.x + q.y * 4.0;
@@ -59,6 +71,7 @@ float seeBayer(vec2 p) {
 }
 `;
 const FRAGMENT_BODY = `
+#ifndef SEE_SOLID
   if (uFace > 0.0) {
     // a closeup: whatever stands in front of the face and over its rectangle (seen from the camera) is cleared, dithered
     // in with the glide; props beside the face stay whole (the camera's near plane no longer cuts them)
@@ -84,6 +97,18 @@ const FRAGMENT_BODY = `
 #endif
     if (fade > seeBayer(gl_FragCoord.xy)) discard;
   }
+#endif
+`;
+
+/** Lit materials: soft cloud shadows drifting over the islands (on the lit colour, before tone mapping). */
+const SHADE_BODY = `
+#ifdef SEE_SHADE
+  {
+    vec2 cp = vSeeWorld.xz / ${CLOUD_SHADE.cell.toFixed(1)} + vec2(uTime * ${(CLOUD_SHADE.drift / CLOUD_SHADE.cell).toFixed(4)}, uTime * ${(CLOUD_SHADE.drift * 0.4 / CLOUD_SHADE.cell).toFixed(4)});
+    float cloud = smoothstep(0.55, 0.78, seeNoise(cp));
+    gl_FragColor.rgb *= 1.0 - ${CLOUD_SHADE.depth.toFixed(2)} * cloud;
+  }
+#endif
 `;
 
 /** Shader source shape onBeforeCompile hands over (the part this patch touches). */
@@ -97,7 +122,11 @@ interface ShaderLike {
 export function patchSeeThroughShader(shader: ShaderLike): void {
   Object.assign(shader.uniforms, seeThroughUniforms);
   shader.vertexShader = VERTEX_HEAD + shader.vertexShader.replace("#include <project_vertex>", `#include <project_vertex>\n${VERTEX_BODY}`);
-  shader.fragmentShader = FRAGMENT_HEAD + shader.fragmentShader.replace("#include <clipping_planes_fragment>", `#include <clipping_planes_fragment>\n${FRAGMENT_BODY}`);
+  shader.fragmentShader =
+    FRAGMENT_HEAD +
+    shader.fragmentShader
+      .replace("#include <clipping_planes_fragment>", `#include <clipping_planes_fragment>\n${FRAGMENT_BODY}`)
+      .replace("#include <tonemapping_fragment>", `${SHADE_BODY}\n#include <tonemapping_fragment>`);
 }
 
 const patched = new WeakSet<THREE.Material>();
@@ -107,26 +136,29 @@ const patched = new WeakSet<THREE.Material>();
  * material belongs to a board or sign Ezra walks through (userData.passable on an ancestor), which also fades around
  * his body.
  */
-export function applySeeThrough(m: THREE.Material, passable = false): void {
+export function applySeeThrough(m: THREE.Material, passable = false, solid = false): void {
   if (patched.has(m)) return;
   // troika's text material derives from a base material (its prototype) and owns onBeforeCompile through a getter that
   // calls whatever is set on it, so wrapping it recursed forever: patch the base, which troika compiles first
   if ((m as THREE.Material & { isDerivedMaterial?: boolean }).isDerivedMaterial) {
     patched.add(m);
-    applySeeThrough(Object.getPrototypeOf(m) as THREE.Material, passable);
+    applySeeThrough(Object.getPrototypeOf(m) as THREE.Material, passable, solid);
     m.needsUpdate = true;
     return;
   }
   if (!(m instanceof THREE.MeshStandardMaterial || m instanceof THREE.MeshLambertMaterial || m instanceof THREE.MeshBasicMaterial)) return;
   patched.add(m);
+  // lit surfaces take the cloud shade; screens and other unlit ones keep their own colours
+  const lit = !(m instanceof THREE.MeshBasicMaterial);
   const prev = m.onBeforeCompile;
   m.onBeforeCompile = (shader, renderer) => {
     prev.call(m, shader, renderer);
     patchSeeThroughShader(shader);
-    if (passable) shader.fragmentShader = `#define SEE_PASSABLE\n${shader.fragmentShader}`;
+    const defs = [passable && "SEE_PASSABLE", solid && "SEE_SOLID", lit && "SEE_SHADE"].filter(Boolean);
+    shader.fragmentShader = defs.map((d) => `#define ${d}\n`).join("") + shader.fragmentShader;
   };
   const prevKey = m.customProgramCacheKey.bind(m);
-  m.customProgramCacheKey = () => `${prevKey()}|see${passable ? "|pass" : ""}`;
+  m.customProgramCacheKey = () => `${prevKey()}|see${passable ? "|pass" : ""}${solid ? "|solid" : ""}`;
   m.needsUpdate = true;
 }
 
@@ -134,13 +166,15 @@ export function applySeeThrough(m: THREE.Material, passable = false): void {
  * Walks the scene and patches every mesh material, skipping subtrees marked userData.noSeeThrough; under one marked
  * userData.passable (boards and signs) they also fade around Ezra's body.
  */
-export function patchSceneSeeThrough(root: THREE.Object3D, passable = false): void {
+export function patchSceneSeeThrough(root: THREE.Object3D, passable = false, solid = false): void {
   if (root.userData.noSeeThrough) return;
   const pass = passable || root.userData.passable === true;
+  // seeSolid (terrain, Ezra): never faded, but still under the drifting cloud shade
+  const firm = solid || root.userData.seeSolid === true;
   const mesh = root as THREE.Mesh;
   if (mesh.isMesh) {
     const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
-    for (const m of mats) if (m) applySeeThrough(m, pass);
+    for (const m of mats) if (m) applySeeThrough(m, pass, firm);
   }
-  for (const c of root.children) patchSceneSeeThrough(c, pass);
+  for (const c of root.children) patchSceneSeeThrough(c, pass, firm);
 }

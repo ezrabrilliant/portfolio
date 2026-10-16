@@ -4,6 +4,8 @@ import { mulberry32 } from "@/world/engine/gen/rng";
 export interface PropBlock {
   x: number; y: number; z: number; c: string;
   sx?: number; sy?: number; sz?: number; rx?: number; ry?: number; rz?: number;
+  /** 0..1: how much the wind moves it (leaves); PropBlocks sways the block's top that much */
+  sway?: number;
 }
 
 export const PALETTE = {
@@ -36,10 +38,10 @@ export function treeBlocks(x: number, z: number, h: number, seed: number): PropB
         const corner = Math.abs(dx) + Math.abs(dz) === 2;
         if (corner && dy === 1 && r() < 0.65) continue;
         if (corner && dy === 0 && r() < 0.25) continue;
-        out.push({ x: x + dx, y: h + dy + 0.5, z: z + dz, c: pickColor(PALETTE.leaf, r) });
+        out.push({ x: x + dx, y: h + dy + 0.5, z: z + dz, c: pickColor(PALETTE.leaf, r), sway: 0.55 + 0.3 * dy });
       }
     }
   }
-  out.push({ x, y: h + 2.5, z, c: pickColor(PALETTE.leaf, r) });
+  out.push({ x, y: h + 2.5, z, c: pickColor(PALETTE.leaf, r), sway: 1 });
   return out;
 }

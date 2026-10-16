@@ -1,8 +1,9 @@
-import { useLayoutEffect, useRef } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
 import { mulberry32 } from "@/world/engine/gen/rng";
 import type { PropBlock } from "./props";
+import { WIND_MATERIAL } from "./wind";
 
 const GEOMETRY = new RoundedBoxGeometry(1, 1, 1, 2, 0.08);
 const MATERIAL = new THREE.MeshStandardMaterial({ color: "#ffffff", roughness: 0.9, metalness: 0 });
@@ -16,6 +17,17 @@ const col = new THREE.Color();
 /** Static decorative blocks as one InstancedMesh (one draw call). Coordinates are island-local. */
 export function PropBlocks({ blocks, seed = 1 }: { blocks: readonly PropBlock[]; seed?: number }) {
   const ref = useRef<THREE.InstancedMesh>(null);
+  // blocks the wind moves get their own geometry with a per-instance sway weight and the wind material
+  const windy = useMemo(() => blocks.some((b) => (b.sway ?? 0) > 0), [blocks]);
+  const geometry = useMemo(() => {
+    if (!windy) return GEOMETRY;
+    const g = GEOMETRY.clone();
+    g.setAttribute("aSway", new THREE.InstancedBufferAttribute(Float32Array.from(blocks, (b) => b.sway ?? 0), 1));
+    return g;
+  }, [blocks, windy]);
+  useEffect(() => () => {
+    if (geometry !== GEOMETRY) geometry.dispose();
+  }, [geometry]);
 
   useLayoutEffect(() => {
     const mesh = ref.current;
@@ -38,7 +50,7 @@ export function PropBlocks({ blocks, seed = 1 }: { blocks: readonly PropBlock[];
     <instancedMesh
       key={blocks.length}
       ref={ref}
-      args={[GEOMETRY, MATERIAL, blocks.length]}
+      args={[geometry, windy ? WIND_MATERIAL : MATERIAL, blocks.length]}
       castShadow
       receiveShadow
     />

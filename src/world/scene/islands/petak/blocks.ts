@@ -155,6 +155,7 @@ export function bananaBlocks(): PropBlock[] {
       z: z - (len / 2) * Math.cos(a) * Math.sin(t),
       sx: len, sy: 0.05, sz: 0.42, ry: t, rz: -a,
       c: PALETTE.leaf[i % 4],
+      sway: 1,
     });
   }
   return out;
