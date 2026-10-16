@@ -36,8 +36,8 @@ export function plazaPropBlocks(): PropBlock[] {
     out.push({ x: l.x, y: LANTERN_Y + 0.17, z: l.z, c: PALETTE.woodDark, sx: 0.36, sy: 0.06, sz: 0.36 });
   }
   for (const f of PLAZA.flowers) {
-    out.push({ x: f.x, y: 0.11, z: f.z, c: PALETTE.leaf[2], sx: 0.05, sy: 0.22, sz: 0.05 });
-    out.push({ x: f.x, y: 0.26, z: f.z, c: f.c, sx: 0.2, sy: 0.1, sz: 0.2 });
+    out.push({ x: f.x, y: 0.11, z: f.z, c: PALETTE.leaf[2], sx: 0.05, sy: 0.22, sz: 0.05, sway: 0.5 });
+    out.push({ x: f.x, y: 0.26, z: f.z, c: f.c, sx: 0.2, sy: 0.1, sz: 0.2, sway: 1 });
   }
   return out;
 }

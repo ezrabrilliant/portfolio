@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
+import { glows } from "@/world/scene/daylight";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import type { IslandPlacement } from "@/world/engine/gen/layout";
 import { playSfx } from "@/world/engine/audio/sfx";
@@ -22,6 +23,9 @@ import { projectById } from "./shared/project";
 import { useCanvasTexture } from "./shared/useCanvasTexture";
 
 /** Warm lanterns hanging from the post arms, swaying slowly (still under reduced motion). */
+/** The lanterns' glowing paper, one material so the golden hour brightens them all (daylight.ts glows). */
+const LANTERN_GLOW = glows(new THREE.MeshStandardMaterial({ color: "#6b4220", emissive: "#ffa64a", emissiveIntensity: 0.9, roughness: 0.6, toneMapped: false }));
+
 function Lanterns() {
   const refs = useRef<(THREE.Group | null)[]>([]);
   useFrame(({ clock }) => {
@@ -40,7 +44,7 @@ function Lanterns() {
           </mesh>
           <mesh position={[0, -0.3, 0]}>
             <boxGeometry args={[0.22, 0.28, 0.22]} />
-            <meshStandardMaterial color="#6b4220" emissive="#ffa64a" emissiveIntensity={0.9} roughness={0.6} toneMapped={false} />
+            <primitive object={LANTERN_GLOW} attach="material" />
           </mesh>
         </group>
       ))}

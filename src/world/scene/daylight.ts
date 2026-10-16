@@ -28,3 +28,16 @@ export const DAY = {
 export function mixColor(out: THREE.Color, pair: readonly [THREE.Color, THREE.Color], k: number): THREE.Color {
   return out.copy(pair[0]).lerp(pair[1], k);
 }
+
+/**
+ * Lantern and lamp materials that glow brighter toward golden hour (Sky multiplies each one's base glow, kept in
+ * userData.glow, by up to 2.4).
+ */
+export const glowMaterials = new Set<THREE.MeshStandardMaterial>();
+
+/** Registers a glowing material (its current emissiveIntensity is its daytime glow). */
+export function glows(m: THREE.MeshStandardMaterial): THREE.MeshStandardMaterial {
+  m.userData.glow = m.emissiveIntensity;
+  glowMaterials.add(m);
+  return m;
+}

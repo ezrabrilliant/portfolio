@@ -12,7 +12,8 @@ import { InfoBoard } from "./shared/InfoBoard";
 import { MapBoard } from "./shared/MapBoard";
 import { Signpost } from "./shared/Signpost";
 import { PALETTE } from "./shared/props";
-import { islandFrame, worldTuple } from "./shared/local";
+import { islandFrame, worldOf, worldTuple } from "./shared/local";
+import { runtime } from "@/world/state/runtime";
 import { projectById } from "./shared/project";
 import { useCanvasTexture } from "./shared/useCanvasTexture";
 import { useHoverLift } from "./shared/useHoverLift";
@@ -41,9 +42,10 @@ const ROBOT = {
     [EZRA.robot.w, 1.2, EZRA.robot.d, 0, 1.22, 0, BODY],
     [0.62, 0.34, 0.06, 0, 1.34, 0.51, SLATE],
     [0.34, 1.0, 0.42, -0.95, 1.14, 0, LIGHT],
-    [0.34, 1.0, 0.42, 0.95, 1.14, 0, LIGHT],
     [0.34, 0.58, 0.34, 0, 2.08, 0, SLATE],
   ]),
+  // the right arm, hung from its shoulder (it waves at Ezra)
+  arm: bake([[0.34, 1.0, 0.42, 0, -0.46, 0, LIGHT]]),
   // head, visor and antenna stalk, relative to the neck pivot
   head: bake([
     [1.32, 1.0, EZRA.robot.d, 0, 0.48, 0, LIGHT],
@@ -100,21 +102,42 @@ const SCREEN_MAT = new THREE.MeshStandardMaterial({ vertexColors: true, roughnes
 /** Pause between a member's question and the bot's answer. */
 const REPLY_DELAY_MS = 1100;
 
-function Robot({ id }: { id: string }) {
+/** Blocks from the robot within which it turns to Ezra and waves. */
+const WAVE_AT = 4.5;
+
+function Robot({ id, placement }: { id: string; placement: IslandPlacement }) {
   const head = useRef<THREE.Group>(null);
   const eyes = useRef<THREE.Mesh>(null);
+  const arm = useRef<THREE.Group>(null);
   const lift = useHoverLift(id);
-  useFrame(({ clock }) => {
-    if (useWorld.getState().reducedMotion) return;
+  const st = useMemo(() => ({ wave: 0, near: false, at: worldOf(placement, EZRA.robot.x, 0, EZRA.robot.z) }), [placement]);
+  useFrame(({ clock }, dt) => {
     const t = clock.elapsedTime;
-    if (head.current) head.current.rotation.z = Math.sin(t * 0.9) * 0.06;
-    if (eyes.current) eyes.current.scale.y = t % 4 < 0.12 ? 0.15 : 1;
+    const reduced = useWorld.getState().reducedMotion;
+    const p = runtime.player.pos;
+    const dx = p.x - st.at.x, dz = p.z - st.at.z;
+    const near = useWorld.getState().mode === "play" && Math.hypot(dx, dz) < WAVE_AT;
+    // a beep as Ezra comes into range, and the arm comes up and waves while he stays
+    if (near && !st.near) playSfx("chat");
+    st.near = near;
+    st.wave += ((near ? 1 : 0) - st.wave) * (1 - Math.exp(-5 * dt));
+    if (arm.current) arm.current.rotation.z = st.wave * (2.4 + (reduced ? 0 : 0.35 * Math.sin(t * 7)));
+    if (head.current) {
+      // the head turns toward him (the robot faces +z)
+      const look = near ? Math.max(-0.7, Math.min(0.7, Math.atan2(dx, dz))) : 0;
+      head.current.rotation.y += (look - head.current.rotation.y) * (1 - Math.exp(-4 * dt));
+      head.current.rotation.z = reduced ? 0 : Math.sin(t * 0.9) * 0.06;
+    }
+    if (eyes.current && !reduced) eyes.current.scale.y = t % 4 < 0.12 ? 0.15 : near ? 1.15 : 1;
   });
   return (
     <group position={[EZRA.robot.x, 0, EZRA.robot.z]}>
       <group ref={lift}>
         <mesh geometry={ROBOT.body} material={ROBOT_MAT.body} castShadow />
         <mesh geometry={ROBOT.led} material={ROBOT_MAT.led} position={[0.18, 1.34, 0.55]} />
+        <group ref={arm} position={[0.95, 1.64, 0]}>
+          <mesh geometry={ROBOT.arm} material={ROBOT_MAT.body} castShadow />
+        </group>
         <group ref={head} position={[0, 2.36, 0]}>
           <mesh geometry={ROBOT.head} material={ROBOT_MAT.body} castShadow />
           <mesh ref={eyes} geometry={ROBOT.eyes} material={ROBOT_MAT.eyes} position={[0, 0.5, 0.55]} />
@@ -207,7 +230,7 @@ export function EzraBotIsland({ placement }: { placement: IslandPlacement }) {
   return (
     <>
       <group position={islandFrame(placement)}>
-        <Robot id="ezra-robot" />
+        <Robot id="ezra-robot" placement={placement} />
         {window3.map((msgIndex, slot) => (
           <Bubble key={slot} slot={slot} msg={CHAT_SCRIPT[msgIndex]} time={log.times[slot]} popKey={log.latest} />
         ))}

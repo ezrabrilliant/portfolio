@@ -6,7 +6,9 @@ import { useWorld } from "@/world/state/store";
 import { VIEW_R } from "./islands/types";
 import { DAY, daylight, daylightK, mixColor } from "./daylight";
 import { seeThroughUniforms } from "./seeThroughShader";
-import { windUniform } from "./islands/shared/wind";
+import { ezraUniform, windUniform } from "./islands/shared/wind";
+import { glowMaterials } from "./daylight";
+import { runtime } from "@/world/state/runtime";
 
 // Spec sky: #8ab3d1 → #cbdce4. THREE.Color holds linear values; the shaders mix in linear space and
 // convert to the output colour space themselves, so these hexes reach the screen untouched (no tone mapping).
@@ -220,6 +222,11 @@ function Daylight() {
     const world = useWorld.getState();
     windUniform.value = world.reducedMotion ? 0 : 1;
     seeThroughUniforms.uShadeOn.value = world.quality === "high" ? 1 : 0;
+    const pp = runtime.player.pos;
+    if (world.mode === "play") ezraUniform.value.set(pp.x, pp.y, pp.z);
+    else ezraUniform.value.set(0, -1000, 0);
+    // the lanterns and lamps glow brighter as the light turns golden (daylight.ts)
+    for (const m of glowMaterials) m.emissiveIntensity = (m.userData.glow as number) * (1 + 1.4 * k);
   });
   return null;
 }

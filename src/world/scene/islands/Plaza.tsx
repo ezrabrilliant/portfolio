@@ -1,5 +1,6 @@
 import { useLayoutEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
+import { glows } from "@/world/scene/daylight";
 import type { IslandPlacement } from "@/world/engine/gen/layout";
 import { worldCopy } from "@/config/portfolio";
 import { runtime } from "@/world/state/runtime";
@@ -12,7 +13,7 @@ import { LANTERN_Y, districtSignBlocks, plazaPropBlocks } from "./plaza/blocks";
 import { projectsAheadLine } from "./plaza/sign";
 
 const LANTERN_GEO = new THREE.BoxGeometry(0.28, 0.28, 0.28);
-const LANTERN_MAT = new THREE.MeshStandardMaterial({ color: "#f1dfb0", emissive: "#f3d58e", emissiveIntensity: 0.6, roughness: 0.6 });
+const LANTERN_MAT = glows(new THREE.MeshStandardMaterial({ color: "#f1dfb0", emissive: "#f3d58e", emissiveIntensity: 0.6, roughness: 0.6 }));
 /** Both lanterns in one draw call (they glow, so they can't share the props' plain material). */
 function Lanterns() {
   const ref = useRef<THREE.InstancedMesh>(null);
