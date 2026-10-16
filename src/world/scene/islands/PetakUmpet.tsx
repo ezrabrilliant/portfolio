@@ -15,6 +15,8 @@ import { Signpost } from "./shared/Signpost";
 import { PropBlocks } from "./shared/PropBlocks";
 import { PALETTE, treeBlocks } from "./shared/props";
 import { islandFrame, worldOf } from "./shared/local";
+import { FOUND_AT, GIVE_UP_AT, HIDE_SPOTS, ROUNDS, START_AT, pickRounds } from "./petak/hideSeek";
+import { announceCard } from "@/world/ui/islandAnnounce";
 import { RED, turn, houseBlocks, bananaBlocks, gentongBlocks, jemuranBlocks, pathBlocks, SIGN_BOTTOM, postBlocks } from "./petak/blocks";
 import { projectById } from "./shared/project";
 import { useCanvasTexture } from "./shared/useCanvasTexture";
@@ -98,7 +100,7 @@ const smooth = (a: number, b: number, x: number) => {
   return t * t * (3 - 2 * t);
 };
 
-type KidState = "peek" | "run" | "hidden" | "back";
+type KidState = "peek" | "run" | "hidden" | "back" | "seekRun" | "seekHide" | "found";
 
 /** Where the kid stands fully peeking out (also where reduced motion keeps him). */
 const PEEK_SPOT = { x: PETAK.kid.home.x + PETAK.kid.peek, z: PETAK.kid.home.z };
@@ -120,10 +122,12 @@ function HidingKid({ placement }: { placement: IslandPlacement }) {
   const root = useRef<THREE.Group>(null);
   const head = useRef<THREE.Group>(null);
   const legs = useRef<(THREE.Group | null)[]>([]);
-  const sim = useRef({ state: "peek" as KidState, t: 0, from: { x: 0, z: 0 } });
+  const sim = useRef({ state: "peek" as KidState, t: 0, from: { x: 0, z: 0 }, to: { x: 0, z: 0 }, rounds: [] as number[], round: 0 });
   const { home, hide, peek } = PETAK.kid;
   const side = Math.sign(peek); // which side of the trunk he peeks out of (+1 = +x)
   const spot = useMemo(() => worldOf(placement, PEEK_SPOT.x, 0.7, PEEK_SPOT.z), [placement]);
+  /** the island frame in world space: the kid's group moves in island-local coordinates */
+  const spot0 = useMemo(() => worldOf(placement, 0, 0, 0), [placement]);
   const geo = useMemo(
     () => ({
       cap: merged([boxAt(0.4, 0.14, 0.4, 0, 0.2, -0.01), boxAt(0.34, 0.04, 0.2, 0, 0.15, 0.28)]),
@@ -147,6 +151,30 @@ function HidingKid({ placement }: { placement: IslandPlacement }) {
     playSfx("step");
   };
 
+  /** Hide and seek (petak/hideSeek.ts): he runs to the round's spot. */
+  const runTo = (to: { x: number; z: number }, state: KidState) => {
+    const k = sim.current;
+    const g = root.current;
+    k.from = { x: g ? g.position.x : home.x, z: g ? g.position.z : home.z };
+    k.to = to;
+    k.state = state;
+    k.t = 0;
+    if (head.current) head.current.rotation.y = 0;
+    playSfx("step");
+  };
+  const startGame = () => {
+    const k = sim.current;
+    k.rounds = pickRounds();
+    k.round = 0;
+    runTo(HIDE_SPOTS[k.rounds[0]], "seekRun");
+    announceCard("Hide and seek!", `Find the kid · 1 / ${ROUNDS}`);
+  };
+  const endGame = () => {
+    const k = sim.current;
+    runTo(PEEK_SPOT, "back");
+    k.rounds = [];
+  };
+
   useFrame((_, dt) => {
     const g = root.current;
     if (!g) return;
@@ -164,8 +192,40 @@ function HidingKid({ placement }: { placement: IslandPlacement }) {
       g.position.set(home.x + out * peek, 0, home.z);
       g.rotation.set(0, 0, -side * out * 0.12); // lean out past the trunk
       if (head.current) head.current.rotation.y = side * out * 0.35; // and look out (toward the tour camera)
-      if (mode === "play" && dist < 4.5) run();
+      if (mode === "play" && dist < START_AT && !reducedMotion) startGame();
+      else if (mode === "play" && dist < START_AT) run();
       return;
+    }
+    // hide and seek: he waits where he hid until Ezra finds him; a found kid hops, then runs to the next spot
+    if (k.state === "seekHide" || k.state === "found" || k.state === "seekRun") {
+      const kx = spot0.x + g.position.x, kz = spot0.z + g.position.z;
+      const near = Math.hypot(p.x - kx, p.z - kz);
+      if (mode !== "play" || Math.hypot(p.x - spot.x, p.z - spot.z) > GIVE_UP_AT) {
+        endGame();
+        return;
+      }
+      if (k.state === "seekHide") {
+        // now and then he peeks out from his hiding place
+        if (head.current) head.current.rotation.y = 0.5 * Math.sin(k.t * 1.3);
+        if (near < FOUND_AT) {
+          k.state = "found";
+          k.t = 0;
+          playSfx("pop");
+          runtime.particles.burst({ x: kx, y: spot0.y + 1.2, z: kz }, "confetti", { count: 24 });
+          const n = k.round + 1;
+          announceCard(n >= ROUNDS ? "You found me every time!" : `Found you! ${n} / ${ROUNDS}`, n >= ROUNDS ? "Hide and seek champion" : "Again! Count to three...", true);
+        }
+        return;
+      }
+      if (k.state === "found") {
+        g.position.y = Math.abs(Math.sin(k.t * 9)) * 0.25 * Math.max(0, 1 - k.t);
+        if (k.t > 1.3) {
+          k.round += 1;
+          if (k.round >= ROUNDS) endGame();
+          else runTo(HIDE_SPOTS[k.rounds[k.round]], "seekRun");
+        }
+        return;
+      }
     }
     if (k.state === "hidden") {
       if (k.t > 6 && (mode !== "play" || dist > 6)) {
@@ -176,8 +236,8 @@ function HidingKid({ placement }: { placement: IslandPlacement }) {
       return;
     }
     // reduced motion walks him straight back to where he stays peeking (no snap at the end)
-    const target = k.state === "run" ? hide : reducedMotion ? PEEK_SPOT : home;
-    const e = Math.min(1, k.t / (k.state === "run" ? 0.9 : 1.4));
+    const target = k.state === "seekRun" ? k.to : k.state === "run" ? hide : reducedMotion ? PEEK_SPOT : home;
+    const e = Math.min(1, k.t / (k.state === "run" ? 0.9 : k.state === "seekRun" ? 1.4 : 1.4));
     g.position.set(
       k.from.x + (target.x - k.from.x) * e,
       reducedMotion ? 0 : Math.abs(Math.sin(k.t * 14)) * 0.08,
@@ -192,7 +252,7 @@ function HidingKid({ placement }: { placement: IslandPlacement }) {
         if (l) l.rotation.x = 0;
       });
       g.rotation.set(0, 0, 0);
-      k.state = k.state === "run" ? "hidden" : "peek";
+      k.state = k.state === "run" ? "hidden" : k.state === "seekRun" ? "seekHide" : "peek";
       k.t = 0;
     }
   });
