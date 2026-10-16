@@ -34,6 +34,7 @@ import { Milestones } from "./milestones/Milestones";
 import { Critters } from "./critters/Critters";
 import { Ambient } from "./critters/Ambient";
 import { BlobShadow } from "./ezra/BlobShadow";
+import { Soundscape } from "./Soundscape";
 import { Gold } from "./gold/Gold";
 import { PlazaBall } from "./ball/PlazaBall";
 import { stampMilestones } from "./milestones/stamp";
@@ -113,6 +114,7 @@ export function World() {
       <Critters />
       <Ambient />
       <BlobShadow />
+      <Soundscape />
       <Gold />
       <PlazaBall />
       <ParticlesRenderer />

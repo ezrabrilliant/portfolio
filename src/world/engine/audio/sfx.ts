@@ -62,6 +62,11 @@ export function setMuted(next: boolean): void {
   if (!next) void load().then(() => zz?.ZZFX.audioContext.resume());
 }
 
+/** The audio context, once the sound has been switched on (music and ambience play on it too), else null. */
+export function audioContext(): AudioContext | null {
+  return zz ? zz.ZZFX.audioContext : null;
+}
+
 export function isMuted(): boolean {
   return muted;
 }
