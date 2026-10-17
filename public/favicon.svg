@@ -1,4 +1,11 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
-  <rect width="32" height="32" rx="8" fill="#0a1a1f"/>
-  <text x="16" y="22.5" font-family="'Space Grotesk', 'Segoe UI', Arial, sans-serif" font-size="19" font-weight="700" text-anchor="middle" fill="#00d4ff">E</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- a voxel island block: grass on top, earth below, as the world draws them -->
+  <path d="M32 6 58 20 32 34 6 20Z" fill="#97ae73"/>
+  <path d="M32 9.5 51.5 20 32 30.5 12.5 20Z" fill="#a7bd82"/>
+  <path d="M6 20 32 34v8L6 28Z" fill="#7f995d"/>
+  <path d="M58 20 32 34v8l26-14Z" fill="#6f8a50"/>
+  <path d="M6 28 32 42v18L6 46Z" fill="#94714f"/>
+  <path d="M58 28 32 42v18l26-14Z" fill="#7a5a3c"/>
+  <path d="M14 36l6 3.2v4L14 40Z" fill="#8a6849"/>
+  <path d="M46 40l6-3.2v4L46 44Z" fill="#6b4f37"/>
 </svg>
