@@ -1,11 +1,22 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <!-- a voxel island block: grass on top, earth below, as the world draws them -->
-  <path d="M32 6 58 20 32 34 6 20Z" fill="#97ae73"/>
-  <path d="M32 9.5 51.5 20 32 30.5 12.5 20Z" fill="#a7bd82"/>
-  <path d="M6 20 32 34v8L6 28Z" fill="#7f995d"/>
-  <path d="M58 20 32 34v8l26-14Z" fill="#6f8a50"/>
-  <path d="M6 28 32 42v18L6 46Z" fill="#94714f"/>
-  <path d="M58 28 32 42v18l26-14Z" fill="#7a5a3c"/>
-  <path d="M14 36l6 3.2v4L14 40Z" fill="#8a6849"/>
-  <path d="M46 40l6-3.2v4L46 44Z" fill="#6b4f37"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" shape-rendering="crispEdges">
+  <!-- Ezra's voxel head, face on: the same boxes and colours the world's model uses (scene/ezra/geometry.ts) -->
+  <rect x="19.01" y="6.89" width="25.98" height="5.20" fill="#1e1b19"/>
+  <rect x="52.78" y="36.76" width="4.33" height="9.52" fill="#d09676"/>
+  <rect x="6.89" y="36.76" width="4.33" height="9.52" fill="#d09676"/>
+  <rect x="53.04" y="32.43" width="2.60" height="6.06" fill="#463830"/>
+  <rect x="8.36" y="32.43" width="2.60" height="6.06" fill="#463830"/>
+  <rect x="53.04" y="19.01" width="2.60" height="14.72" fill="#463830"/>
+  <rect x="8.36" y="19.01" width="2.60" height="14.72" fill="#463830"/>
+  <rect x="6.46" y="7.76" width="5.20" height="6.93" fill="#1e1b19"/>
+  <rect x="10.35" y="19.01" width="43.29" height="39.83" fill="#d09676"/>
+  <rect x="51.31" y="16.41" width="4.33" height="10.39" fill="#1e1b19"/>
+  <rect x="10.35" y="2.56" width="22.51" height="9.52" fill="#1e1b19"/>
+  <rect x="32.87" y="5.59" width="17.32" height="6.93" fill="#1e1b19"/>
+  <rect x="38.71" y="38.71" width="5.63" height="7.36" fill="#1e1b19"/>
+  <rect x="19.66" y="38.71" width="5.63" height="7.36" fill="#1e1b19"/>
+  <rect x="36.76" y="33.73" width="9.52" height="2.60" fill="#1e1b19"/>
+  <rect x="17.71" y="33.73" width="9.52" height="2.60" fill="#1e1b19"/>
+  <rect x="8.62" y="10.35" width="46.76" height="10.39" fill="#1e1b19"/>
+  <rect x="41.52" y="20.74" width="12.99" height="6.93" fill="#1e1b19"/>
+  <rect x="8.62" y="17.71" width="46.76" height="5.20" fill="#1e1b19"/>
 </svg>
