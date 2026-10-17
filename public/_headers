@@ -1,0 +1,11 @@
+# Header untuk Cloudflare Pages, menyalin deploy/Caddyfile.portfolio.
+# Hanya berlaku untuk file statis, bukan respons Pages Function (/api/*).
+
+/*
+  X-Frame-Options: SAMEORIGIN
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: no-referrer-when-downgrade
+
+# Aset Vite di /assets memakai hash pada nama file, jadi aman di-cache lama.
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
