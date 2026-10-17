@@ -1,0 +1,14 @@
+node_modules
+dist
+.git
+.github
+.env
+.env.local
+.env.production
+*.log
+*.md
+deploy*.sh
+setup-*.sh
+webhook-deploy.sh
+local-deploy.ps1
+gsap-splittext-kinetic-typography-experiment-gsapchallenge-1

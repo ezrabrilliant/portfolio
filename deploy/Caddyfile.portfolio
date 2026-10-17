@@ -1,0 +1,28 @@
+# Blok Caddy untuk portfolio.
+# Dipasang di server pada /etc/caddy/Caddyfile
+#
+# Catatan Cloudflare:
+# Domain ini diproxy Cloudflare dengan mode SSL "Full", artinya Cloudflare
+# tetap menuntut HTTPS yang valid di origin. Tanpa sertifikat di sisi Caddy,
+# handshake gagal dan pengunjung melihat error 525.
+# Caddy mengambil sertifikat Let's Encrypt otomatis lewat tantangan HTTP-01,
+# yang diteruskan Cloudflare ke port 80 origin.
+
+ezrabrilliant.com, www.ezrabrilliant.com {
+	encode zstd gzip
+
+	# Aplikasi berjalan dalam container Docker, hanya terikat ke localhost.
+	reverse_proxy 127.0.0.1:3002
+
+	header {
+		X-Frame-Options "SAMEORIGIN"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "no-referrer-when-downgrade"
+		-Server
+	}
+
+	# Aset statis Vite memakai hash pada nama file, jadi aman di-cache lama.
+	@aset path_regexp \.(js|css|png|jpg|jpeg|gif|ico|svg|webp|woff|woff2|ttf|eot)$
+	header @aset Cache-Control "public, max-age=31536000, immutable"
+
+}
