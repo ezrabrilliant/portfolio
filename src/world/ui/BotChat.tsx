@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { FormEvent } from "react";
 import emailjs from "@emailjs/browser";
-import { playSfx } from "@/world/engine/audio/sfx";
+import { playJingle, playSfx } from "@/world/engine/audio/sfx";
 import { sharedKeyboard } from "@/world/input/keyboard";
 import { resetTouch } from "@/world/input/touch";
 import { useWorld } from "@/world/state/store";
@@ -30,11 +30,18 @@ export function BotChat() {
   const list = useRef<HTMLDivElement>(null);
   const input = useRef<HTMLInputElement>(null);
 
+  // the chat sweeps open with the bot's hello, and closes mirrored
+  useEffect(() => {
+    if (!open) return;
+    playSfx("uiOpen");
+    playSfx("chat", { delay: 0.12 });
+    return () => playSfx("uiClose");
+  }, [open]);
+
   useEffect(() => {
     if (!open) return;
     sharedKeyboard.release();
     resetTouch();
-    playSfx("chat");
     input.current?.focus({ preventScroll: true });
     // keys belong to the chat: the world's listeners (window, bubble) never see them
     const onKey = (e: KeyboardEvent) => {
@@ -58,6 +65,7 @@ export function BotChat() {
     const text = q.trim();
     if (!text || typing) return;
     setLines((l) => [...l, { from: "you", text }]);
+    playSfx("send");
     setDraft("");
     setTyping(true);
     window.setTimeout(() => {
@@ -65,8 +73,15 @@ export function BotChat() {
       setLines((l) => [...l, { from: "bot", text: reply.text, reply }]);
       setTyping(false);
       playSfx("chat");
-      if (reply.contact) setForm(true);
+      if (reply.contact) {
+        setForm(true);
+        playSfx("uiOpen", { delay: 0.15, volume: 0.7 });
+      }
     }, TYPING_MS);
+  };
+  const typeInto = (next: typeof mail) => {
+    playSfx("type");
+    setMail(next);
   };
   const submit = async (e: FormEvent) => {
     e.preventDefault();
@@ -75,6 +90,7 @@ export function BotChat() {
     const key = import.meta.env.VITE_EMAILJS_PUBLIC_KEY;
     if (!service || !template || !key) {
       setSend("error");
+      playSfx("error");
       return;
     }
     setSend("sending");
@@ -84,9 +100,10 @@ export function BotChat() {
       setMail({ name: "", email: "", message: "" });
       setLines((l) => [...l, { from: "bot", text: "Sent! Ezra will write back to your email." }]);
       setForm(false);
-      playSfx("coin");
+      playJingle("sent");
     } catch {
       setSend("error");
+      playSfx("error");
     }
   };
 
@@ -123,15 +140,15 @@ export function BotChat() {
             <form className="bot-form" onSubmit={submit}>
               <label>
                 Your name
-                <input id="bot-name" required value={mail.name} onChange={(e) => setMail({ ...mail, name: e.target.value })} />
+                <input id="bot-name" required value={mail.name} onChange={(e) => typeInto({ ...mail, name: e.target.value })} />
               </label>
               <label>
                 Your email
-                <input id="bot-email" type="email" required value={mail.email} onChange={(e) => setMail({ ...mail, email: e.target.value })} />
+                <input id="bot-email" type="email" required value={mail.email} onChange={(e) => typeInto({ ...mail, email: e.target.value })} />
               </label>
               <label>
                 Message
-                <textarea id="bot-message" required rows={3} value={mail.message} onChange={(e) => setMail({ ...mail, message: e.target.value })} />
+                <textarea id="bot-message" required rows={3} value={mail.message} onChange={(e) => typeInto({ ...mail, message: e.target.value })} />
               </label>
               <button type="submit" className="bot-send" disabled={send === "sending"}>
                 {send === "sending" ? "Sending…" : "Send to Ezra"}
@@ -154,7 +171,11 @@ export function BotChat() {
             ask(draft);
           }}
         >
-          <input id="bot-ask" ref={input} value={draft} onChange={(e) => setDraft(e.target.value)} placeholder="Ask about Ezra or a project…" aria-label="Your question" autoComplete="off" />
+          <input id="bot-ask" ref={input} value={draft} onChange={(e) => {
+              // typing: a tiny tick per key (sfx.ts spaces them out)
+              playSfx("type");
+              setDraft(e.target.value);
+            }} placeholder="Ask about Ezra or a project…" aria-label="Your question" autoComplete="off" />
           <button type="submit" aria-label="Send">
             ➤
           </button>

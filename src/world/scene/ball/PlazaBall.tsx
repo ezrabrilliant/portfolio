@@ -41,14 +41,21 @@ export function PlazaBall() {
     const p = runtime.player;
     if (useWorld.getState().mode === "play" && !runtime.travel && t - st.lastKick > 0.25 && kickBall(ball, p.pos, p.vel)) {
       st.lastKick = t;
-      playSfx("bounce");
+      playSfx("kick", { at: ball.pos, volume: Math.min(1.2, 0.6 + Math.hypot(p.vel.x, p.vel.z) / 12) });
       runtime.particles.burst({ x: ball.pos.x, y: ball.pos.y - 0.2, z: ball.pos.z }, "grass", { count: 4 });
     }
     const before = { x: ball.pos.x, z: ball.pos.z };
+    const v0 = { x: ball.vel.x, y: ball.vel.y, z: ball.vel.z };
     if (stepBall(ball, { isSolid: built.grid.isSolid, props: built.props, ramps: built.ramps, killY: runtime.killY }, dt) === "fell") {
       Object.assign(ball, createBall(home));
       runtime.particles.burst({ x: home.x, y: home.y + 0.3, z: home.z }, "dust", { count: 10 });
-      playSfx("poof");
+      playSfx("poof", { at: home });
+    } else {
+      // it hit something: the ground (falling, now not) or a wall (a sideways speed turned back), as hard as it hit
+      const ground = v0.y < -1.5 && ball.vel.y >= 0 ? -v0.y : 0;
+      const wall = Math.max(v0.x * ball.vel.x < 0 ? Math.abs(v0.x) : 0, v0.z * ball.vel.z < 0 ? Math.abs(v0.z) : 0);
+      const hit = Math.max(ground, wall);
+      if (hit > 1.2) playSfx("thud", { at: ball.pos, volume: Math.min(1, hit / 8), rate: 0.9 + Math.min(0.3, hit / 30) });
     }
     // roll: turn about the axis across its travel by the distance it went
     const mx = ball.pos.x - before.x, mz = ball.pos.z - before.z;

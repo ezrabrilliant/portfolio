@@ -35,11 +35,17 @@ export function MapOverlay() {
   const [state, setState] = useState<MapState>(() => app.init(new Date()));
   useEffect(() => setState(app.init(new Date())), [app]);
 
+  // the map sweeps open and, mirrored, closed
+  useEffect(() => {
+    if (!open) return;
+    playSfx("uiOpen");
+    return () => playSfx("uiClose");
+  }, [open]);
+
   useEffect(() => {
     if (!open) return;
     sharedKeyboard.release();
     resetTouch();
-    playSfx("click");
     // keys belong to the map while it is open: caught before the world's listeners (window, bubble) ever see them
     const onKey = (e: KeyboardEvent) => {
       if (e.ctrlKey || e.metaKey || e.altKey || e.code === "Tab") return;
@@ -52,6 +58,7 @@ export function MapOverlay() {
       const next = app.key?.(state, e.code, performance.now());
       if (next) {
         e.preventDefault();
+        playSfx("click");
         setState(next);
       }
     };

@@ -8,8 +8,9 @@ import { Interactable } from "@/world/scene/Interactable";
 import { bakeBoxes } from "@/world/scene/shared/bake";
 import { paintMat } from "@/world/scene/crossings/materials";
 import { islandTop } from "@/world/scene/islands/types";
-import { ORBIT, MONOSUKO } from "@/world/scene/islands/layouts";
+import { ORBIT } from "@/world/scene/islands/layouts";
 import { islandFrame } from "@/world/scene/islands/shared/local";
+import { birdPerches, chickenHome } from "./places";
 import { birdOffset, butterflyAt, chickenAt, createBird, stepBird, wingFlap, type Bird } from "./motion";
 
 /** Drawn sizes: small enough to be critters, big enough to read from the tour. */
@@ -177,16 +178,7 @@ function Birds() {
   const bodies = useRef<THREE.InstancedMesh>(null);
   const wings = useRef<THREE.InstancedMesh>(null);
   // one bird on a post cap at each bridge's first end, facing along the bridge; it flies off away from the island
-  const birds = useMemo(() => {
-    return runtime.layout.crossings
-      .filter((c) => c.kind === "bridge")
-      .map((c) => {
-        const len = Math.hypot(c.b.x - c.a.x, c.b.z - c.a.z) || 1;
-        const ux = (c.b.x - c.a.x) / len, uz = (c.b.z - c.a.z) / len;
-        const perch = new THREE.Vector3(c.a.x - uz * 1.05, c.a.y + 1.64, c.a.z + ux * 1.05);
-        return { perch, yaw: Math.atan2(ux, uz), dir: { x: ux * 0.6 - uz * 0.8, z: uz * 0.6 + ux * 0.8 }, state: createBird() as Bird };
-      });
-  }, []);
+  const birds = useMemo(() => birdPerches().map((b) => ({ ...b, perch: new THREE.Vector3(b.perch.x, b.perch.y, b.perch.z), state: createBird() as Bird })), []);
   const off = useMemo(() => ({ x: 0, y: 0, z: 0 }), []);
   useFrame(({ clock }, dt) => {
     const b = bodies.current, w = wings.current;
@@ -199,7 +191,7 @@ function Birds() {
       const d = play ? Math.hypot(p.x - bird.perch.x, p.z - bird.perch.z) + Math.max(0, bird.perch.y - p.y - 2) : 99;
       const was = bird.state.mode;
       if (!reduced) stepBird(bird.state, d, Math.min(dt, 0.1));
-      if (was === "perch" && bird.state.mode === "away") playSfx("chirp");
+      if (was === "perch" && bird.state.mode === "away") playSfx("chirp", { at: bird.perch });
       const shown = birdOffset(bird.state, bird.dir, off);
       const flying = bird.state.mode !== "perch";
       // flying off it faces away; coming back it faces its post; perched it looks about
@@ -234,16 +226,15 @@ function Chicken() {
   const root = useRef<THREE.Group>(null);
   const head = useRef<THREE.Mesh>(null);
   const spot = useMemo(() => {
-    const p = runtime.islandById("pos-monosuko");
-    const [fx, fy, fz] = islandFrame(p);
-    return new THREE.Vector3(fx + MONOSUKO.table.x + 1.0, fy, fz + MONOSUKO.table.z - 0.9);
+    const h = chickenHome();
+    return new THREE.Vector3(h.x, h.y, h.z);
   }, []);
   // fed: it stops to peck fast for a while; startled (Ezra running past): it hops with a flap and a cluck
   const st = useMemo(() => ({ fed: -99, hop: -99, clock: 0 }), []);
   const feed = () => {
     st.fed = st.clock;
-    playSfx("cluck");
     const r = root.current;
+    playSfx("cluck", { at: r ? r.position : spot });
     if (r) runtime.particles.burst({ x: r.position.x, y: r.position.y + 0.9, z: r.position.z }, "seeds");
   };
   useFrame(({ clock }) => {
@@ -258,7 +249,7 @@ function Chicken() {
     const ez = runtime.player.pos;
     if (useWorld.getState().mode === "play" && runtime.speed > 5.5 && Math.hypot(ez.x - r.position.x, ez.z - r.position.z) < 1.3 && st.clock - st.hop > 1.5) {
       st.hop = st.clock;
-      playSfx("cluck");
+      playSfx("cluck", { at: r.position, volume: 1.2 });
       runtime.particles.burst({ x: r.position.x, y: r.position.y + 0.4, z: r.position.z }, "feathers");
     }
     const h = st.clock - st.hop;
@@ -294,7 +285,7 @@ function Cat() {
   const pet = () => {
     if (st.clock - st.pet < 2.5) return;
     st.pet = st.clock;
-    playSfx("purr");
+    playSfx("purr", { at: spot.pos });
   };
   useFrame(({ clock }, dt) => {
     if (!body.current || !tail.current) return;

@@ -1,6 +1,6 @@
 import { useEffect, useState, useSyncExternalStore } from "react";
 import type { MouseEvent } from "react";
-import { playSfx } from "@/world/engine/audio/sfx";
+import { playJingle, playSfx, whenAudioReady } from "@/world/engine/audio/sfx";
 import { useWorld } from "@/world/state/store";
 import { runtime } from "@/world/state/runtime";
 import { closeupPans } from "@/world/engine/camera/closeup";
@@ -156,16 +156,25 @@ export function Hud() {
   const hint = ready && hintShown(key, seen, help && !closeupId) ? HINTS[touch ? "touch" : "keys"][key] : null;
   const pill = promptPill(mode, touch);
   const play = mode === "play";
+  // switching on wakes the audio in this click (iOS needs that); a small rising chime once the synth is ready
   const toggleSound = () => {
     toggleMuted();
-    if (muted) playSfx("click");
+    if (muted) void whenAudioReady().then(() => playJingle("chime"));
+  };
+  const lightMode = () => {
+    playSfx("toggle");
+    togglePowerSave();
+  };
+  const switchMode = (m: "tour" | "play") => {
+    if (m !== mode) playSfx("toggle");
+    setMode(m);
   };
   return (
     <div className="hud">
       <div className="hud-bar" role="group" aria-label="World controls">
         {touch ? (
           // phones: one chip that names where it takes you (Play waits for the built world)
-          <button type="button" className={play ? "hud-chip" : "hud-chip hud-chip--go"} disabled={!ready} onClick={() => setMode(play ? "tour" : "play")}>
+          <button type="button" className={play ? "hud-chip" : "hud-chip hud-chip--go"} disabled={!ready} onClick={() => switchMode(play ? "tour" : "play")}>
             {play ? (
               <>
                 <span aria-hidden="true">← </span>Tour
@@ -177,10 +186,10 @@ export function Hud() {
         ) : (
           // desktop: a switch that shows the mode you are in
           <div className="hud-switch" role="group" aria-label="Mode">
-            <button type="button" aria-pressed={!play} className={play ? "hud-seg" : "hud-seg hud-seg--on"} onMouseDown={keepFocus} onClick={() => setMode("tour")}>
+            <button type="button" aria-pressed={!play} className={play ? "hud-seg" : "hud-seg hud-seg--on"} onMouseDown={keepFocus} onClick={() => switchMode("tour")}>
               Tour
             </button>
-            <button type="button" aria-pressed={play} disabled={!ready} className={play ? "hud-seg hud-seg--on" : "hud-seg"} onMouseDown={keepFocus} onClick={() => setMode("play")}>
+            <button type="button" aria-pressed={play} disabled={!ready} className={play ? "hud-seg hud-seg--on" : "hud-seg"} onMouseDown={keepFocus} onClick={() => switchMode("play")}>
               Play
             </button>
           </div>
@@ -191,7 +200,7 @@ export function Hud() {
         <button type="button" className={mapOpen ? "hud-icon hud-icon--on" : "hud-icon"} aria-label="Island map" aria-pressed={mapOpen} title="Island map (M)" disabled={!ready || !!closeupId} onMouseDown={keepFocus} onClick={() => setMapOpen(!mapOpen)}>
           <MapIcon />
         </button>
-        <button type="button" className={powerSave ? "hud-icon hud-icon--on" : "hud-icon"} aria-label="Light mode for slower devices" aria-pressed={powerSave} title={powerSave ? "Light mode on" : "Light mode (smoother on slower devices)"} onMouseDown={keepFocus} onClick={togglePowerSave}>
+        <button type="button" className={powerSave ? "hud-icon hud-icon--on" : "hud-icon"} aria-label="Light mode for slower devices" aria-pressed={powerSave} title={powerSave ? "Light mode on" : "Light mode (smoother on slower devices)"} onMouseDown={keepFocus} onClick={lightMode}>
           <LeafIcon />
         </button>
         <button type="button" className="hud-icon" aria-label="Sound" aria-pressed={!muted} title={muted ? "Sound off" : "Sound on"} onMouseDown={keepFocus} onClick={toggleSound}>
@@ -205,7 +214,10 @@ export function Hud() {
             aria-pressed={help}
             title="Controls"
             onMouseDown={keepFocus}
-            onClick={() => setHelp((h) => !h)}
+            onClick={() => {
+              playSfx("toggle");
+              setHelp((h) => !h);
+            }}
           >
             ?
           </button>

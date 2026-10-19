@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { footfalls, landingRing, surfaceOfBlock } from "./footfall";
+import { fallWind, footfalls, landingRing, landingWeight, surfaceOfBlock } from "./footfall";
 
 describe("footfalls", () => {
   it("maps blocks to surfaces", () => {
@@ -21,5 +21,23 @@ describe("footfalls", () => {
     expect(big.count).toBeGreaterThan(small.count);
     expect(big.speed).toBeGreaterThan(small.speed);
     expect(landingRing(100)!.count).toBeLessThanOrEqual(22);
+  });
+});
+
+describe("landing and falling sounds", () => {
+  it("a landing grows louder and lower with the drop, with a thump under a big one only", () => {
+    const hop = landingWeight(0.5), roof = landingWeight(4), sky = landingWeight(20);
+    expect(hop.heavy).toBe(0);
+    expect(roof.heavy).toBeGreaterThan(0);
+    expect(sky.heavy).toBe(1);
+    expect(roof.volume).toBeGreaterThan(hop.volume);
+    expect(roof.rate).toBeLessThan(hop.rate);
+    expect(sky.volume).toBeLessThanOrEqual(1);
+  });
+  it("the rush of air is silent rising or in a hop, and full in a long fall", () => {
+    expect(fallWind(5)).toBe(0);
+    expect(fallWind(-4)).toBe(0);
+    expect(fallWind(-12)).toBeGreaterThan(0);
+    expect(fallWind(-40)).toBe(1);
   });
 });

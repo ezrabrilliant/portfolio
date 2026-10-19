@@ -1,7 +1,7 @@
 import { useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
-import { playSfx } from "@/world/engine/audio/sfx";
+import { coinRate, playJingle, playSfx } from "@/world/engine/audio/sfx";
 import { runtime } from "@/world/state/runtime";
 import { useWorld } from "@/world/state/store";
 import { bakeBoxes } from "@/world/scene/shared/bake";
@@ -56,7 +56,9 @@ export function Gold() {
         const n = collectGold(g.id);
         if (n !== null) {
           st.pop.set(g.id, t);
-          playSfx("coin");
+          // each block rings a step higher up the scale; the last one gets a fanfare
+          playSfx("coin", { rate: coinRate(n) });
+          if (n >= GOLD_TOTAL) playJingle("fanfare");
           runtime.particles.burst({ x: g.pos.x, y: g.pos.y + 0.2, z: g.pos.z }, "confetti", { count: n >= GOLD_TOTAL ? 60 : 18, color: "#f2c14e" });
           if (n >= GOLD_TOTAL) announceCard("All gold found!", "A crown for you", true);
           else announceCard(`Gold block ${n} / ${GOLD_TOTAL}`, "Keep exploring", true);

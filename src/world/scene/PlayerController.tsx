@@ -1,10 +1,11 @@
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { respawn, stepCharacter } from "@/world/engine/physics/character";
 import { cloudCatchRide, shouldCloudCatch } from "@/world/engine/physics/edge";
 import type { CharacterInput } from "@/world/engine/physics/character";
-import { playSfx } from "@/world/engine/audio/sfx";
+import { playSfx, type SfxName } from "@/world/engine/audio/sfx";
+import { setLoop, stopLoops } from "@/world/engine/audio/loops";
 import { runtime } from "@/world/state/runtime";
 import { TITLE_DELAY, announceIsland } from "@/world/ui/islandAnnounce";
 import type { Ride } from "@/world/state/runtime";
@@ -14,7 +15,7 @@ import { consumeTouch, touchInput } from "@/world/input/touch";
 import { advanceRide, rideHeading } from "./crossings/ride";
 import { cutsStandUp, holdDropInput, islandUnder } from "./modes";
 import { arrivalSpot, stepTravel, travelFade } from "./travel";
-import { RUN_TRAIL_EVERY, footfalls, landingRing, surfaceOfBlock, type Surface } from "./ezra/footfall";
+import { RUN_TRAIL_EVERY, fallWind, footfalls, landingRing, landingWeight, surfaceOfBlock, type Surface } from "./ezra/footfall";
 import { blockDef } from "@/world/engine/voxel/blocks";
 import type { BuiltWorld } from "@/world/engine/worldBuild";
 import type { Vec3 } from "@/world/engine/types";
@@ -38,10 +39,19 @@ function setFade(opacity: number) {
   if (el) el.style.opacity = String(opacity);
 }
 
+/** Ezra stands on a bridge's ramp (its planks). */
+function onBridge(built: BuiltWorld, pos: Vec3): boolean {
+  const ramp = built.ramps.surfaceAt(pos.x, pos.z, pos.y);
+  return ramp !== null && Math.abs(ramp - pos.y) < 0.05;
+}
+
+/** Each surface's footfall and landing. */
+const STEP_SOUND: Record<Surface, SfxName> = { grass: "stepGrass", stone: "stepStone", wood: "stepWood" };
+const LAND_SOUND: Record<Surface, SfxName> = { grass: "land", stone: "landStone", wood: "landWood" };
+
 /** What Ezra stands on: a bridge's ramp is wood, a prop's top wood, else the drawn block under his feet. */
 function surfaceUnder(built: BuiltWorld, pos: Vec3): Surface {
-  const ramp = built.ramps.surfaceAt(pos.x, pos.z, pos.y);
-  if (ramp !== null && Math.abs(ramp - pos.y) < 0.05) return "wood";
+  if (onBridge(built, pos)) return "wood";
   const id = built.grid.get(Math.floor(pos.x), Math.floor(pos.y - 0.05), Math.floor(pos.z));
   const def = id ? blockDef(id) : undefined;
   if (!def) return "wood"; // nothing drawn under him: a prop's top (a crate, a table, a gentong)
@@ -61,12 +71,17 @@ export function PlayerController() {
       fading: false as false | "out" | "in",
       ride: null as Ride | null,
       exitHeading: null as number | null,
+      /** which foot steps next (-1 left, 1 right): footfalls lean a touch to that side */
+      foot: 1,
+      /** this frame's continuous sounds (engine/audio/loops): the rush of a fall, the cart's rattle and its speed */
+      fall: 0,
+      rail: 0,
+      railSpeed: 0,
     }),
     [],
   );
 
-  useFrame((_, rawDt) => {
-    const dt = Math.min(rawDt, 1 / 30);
+  const frame = (dt: number) => {
     const built = runtime.built;
     if (!built) return;
     const p = runtime.player;
@@ -101,6 +116,7 @@ export function PlayerController() {
         tmp.fade = Math.min(1, tmp.fade + dt / 0.25);
         if (tmp.fade === 1) {
           respawn(p);
+          playSfx("appear");
           runtime.stepOffset = 0;
           runtime.particles.burst({ x: p.pos.x, y: p.pos.y + 0.2, z: p.pos.z }, "dust", { count: 14 });
           tmp.fading = "in";
@@ -159,7 +175,18 @@ export function PlayerController() {
         tmp.ride = ride;
         tmp.exitHeading = ride.kind === "rail" ? ride.exitHeading : null;
       }
+      const railing = ride.kind === "rail";
+      const was = { x: p.pos.x, y: p.pos.y, z: p.pos.z };
       const done = advanceRide(ride, p, dt);
+      // the cart rattles along at its pace; at the far station it brakes and knocks the buffer
+      if (railing && ride.kind === "rail") {
+        tmp.rail = 1;
+        tmp.railSpeed = Math.hypot(p.pos.x - was.x, p.pos.y - was.y, p.pos.z - was.z) / Math.max(dt, 1e-3);
+      } else if (railing) {
+        playSfx("brake");
+        playSfx("clunk", { delay: 0.1 });
+      }
+      if (ride.kind === "arc" && !done) tmp.fall = fallWind(p.vel.y);
       // read ride.kind only now: advanceRide turns a finished cart ride into its hop arc in place
       if (ride.kind === "rail") runtime.heading = rideHeading(ride);
       else if (tmp.exitHeading !== null) runtime.heading = done ? tmp.exitHeading : dampAngle(runtime.heading, tmp.exitHeading, 14, dt);
@@ -175,7 +202,7 @@ export function PlayerController() {
         p.onGround = true;
         runtime.landTimer = 0.14;
         runtime.particles.burst({ x: p.pos.x, y: p.pos.y + 0.1, z: p.pos.z }, "dust", { count: 10 });
-        playSfx("land");
+        playSfx(LAND_SOUND[surfaceUnder(built, p.pos)]);
       }
       return;
     }
@@ -213,7 +240,7 @@ export function PlayerController() {
     // bounce pad's), instead of the respawn fade, which stays only as the net under it (killY)
     if (shouldCloudCatch(p) && !tmp.fading) {
       runtime.particles.burst({ x: p.pos.x, y: p.pos.y + 0.4, z: p.pos.z }, "cloud");
-      playSfx("bounce");
+      playSfx("whump");
       runtime.ride = cloudCatchRide(p);
       p.locked = true;
       p.vel.x = p.vel.y = p.vel.z = 0;
@@ -248,7 +275,10 @@ export function PlayerController() {
     if (r.stepped && !r.jumped) runtime.stepOffset = Math.max(-1.2, runtime.stepOffset - Math.max(0, p.pos.y - before));
     runtime.airTime = r.jumped ? 0 : runtime.airTime + dt;
     if (r.jumped) playSfx("jump");
-    if (!p.onGround) tmp.peak = Math.max(tmp.peak, p.pos.y);
+    if (!p.onGround) {
+      tmp.peak = Math.max(tmp.peak, p.pos.y);
+      tmp.fall = fallWind(p.vel.y);
+    }
     const surface = p.onGround || r.landed ? surfaceUnder(built, p.pos) : "grass";
     const puff = surface === "wood" ? "chips" : surface === "stone" ? "grit" : "grass";
     const feet = { x: p.pos.x, y: p.pos.y + 0.05, z: p.pos.z };
@@ -258,15 +288,20 @@ export function PlayerController() {
       const ring = landingRing(tmp.peak - p.pos.y);
       if (ring) runtime.particles.burst(feet, "dust", { count: ring.count, ring: true, speedScale: ring.speed });
       runtime.particles.burst(feet, puff, { count: 4 });
-      playSfx(surface === "wood" ? "stepWood" : "land");
+      // louder and lower the higher the drop, with a deep thump under a big one
+      const w = landingWeight(tmp.peak - p.pos.y);
+      playSfx(LAND_SOUND[surface], { volume: w.volume, rate: w.rate });
+      if (w.heavy > 0) playSfx("landHeavy", { volume: w.heavy });
     }
     if (p.onGround) tmp.peak = p.pos.y;
-    // a puff of what he walks on at every footfall; steps sound when he runs, and always on planks
+    // a puff of what he walks on at every footfall, and its sound: softer and a touch lower walking, left and right
+    // feet a little apart; a bridge's planks creak now and then
     if (p.onGround && runtime.moving && footfalls(prevPhase, runtime.animPhase) > 0) {
       const running = runtime.speed > 5.5;
       runtime.particles.burst(feet, puff, { count: running ? 3 : 2 });
-      if (surface === "wood") playSfx("stepWood");
-      else if (running) playSfx("step");
+      tmp.foot = -tmp.foot;
+      playSfx(STEP_SOUND[surface], { volume: running ? 1 : 0.6, rate: running ? 1.04 : 0.96, pan: tmp.foot * 0.12 });
+      if (surface === "wood" && Math.random() < 0.18 && onBridge(built, p.pos)) playSfx("creak");
     }
     // running: a thin trail of dust behind his heels
     if (p.onGround && runtime.speed > 5.5) {
@@ -281,7 +316,20 @@ export function PlayerController() {
         );
       }
     }
-    if (r.fellOut && !tmp.fading) tmp.fading = "out";
+    if (r.fellOut && !tmp.fading) {
+      tmp.fading = "out";
+      playSfx("fallAway");
+    }
+  };
+  useFrame((_, rawDt) => {
+    const dt = Math.min(rawDt, 1 / 30);
+    tmp.fall = 0;
+    tmp.rail = 0;
+    frame(dt);
+    setLoop("fall", tmp.fall, dt);
+    setLoop("rail", tmp.rail, dt, tmp.railSpeed);
   });
+  // the loops are this frame's: none may keep rushing or rattling after the controller is gone
+  useEffect(() => () => stopLoops(), []);
   return null;
 }

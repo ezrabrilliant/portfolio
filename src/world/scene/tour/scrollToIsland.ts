@@ -1,3 +1,4 @@
+import { playSfx } from "@/world/engine/audio/sfx";
 import { runtime } from "@/world/state/runtime";
 import { useWorld } from "@/world/state/store";
 import { progressToScroll, stopProgresses } from "./tourMath";
@@ -26,6 +27,7 @@ export function scrollToIsland(id: string, kind: "hop" | "map" = "hop"): void {
   const i = path.stops.findIndex((s) => s.id === id);
   if (i < 0) return;
   const to = stopProgresses(path)[i];
+  if (useWorld.getState().activeIsland !== id) playSfx("travel");
   if (useWorld.getState().reducedMotion) fadeCut();
   else runtime.tourGlide = { to, kind };
   announceIsland(id, useWorld.getState().reducedMotion ? TITLE_DELAY.travel : TITLE_DELAY[kind]);

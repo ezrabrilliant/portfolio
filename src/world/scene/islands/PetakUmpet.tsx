@@ -4,7 +4,8 @@ import * as THREE from "three";
 import { glows } from "@/world/scene/daylight";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import type { IslandPlacement } from "@/world/engine/gen/layout";
-import { playSfx } from "@/world/engine/audio/sfx";
+import { playJingle, playSfx } from "@/world/engine/audio/sfx";
+import { footfalls } from "@/world/scene/ezra/footfall";
 import { Interactable } from "@/world/scene/Interactable";
 import { runtime } from "@/world/state/runtime";
 import { useWorld } from "@/world/state/store";
@@ -152,7 +153,6 @@ function HidingKid({ placement }: { placement: IslandPlacement }) {
     k.state = "run";
     k.t = 0;
     if (head.current) head.current.rotation.y = 0;
-    playSfx("step");
   };
 
   /** Hide and seek (petak/hideSeek.ts): he runs to the round's spot. */
@@ -164,13 +164,14 @@ function HidingKid({ placement }: { placement: IslandPlacement }) {
     k.state = state;
     k.t = 0;
     if (head.current) head.current.rotation.y = 0;
-    playSfx("step");
   };
   const startGame = () => {
     const k = sim.current;
     k.rounds = pickRounds();
     k.round = 0;
     runTo(HIDE_SPOTS[k.rounds[0]], "seekRun");
+    // he counts to three (one, two, three ... go!)
+    playJingle("seek", { at: spot });
     announceCard("Hide and seek!", `Find the kid · 1 / ${ROUNDS}`);
   };
   const endGame = () => {
@@ -214,7 +215,8 @@ function HidingKid({ placement }: { placement: IslandPlacement }) {
         if (near < FOUND_AT) {
           k.state = "found";
           k.t = 0;
-          playSfx("pop");
+          playSfx("pop", { at: { x: kx, y: spot0.y + 1, z: kz } });
+          playJingle(k.round + 1 >= ROUNDS ? "fanfare" : "found");
           runtime.particles.burst({ x: kx, y: spot0.y + 1.2, z: kz }, "confetti", { count: 24 });
           const n = k.round + 1;
           announceCard(n >= ROUNDS ? "You found me every time!" : `Found you! ${n} / ${ROUNDS}`, n >= ROUNDS ? "Hide and seek champion" : "Again! Count to three...", true);
@@ -226,7 +228,10 @@ function HidingKid({ placement }: { placement: IslandPlacement }) {
         if (k.t > 1.3) {
           k.round += 1;
           if (k.round >= ROUNDS) endGame();
-          else runTo(HIDE_SPOTS[k.rounds[k.round]], "seekRun");
+          else {
+            runTo(HIDE_SPOTS[k.rounds[k.round]], "seekRun");
+            playJingle("count3", { at: { x: kx, y: spot0.y + 1, z: kz } });
+          }
         }
         return;
       }
@@ -251,6 +256,8 @@ function HidingKid({ placement }: { placement: IslandPlacement }) {
     legs.current.forEach((l, i) => {
       if (l) l.rotation.x = reducedMotion ? 0 : Math.sin(k.t * 14 + i * Math.PI) * 0.6;
     });
+    // his feet patter on the grass as his legs swing (twice a stride), heard from where he is
+    if (footfalls((k.t - dt) * 14, k.t * 14) > 0) playSfx("stepGrass", { at: { x: spot0.x + g.position.x, y: spot0.y, z: spot0.z + g.position.z }, volume: 0.55, rate: 1.25 });
     if (e >= 1) {
       legs.current.forEach((l) => {
         if (l) l.rotation.x = 0;

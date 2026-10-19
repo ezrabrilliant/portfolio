@@ -48,7 +48,7 @@ export function BouncePad({ crossing }: { crossing: Crossing }) {
     st.armed[1 - i] = false; // don't relaunch on landing; re-arms once Ezra steps off
     st.squash[i] = 1;
     runtime.particles.burst({ x: start.x, y: start.y + 0.1, z: start.z }, "dust", { count: 10 });
-    playSfx("bounce");
+    playSfx("boing");
   };
 
   useFrame((_, dt) => {

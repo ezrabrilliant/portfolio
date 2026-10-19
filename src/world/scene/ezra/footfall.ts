@@ -26,3 +26,17 @@ export function landingRing(drop: number): { count: number; speed: number } | nu
 
 /** Seconds between the little puffs behind his feet while he runs. */
 export const RUN_TRAIL_EVERY = 0.07;
+
+/**
+ * How a landing sounds from how far he fell: louder and a little lower the higher the drop, and past three blocks a
+ * deep thump under it (`heavy`, its loudness 0..1).
+ */
+export function landingWeight(drop: number): { volume: number; rate: number; heavy: number } {
+  const k = Math.max(0, Math.min(1, drop / 8));
+  return { volume: 0.55 + 0.45 * k, rate: 1.08 - 0.2 * k, heavy: drop >= 3 ? Math.min(1, (drop - 2) / 6) : 0 };
+}
+
+/** The rush of air while he falls (0..1): nothing at a jump's top speed, full in a long drop. */
+export function fallWind(vy: number): number {
+  return Math.max(0, Math.min(1, (-vy - 6) / 14));
+}

@@ -1,18 +1,35 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("@/world/engine/audio/sfx", () => ({
-  setMuted: vi.fn(),
-  playSfx: vi.fn(),
-  isMuted: vi.fn(() => true),
+// the audio engine owns the switch: a small stand-in that holds it and tells its listeners
+const audio = vi.hoisted(() => {
+  const subs = new Set<() => void>();
+  const s = { muted: true, subs };
+  return {
+    s,
+    setMuted: vi.fn((next: boolean) => {
+      s.muted = next;
+      subs.forEach((f) => f());
+    }),
+  };
+});
+vi.mock("@/world/engine/audio/core", () => ({
+  setMuted: audio.setMuted,
+  isMuted: () => audio.s.muted,
+  restoreSoundPref: () => audio.s.muted,
+  subscribeAudio: (f: () => void) => {
+    audio.s.subs.add(f);
+    return () => audio.s.subs.delete(f);
+  },
 }));
 
-import { setMuted } from "@/world/engine/audio/sfx";
+import { setMuted } from "@/world/engine/audio/core";
 import { useWorld } from "./store";
 
 describe("useWorld", () => {
   beforeEach(() => {
     useWorld.setState({ mode: "tour", activeIsland: "hero", muted: true, hoveredId: null, prompt: null, ready: false, closeupId: null });
     vi.mocked(setMuted).mockClear();
+    audio.s.muted = true;
   });
 
   it("starts in tour mode, muted, on the hero island", () => {
@@ -22,10 +39,17 @@ describe("useWorld", () => {
     expect(s.activeIsland).toBe("hero");
   });
 
-  it("toggleMuted flips the flag and tells the audio engine", () => {
+  it("toggleMuted asks the audio engine, and shows what it says", () => {
+    useWorld.getState().toggleMuted();
+    expect(setMuted).toHaveBeenCalledWith(false);
+    expect(useWorld.getState().muted).toBe(false);
+  });
+
+  it("follows the engine when it switches the sound off by itself (a synth that failed to load)", () => {
     useWorld.getState().toggleMuted();
     expect(useWorld.getState().muted).toBe(false);
-    expect(setMuted).toHaveBeenCalledWith(false);
+    audio.setMuted(true);
+    expect(useWorld.getState().muted).toBe(true);
   });
 
   it("change-guarded setters do not notify when the value is unchanged", () => {

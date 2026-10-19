@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { setMuted } from "@/world/engine/audio/sfx";
+import { isMuted, restoreSoundPref, setMuted, subscribeAudio } from "@/world/engine/audio/core";
 import { pickQuality, readDevice } from "./quality";
 
 export type Mode = "tour" | "play";
@@ -10,6 +10,7 @@ export interface WorldState {
   setMode(m: Mode): void;
   activeIsland: string;
   setActiveIsland(id: string): void;
+  /** The sound is off. The audio engine (engine/audio/core) owns it and keeps it in this browser; this mirrors it. */
   muted: boolean;
   toggleMuted(): void;
   quality: Quality;
@@ -60,12 +61,9 @@ export const useWorld = create<WorldState>()((set, get) => ({
   setActiveIsland: (activeIsland) => {
     if (get().activeIsland !== activeIsland) set({ activeIsland });
   },
-  muted: true,
-  toggleMuted: () => {
-    const muted = !get().muted;
-    setMuted(muted);
-    set({ muted });
-  },
+  // a saved "on" waits for the visitor's first click, key or touch to start (core.restoreSoundPref)
+  muted: restoreSoundPref(),
+  toggleMuted: () => setMuted(!get().muted),
   quality: savedPowerSave() ? "low" : initialQuality,
   powerSave: savedPowerSave(),
   togglePowerSave: () => {
@@ -107,3 +105,8 @@ export const useWorld = create<WorldState>()((set, get) => ({
     if (get().mapOpen !== mapOpen) set({ mapOpen });
   },
 }));
+
+// the engine is the one source of truth: a switch from anywhere (the HUD, a synth that failed to load) shows here
+subscribeAudio(() => {
+  if (useWorld.getState().muted !== isMuted()) useWorld.setState({ muted: isMuted() });
+});

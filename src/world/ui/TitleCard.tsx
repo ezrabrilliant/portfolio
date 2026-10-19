@@ -1,5 +1,6 @@
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { worldProjects } from "@/config/portfolio";
+import { playJingle } from "@/world/engine/audio/sfx";
 import { islandTitle } from "@/world/scene/islands/shared/project";
 import { TITLE_CARD, subscribeTitleCard, titleCardNow } from "./islandAnnounce";
 
@@ -12,7 +13,11 @@ export function TitleCard() {
   const [shown, setShown] = useState<typeof card>(null);
   useEffect(() => {
     if (!card) return;
-    const on = window.setTimeout(() => setShown(card), card.delay * 1000);
+    const on = window.setTimeout(() => {
+      setShown(card);
+      // an island's name comes in on two soft bells (a message card brings its own sound)
+      if (!card.title) playJingle("stinger");
+    }, card.delay * 1000);
     const off = window.setTimeout(() => setShown(null), (card.delay + TITLE_CARD.show) * 1000);
     return () => {
       window.clearTimeout(on);

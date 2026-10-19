@@ -1,3 +1,4 @@
+import { playSfx } from "@/world/engine/audio/sfx";
 import { runtime } from "@/world/state/runtime";
 import { useWorld } from "@/world/state/store";
 import { releaseHudFocus } from "./closeupFocus";
@@ -22,6 +23,7 @@ export const closeupPan = { offset: 0, limit: 0, perPx: 0 };
 export function openCloseup(id: string): void {
   if (!runtime.closeups.has(id) || runtime.closeup?.id === id) return;
   runtime.closeup = { id };
+  playSfx("uiOpen");
   closeupPan.offset = 0;
   openedAtScroll = pageScroll();
   // the hover (outline, cursor) belongs to the world behind the closeup
@@ -37,6 +39,7 @@ export function openCloseup(id: string): void {
 export function closeCloseup(): void {
   if (!runtime.closeup) return;
   runtime.closeup = null;
+  playSfx("uiClose");
   useWorld.getState().setCloseup(null);
 }
 

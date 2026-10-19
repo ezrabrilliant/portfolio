@@ -9,6 +9,9 @@ import { consumeTouch } from "@/world/input/touch";
 import { inReach } from "@/world/engine/interaction/registry";
 import { GLINT, glintPoint, glinting } from "./interaction/glints";
 
+/** A hover must rest this long (ms) on something before it ticks. */
+const HOVER_DELAY_MS = 70;
+
 export function InteractionController() {
   const camera = useThree((s) => s.camera);
   const gl = useThree((s) => s.gl);
@@ -21,6 +24,7 @@ export function InteractionController() {
     let downY = 0;
     /** the press began inside a closeup: its release belongs to CloseupController (a tap, or the click that closes it) */
     let downInCloseup = false;
+    let hoverTimer = 0;
     const pick = (e: PointerEvent) => {
       const r = el.getBoundingClientRect();
       ray.ndc.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
@@ -41,7 +45,11 @@ export function InteractionController() {
       runtime.hoverId = id;
       el.style.cursor = id ? "pointer" : "";
       useWorld.getState().setHovered(id);
-      if (id && !play) playSfx("hover");
+      // the hover tick waits a moment: a pointer sweeping across many things in passing stays quiet
+      window.clearTimeout(hoverTimer);
+      if (id && !play) hoverTimer = window.setTimeout(() => {
+          if (runtime.hoverId === id) playSfx("hover");
+        }, HOVER_DELAY_MS);
     };
     const onDown = (e: PointerEvent) => {
       downX = e.clientX;
@@ -73,6 +81,7 @@ export function InteractionController() {
     el.addEventListener("pointerup", onUp);
     el.addEventListener("pointerleave", onLeave);
     return () => {
+      window.clearTimeout(hoverTimer);
       el.removeEventListener("pointermove", onMove);
       el.removeEventListener("pointerdown", onDown);
       el.removeEventListener("pointerup", onUp);

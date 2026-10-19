@@ -64,12 +64,15 @@ function enterPlay() {
       runtime.dropping = true;
     }
     p.locked = false;
+    // dropping in from the sky: a long breathy whoosh (standing up from his seat is quiet)
+    if (!world.reducedMotion) playSfx("dropIn");
   }
-  playSfx("click");
 }
 
 function exitPlay() {
   document.documentElement.classList.remove("world-playing");
+  // the camera lifts back to the tour: a soft whoosh up and out
+  playSfx("rise");
   const player = runtime.player;
   // the tour runs no physics: Ezra stays where he was left, but one left mid-air (a drop, a jump, a bounce
   // arc or cart ride, a fall) would hang there, so he goes back to his last footing
