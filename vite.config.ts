@@ -41,7 +41,7 @@ export default defineConfig({
     },
   },
   test: {
-    include: ["src/**/*.test.ts", "server/**/*.test.js"],
+    include: ["src/**/*.test.ts", "server/**/*.test.js", "worker/**/*.test.js"],
     environment: "node",
   },
 })

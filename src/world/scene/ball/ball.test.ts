@@ -62,5 +62,5 @@ describe("the plaza ball in the built world", () => {
     for (let i = 0; i < 240; i++) stepBall(b, { isSolid: built.grid.isSolid, props: built.props, killY: -60 }, 1 / 60);
     expect(Math.hypot(b.pos.x - home.x, b.pos.z - home.z)).toBeLessThan(0.05);
     expect(b.pos.y).toBeCloseTo(home.y, 1);
-  });
+  }, 30_000); // builds the whole world: seconds under a full parallel run
 });

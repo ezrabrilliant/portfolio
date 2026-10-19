@@ -80,7 +80,11 @@ export function createGtidProxy({
     return f !== undefined && now() - f.at < backoffMs;
   };
 
-  async function get(key) {
+  /**
+   * `background` receives the promise of a refresh started past the TTL (Node: nothing to do; a Worker passes
+   * ctx.waitUntil so the isolate keeps it running after the answer is sent).
+   */
+  async function get(key, { background = () => {} } = {}) {
     if (!sources[key]) {
       const e = new Error(`unknown gtid source: ${key}`);
       e.status = 404;
@@ -88,7 +92,7 @@ export function createGtidProxy({
     }
     const hit = cache.get(key);
     if (hit) {
-      if (now() - hit.at >= TTL[key] && !backingOff(key)) void refresh(key);
+      if (now() - hit.at >= TTL[key] && !backingOff(key)) background(refresh(key));
       return { data: hit.data, stale: failure.has(key), fetchedAt: hit.at };
     }
     if (!backingOff(key) && (await refresh(key))) {

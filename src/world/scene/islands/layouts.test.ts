@@ -643,7 +643,7 @@ describe("what Ezra could walk or jump into, on every island", () => {
     const unexpected = [...found].filter(([k, by]) => !(by <= (open.get(k) ?? -1))).map(([k, by]) => `${k} by ${by.toFixed(2)}`);
     expect(unexpected).toEqual([]);
     expect([...open.keys()].filter((k) => !found.has(k)), "closed: drop it from OPEN").toEqual([]);
-  });
+  }, 30_000); // walks every island's columns: seconds under a full parallel run
 
   it("hang every ceiling-only barrier column under the visual it caps, from the row that stops his model under it to its top", () => {
     const loose: string[] = [];

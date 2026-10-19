@@ -33,3 +33,6 @@ FETCH_HEAD
 
 shots/
 .shots/
+
+# Cloudflare Workers (wrangler dev/deploy local state)
+.wrangler/
