@@ -29,11 +29,59 @@ async function on(): Promise<{ sfx: Sfx; ctx: FakeAudioContext }> {
 const sources = (ctx: FakeAudioContext) => ctx.nodes.filter((n) => n.kind === "buffer" && n.buffer);
 
 describe("sfx", () => {
-  it("starts muted, makes no audio context, and stays silent", async () => {
+  it("before the saved choice is read, it is muted, makes no audio context, and stays silent", async () => {
     const sfx = await load();
     expect(sfx.isMuted()).toBe(true);
     sfx.playSfx("click");
     expect(browser.ctx()).toBeUndefined();
+  });
+
+  it("plays the click of the gesture that woke the audio once, when the synth is ready", async () => {
+    const sfx = await load();
+    const core = await import("./core");
+    core.restoreSoundPref();
+    // the first press anywhere wakes the audio (capture phase), then the button's own click asks for its sound
+    browser.gesture("pointerdown");
+    expect(browser.ctx().resume).toHaveBeenCalledTimes(1);
+    sfx.playSfx("click");
+    sfx.playJingle("chime");
+    const ctx = browser.ctx();
+    expect(sources(ctx)).toHaveLength(0);
+    await sfx.whenAudioReady();
+    await Promise.resolve();
+    expect(mocks.build).toHaveBeenCalledWith(...sfx.SFX_PRESETS.click);
+    // the click once, and the chime's notes
+    expect(sources(ctx)).toHaveLength(1 + sfx.JINGLES.chime.notes.length);
+    await sfx.whenAudioReady();
+    await Promise.resolve();
+    expect(sources(ctx)).toHaveLength(1 + sfx.JINGLES.chime.notes.length);
+  });
+
+  it("drops a waking sound that would arrive too late to belong to its click", async () => {
+    const sfx = await load();
+    const core = await import("./core");
+    core.restoreSoundPref();
+    browser.gesture("pointerdown");
+    sfx.playSfx("click");
+    vi.setSystemTime(Date.now() + sfx.WAKE_WAIT_MS + 100);
+    await sfx.whenAudioReady();
+    await Promise.resolve();
+    expect(sources(browser.ctx())).toHaveLength(0);
+    // once awake, sounds play at once
+    sfx.playSfx("click");
+    expect(sources(browser.ctx())).toHaveLength(1);
+  });
+
+  it("before any gesture, a sound is not kept for later", async () => {
+    const sfx = await load();
+    const core = await import("./core");
+    core.restoreSoundPref();
+    sfx.playSfx("hover");
+    expect(browser.ctx()).toBeUndefined();
+    browser.gesture("pointerdown");
+    await sfx.whenAudioReady();
+    await Promise.resolve();
+    expect(sources(browser.ctx())).toHaveLength(0);
   });
 
   it("wakes the context inside the switching click itself, before any await (iOS)", async () => {

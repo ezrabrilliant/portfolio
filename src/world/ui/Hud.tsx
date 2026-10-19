@@ -45,16 +45,6 @@ function MapIcon() {
   );
 }
 
-/** A leaf: the light look for slower devices. */
-function LeafIcon() {
-  return (
-    <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
-      <path d="M5 19c0-8 5-13 14-14 0 9-5 14-13 14z" fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
-      <path d="M5 19l8-8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-    </svg>
-  );
-}
-
 /** A speaker, with sound waves when on and a slash when muted. */
 function SoundIcon({ on }: { on: boolean }) {
   return (
@@ -125,8 +115,6 @@ export function Hud() {
   const closeupId = useWorld((s) => s.closeupId);
   const [help, setHelp] = useState(false);
   const mapOpen = useWorld((s) => s.mapOpen);
-  const powerSave = useWorld((s) => s.powerSave);
-  const togglePowerSave = useWorld((s) => s.togglePowerSave);
   const setMapOpen = useWorld((s) => s.setMapOpen);
   // M opens the island map from anywhere (MapOverlay closes it again, and owns the keys while open)
   useEffect(() => {
@@ -160,10 +148,6 @@ export function Hud() {
   const toggleSound = () => {
     toggleMuted();
     if (muted) void whenAudioReady().then(() => playJingle("chime"));
-  };
-  const lightMode = () => {
-    playSfx("toggle");
-    togglePowerSave();
   };
   const switchMode = (m: "tour" | "play") => {
     if (m !== mode) playSfx("toggle");
@@ -199,9 +183,6 @@ export function Hud() {
         <GoldCounter />
         <button type="button" className={mapOpen ? "hud-icon hud-icon--on" : "hud-icon"} aria-label="Island map" aria-pressed={mapOpen} title="Island map (M)" disabled={!ready || !!closeupId} onMouseDown={keepFocus} onClick={() => setMapOpen(!mapOpen)}>
           <MapIcon />
-        </button>
-        <button type="button" className={powerSave ? "hud-icon hud-icon--on" : "hud-icon"} aria-label="Light mode for slower devices" aria-pressed={powerSave} title={powerSave ? "Light mode on" : "Light mode (smoother on slower devices)"} onMouseDown={keepFocus} onClick={lightMode}>
-          <LeafIcon />
         </button>
         <button type="button" className="hud-icon" aria-label="Sound" aria-pressed={!muted} title={muted ? "Sound off" : "Sound on"} onMouseDown={keepFocus} onClick={toggleSound}>
           <SoundIcon on={!muted} />

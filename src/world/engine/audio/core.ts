@@ -1,6 +1,6 @@
 /**
  * The audio engine's core: one AudioContext and its mixer (music, effects and ambience buses → master → a soft limiter →
- * the speakers), the sound switch (the one source of truth for "muted", kept in this browser), waking the context inside
+ * the speakers), the sound switch (the one source of truth for "muted", on unless the visitor switched it off, kept in this browser), waking the context inside
  * a user gesture (iOS resumes only there), going quiet while the tab is hidden, and the listener (where the ears are and
  * which way is right) that placed sounds are heard from. Everything else in engine/audio plays through it.
  */
@@ -182,15 +182,18 @@ function armGestures(): void {
 }
 
 /**
- * The visitor's saved choice (first visit: off). A saved "on" cannot start the sound without a gesture, so it arms the
- * gesture listeners: the first click, key or touch anywhere wakes it. Returns whether the sound is off.
+ * The visitor's saved choice; with none (a first visit), the sound is on. Only a saved "off" (the Sound button) keeps it
+ * off. "On" cannot start the sound without a gesture (browsers forbid it), so it arms the gesture listeners: the first
+ * click, key or touch anywhere wakes it (a wheel or scroll is no user activation, so it waits for the next one). Returns
+ * whether the sound is off.
  */
 export function restoreSoundPref(): boolean {
   if (!inBrowser()) return muted;
   try {
-    if (localStorage.getItem(SOUND_KEY) === "1") muted = false;
+    muted = localStorage.getItem(SOUND_KEY) === "0";
   } catch {
-    // storage blocked: off for this visit
+    // storage blocked: the default (on) for this visit
+    muted = false;
   }
   armGestures();
   return muted;

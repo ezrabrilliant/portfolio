@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 // the audio engine owns the switch: a small stand-in that holds it and tells its listeners
 const audio = vi.hoisted(() => {
   const subs = new Set<() => void>();
-  const s = { muted: true, subs };
+  const s = { muted: false, subs };
   return {
     s,
     setMuted: vi.fn((next: boolean) => {
@@ -25,31 +25,42 @@ vi.mock("@/world/engine/audio/core", () => ({
 import { setMuted } from "@/world/engine/audio/core";
 import { useWorld } from "./store";
 
+// what the store started with: the engine's restored choice (on, with nothing saved)
+const startedMuted = useWorld.getState().muted;
+
 describe("useWorld", () => {
   beforeEach(() => {
-    useWorld.setState({ mode: "tour", activeIsland: "hero", muted: true, hoveredId: null, prompt: null, ready: false, closeupId: null });
+    useWorld.setState({ mode: "tour", activeIsland: "hero", muted: false, hoveredId: null, prompt: null, ready: false, closeupId: null });
     vi.mocked(setMuted).mockClear();
-    audio.s.muted = true;
+    audio.s.muted = false;
   });
 
-  it("starts in tour mode, muted, on the hero island", () => {
+  it("starts in tour mode, sound on, on the hero island", () => {
     const s = useWorld.getState();
     expect(s.mode).toBe("tour");
-    expect(s.muted).toBe(true);
+    expect(startedMuted).toBe(false);
     expect(s.activeIsland).toBe("hero");
   });
 
   it("toggleMuted asks the audio engine, and shows what it says", () => {
     useWorld.getState().toggleMuted();
-    expect(setMuted).toHaveBeenCalledWith(false);
+    expect(setMuted).toHaveBeenCalledWith(true);
+    expect(useWorld.getState().muted).toBe(true);
+    useWorld.getState().toggleMuted();
+    expect(setMuted).toHaveBeenLastCalledWith(false);
     expect(useWorld.getState().muted).toBe(false);
   });
 
   it("follows the engine when it switches the sound off by itself (a synth that failed to load)", () => {
-    useWorld.getState().toggleMuted();
     expect(useWorld.getState().muted).toBe(false);
     audio.setMuted(true);
     expect(useWorld.getState().muted).toBe(true);
+  });
+
+  it("has no light-mode switch: the quality is the device's (and the frame-rate monitor's)", () => {
+    const s = useWorld.getState() as unknown as Record<string, unknown>;
+    expect(s.powerSave).toBeUndefined();
+    expect(s.togglePowerSave).toBeUndefined();
   });
 
   it("change-guarded setters do not notify when the value is unchanged", () => {

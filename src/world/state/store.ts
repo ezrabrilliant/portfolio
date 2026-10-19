@@ -15,9 +15,6 @@ export interface WorldState {
   toggleMuted(): void;
   quality: Quality;
   setQuality(q: Quality): void;
-  /** The visitor asked for the light look (HUD's leaf button): the low tier, kept in this browser. */
-  powerSave: boolean;
-  togglePowerSave(): void;
   hoveredId: string | null;
   setHovered(id: string | null): void;
   prompt: { id: string; label: string } | null;
@@ -40,15 +37,6 @@ const inBrowser = typeof window !== "undefined" && typeof window.matchMedia === 
 const reducedMotion = inBrowser && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 const initialQuality: Quality = inBrowser ? pickQuality(readDevice()) : "high";
 
-const POWER_KEY = "voxel.powerSave";
-function savedPowerSave(): boolean {
-  try {
-    return inBrowser && localStorage.getItem(POWER_KEY) === "1";
-  } catch {
-    return false;
-  }
-}
-
 export const useWorld = create<WorldState>()((set, get) => ({
   mode: "tour",
   setMode: (mode) => {
@@ -61,20 +49,10 @@ export const useWorld = create<WorldState>()((set, get) => ({
   setActiveIsland: (activeIsland) => {
     if (get().activeIsland !== activeIsland) set({ activeIsland });
   },
-  // a saved "on" waits for the visitor's first click, key or touch to start (core.restoreSoundPref)
+  // on unless the visitor switched it off; it starts on their first click, key or touch (core.restoreSoundPref)
   muted: restoreSoundPref(),
   toggleMuted: () => setMuted(!get().muted),
-  quality: savedPowerSave() ? "low" : initialQuality,
-  powerSave: savedPowerSave(),
-  togglePowerSave: () => {
-    const powerSave = !get().powerSave;
-    try {
-      localStorage.setItem(POWER_KEY, powerSave ? "1" : "0");
-    } catch {
-      // storage blocked: it holds for this visit
-    }
-    set({ powerSave, quality: powerSave ? "low" : initialQuality });
-  },
+  quality: initialQuality,
   setQuality: (quality) => {
     if (get().quality !== quality) set({ quality });
   },

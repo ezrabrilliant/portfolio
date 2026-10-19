@@ -1,4 +1,4 @@
-import { duckMusic, isMuted, liveMixer, onAudioWake, placeSound, reportAudioFailure, whenRunning, type Mixer } from "./core";
+import { audioAwake, duckMusic, isHidden, isMuted, liveMixer, onAudioWake, placeSound, reportAudioFailure, whenRunning, type Mixer } from "./core";
 
 export { audioAwake, falloff, isMuted, setListener, setMuted, subscribeAudio } from "./core";
 
@@ -20,7 +20,7 @@ export const SFX_PRESETS: Record<SfxName, (number | undefined)[]> = {
   click: [0.5, 0, 900, 0, 0.01, 0.04, 1, 1.5],
   // a mouse-over: the faintest tick
   hover: [0.16, 0, 1250, 0, 0.004, 0.02, 0],
-  // a switch flipped (light mode, help, Tour / Play): a short two-step square click
+  // a switch flipped (help, Tour / Play): a short two-step square click
   toggle: [0.3, 0, 620, 0, 0.008, 0.04, 5, 1, 0, 0, 240, 0.018, 0, 0, 0, 0, 0, 1, 0, 0, -3000],
   // something in Play comes into reach: a soft high blip
   tick: [0.16, 0, 1480, 0, 0.006, 0.05, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, -4000],
@@ -262,9 +262,43 @@ function voice(m: Mixer, name: SfxName, o: SfxOptions, mix: Mix): boolean {
   return true;
 }
 
-/** Plays an effect (nothing while the sound is off, the tab hidden, or the synth still loading). */
+/** How long a sound asked for while the audio wakes may wait for it; later than this it would sound out of step. */
+export const WAKE_WAIT_MS = 600;
+/** At most this many sounds wait for the waking audio. */
+const WAKE_QUEUE = 4;
+let waiting: (() => void)[] = [];
+let waitingSince = 0;
+
+/**
+ * The audio is on and its context built (a gesture woke it) but not playing yet: the synth still loads, or the context
+ * has not confirmed it runs. This is the very first gesture's own sound (the click that woke the audio).
+ */
+function waking(): boolean {
+  return !!audioAwake() && !isHidden() && (!zz || !liveMixer());
+}
+
+/** Holds `play` until the audio is ready, played once then (unless it took longer than WAKE_WAIT_MS), never twice. */
+function playWhenAwake(play: () => void): void {
+  if (waiting.length >= WAKE_QUEUE) return;
+  if (!waiting.length) {
+    waitingSince = Date.now();
+    void whenAudioReady().then(() => {
+      const late = Date.now() - waitingSince > WAKE_WAIT_MS;
+      const queue = waiting;
+      waiting = [];
+      if (!late && liveMixer() && zz) for (const p of queue) p();
+    });
+  }
+  waiting.push(play);
+}
+
+/**
+ * Plays an effect (nothing while the sound is off or the tab hidden). An unplaced sound asked for while the audio wakes
+ * (the click that woke it) waits a moment for it rather than being lost.
+ */
 export function playSfx(name: SfxName, o: SfxOptions = {}): void {
   if (isMuted()) return;
+  if (!o.at && waking()) return playWhenAwake(() => playSfx(name, o));
   const m = liveMixer();
   if (!m || !zz) return;
   const mix = mixOf(name);
@@ -309,6 +343,7 @@ export const JINGLES: Record<JingleName, Jingle> = {
 /** Plays a jingle (once a second at most per jingle), dipping the music under it if it says so. */
 export function playJingle(name: JingleName, o: Pick<SfxOptions, "volume" | "at"> = {}): void {
   if (isMuted()) return;
+  if (!o.at && waking()) return playWhenAwake(() => playJingle(name, o));
   const m = liveMixer();
   if (!m || !zz) return;
   if (!admit(`jingle:${name}`, m.ctx.currentTime, 1)) return;

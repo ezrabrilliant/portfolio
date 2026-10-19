@@ -13,14 +13,52 @@ beforeEach(() => {
 });
 
 describe("the sound switch", () => {
-  it("is off on a first visit, and keeps the visitor's choice in this browser", async () => {
+  it("is on on a first visit, and keeps the visitor's choice in this browser", async () => {
     const b = installFakeBrowser();
     const core = await load();
-    expect(core.restoreSoundPref()).toBe(true);
-    core.setMuted(false);
-    expect(b.store.get("voxel.sound")).toBe("1");
+    expect(core.restoreSoundPref()).toBe(false);
     core.setMuted(true);
     expect(b.store.get("voxel.sound")).toBe("0");
+    core.setMuted(false);
+    expect(b.store.get("voxel.sound")).toBe("1");
+  });
+
+  it("a first visit shows on at once and starts the audio on the first click, key or touch", async () => {
+    const b = installFakeBrowser();
+    const core = await load();
+    expect(core.restoreSoundPref()).toBe(false);
+    expect(core.isMuted()).toBe(false);
+    // no gesture yet: no context (a browser would refuse to start it)
+    expect(b.ctx()).toBeUndefined();
+    b.gesture("pointerdown");
+    expect(b.ctx().resume).toHaveBeenCalledTimes(1);
+    expect(core.liveMixer()).not.toBeNull();
+  });
+
+  it("a wheel or scroll is no user activation: it starts nothing and throws nothing", async () => {
+    const b = installFakeBrowser();
+    const core = await load();
+    core.restoreSoundPref();
+    expect(() => b.gesture("wheel")).not.toThrow();
+    expect(() => b.gesture("scroll")).not.toThrow();
+    expect(b.ctx()).toBeUndefined();
+    expect(core.isMuted()).toBe(false);
+  });
+
+  it("is on when this browser blocks storage", async () => {
+    installFakeBrowser();
+    vi.stubGlobal("localStorage", {
+      getItem: () => {
+        throw new Error("blocked");
+      },
+      setItem: () => {
+        throw new Error("blocked");
+      },
+    });
+    const core = await load();
+    expect(core.restoreSoundPref()).toBe(false);
+    expect(() => core.setMuted(true)).not.toThrow();
+    expect(core.isMuted()).toBe(true);
   });
 
   it("a saved 'on' shows on at once but waits for the first gesture to start the audio", async () => {
@@ -37,7 +75,7 @@ describe("the sound switch", () => {
     expect(heard).toHaveBeenCalled();
   });
 
-  it("a saved 'off' arms nothing: a gesture leaves the audio alone", async () => {
+  it("a saved 'off' (the visitor's own mute) stays off: a gesture leaves the audio alone", async () => {
     const b = installFakeBrowser({ "voxel.sound": "0" });
     const core = await load();
     expect(core.restoreSoundPref()).toBe(true);
