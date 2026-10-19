@@ -132,7 +132,13 @@ export function patchSeeThroughShader(shader: ShaderLike): void {
       .replace("#include <tonemapping_fragment>", `${SHADE_BODY}\n#include <tonemapping_fragment>`);
 }
 
-const patched = new WeakSet<THREE.Material>();
+/** The flags each patched material was compiled with (seeFlags). */
+const patched = new WeakMap<THREE.Material, string>();
+/** A patched material's own hooks from before the patch, so a variant can start from them. */
+const original = new WeakMap<THREE.Material, { onBeforeCompile: THREE.Material["onBeforeCompile"]; key: () => string }>();
+/** Per material, the variants made for meshes that need other flags than it was patched with. */
+const variants = new WeakMap<THREE.Material, Map<string, THREE.Material>>();
+const seeFlags = (passable: boolean, solid: boolean) => `${passable ? "pass" : ""}|${solid ? "solid" : ""}`;
 
 /**
  * Patches one material once (later calls do nothing). Only lit and basic mesh materials take it. `passable`: the
@@ -144,13 +150,14 @@ export function applySeeThrough(m: THREE.Material, passable = false, solid = fal
   // troika's text material derives from a base material (its prototype) and owns onBeforeCompile through a getter that
   // calls whatever is set on it, so wrapping it recursed forever: patch the base, which troika compiles first
   if ((m as THREE.Material & { isDerivedMaterial?: boolean }).isDerivedMaterial) {
-    patched.add(m);
+    patched.set(m, seeFlags(passable, solid));
     applySeeThrough(Object.getPrototypeOf(m) as THREE.Material, passable, solid);
     m.needsUpdate = true;
     return;
   }
   if (!(m instanceof THREE.MeshStandardMaterial || m instanceof THREE.MeshLambertMaterial || m instanceof THREE.MeshBasicMaterial)) return;
-  patched.add(m);
+  patched.set(m, seeFlags(passable, solid));
+  original.set(m, { onBeforeCompile: m.onBeforeCompile, key: m.customProgramCacheKey });
   // lit surfaces take the cloud shade; screens and other unlit ones keep their own colours
   const lit = !(m instanceof THREE.MeshBasicMaterial);
   const prev = m.onBeforeCompile;
@@ -166,8 +173,36 @@ export function applySeeThrough(m: THREE.Material, passable = false, solid = fal
 }
 
 /**
+ * The material a mesh should draw with for these flags: `m` itself, patched on first sight; or, when `m` was already
+ * patched with other flags (a material shared by meshes that need different variants: the graduation outfit worn by a
+ * seeSolid Ezra and on the 2026 pillar), one clone per flag set, patched from m's own pre-patch hooks.
+ */
+export function seeThroughMaterial(m: THREE.Material, passable = false, solid = false): THREE.Material {
+  const want = seeFlags(passable, solid);
+  const have = patched.get(m);
+  if (have === undefined) {
+    applySeeThrough(m, passable, solid);
+    return m;
+  }
+  const hooks = original.get(m);
+  if (have === want || !hooks) return m;
+  let byFlags = variants.get(m);
+  if (!byFlags) variants.set(m, (byFlags = new Map()));
+  let v = byFlags.get(want);
+  if (!v) {
+    v = m.clone();
+    v.onBeforeCompile = hooks.onBeforeCompile;
+    v.customProgramCacheKey = hooks.key;
+    applySeeThrough(v, passable, solid);
+    byFlags.set(want, v);
+  }
+  return v;
+}
+
+/**
  * Walks the scene and patches every mesh material, skipping subtrees marked userData.noSeeThrough; under one marked
- * userData.passable (boards and signs) they also fade around Ezra's body.
+ * userData.passable (boards and signs) they also fade around Ezra's body. A mesh whose shared material was patched for
+ * other flags draws with its own variant (seeThroughMaterial).
  */
 export function patchSceneSeeThrough(root: THREE.Object3D, passable = false, solid = false): void {
   if (root.userData.noSeeThrough) return;
@@ -176,8 +211,13 @@ export function patchSceneSeeThrough(root: THREE.Object3D, passable = false, sol
   const firm = solid || root.userData.seeSolid === true;
   const mesh = root as THREE.Mesh;
   if (mesh.isMesh) {
-    const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
-    for (const m of mats) if (m) applySeeThrough(m, pass, firm);
+    if (Array.isArray(mesh.material)) {
+      const mats = mesh.material.map((m) => (m ? seeThroughMaterial(m, pass, firm) : m));
+      if (mats.some((m, i) => m !== (mesh.material as THREE.Material[])[i])) mesh.material = mats;
+    } else if (mesh.material) {
+      const m = seeThroughMaterial(mesh.material, pass, firm);
+      if (m !== mesh.material) mesh.material = m;
+    }
   }
   for (const c of root.children) patchSceneSeeThrough(c, pass, firm);
 }
