@@ -1,11 +1,21 @@
 // The site on Cloudflare Workers: `npm run deploy` builds dist/ and deploys it as the Worker's static assets, with
-// worker/index.js answering /api/* (the GTID proxy that server.js used to run). Name and compatibility date match the
-// Worker that already serves beta.ezrabrilliant.com (its custom domain is set on the Worker, not here).
+// worker/index.js answering /api/* (the GTID proxy that server.js used to run). The name and compatibility date are
+// those of the Worker first made for beta.ezrabrilliant.com; it now serves the whole site.
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "portfolio-beta",
   "main": "worker/index.js",
   "compatibility_date": "2026-10-06",
+  // beta is the Worker's own custom domain. ezrabrilliant.com and www are zone routes: their DNS records still point at
+  // the old Pages project (portfolio), and a route takes their requests before they reach it
+  "routes": [
+    { "pattern": "beta.ezrabrilliant.com", "custom_domain": true },
+    { "pattern": "ezrabrilliant.com/*", "zone_name": "ezrabrilliant.com" },
+    { "pattern": "www.ezrabrilliant.com/*", "zone_name": "ezrabrilliant.com" }
+  ],
+  // kept on, as they were before this file existed (portfolio-beta.<account>.workers.dev and per-version previews)
+  "workers_dev": true,
+  "preview_urls": true,
   "assets": {
     "directory": "./dist",
     "binding": "ASSETS",
