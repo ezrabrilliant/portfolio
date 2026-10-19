@@ -2,6 +2,7 @@ import type { IsSolid, Vec3 } from "@/world/engine/types";
 import { EZRA_REACH } from "./ezraModel";
 import type { Aabb, ColliderSet } from "./colliders";
 import { RAMP_SNAP, type RampSet } from "./ramps";
+import { hasFooting } from "./edge";
 
 export interface CharacterParams {
   width: number; height: number; walkSpeed: number; runSpeed: number; accel: number;
@@ -21,12 +22,14 @@ export const DEFAULT_PARAMS: CharacterParams = {
  */
 export const MODEL_TOP = Math.max(EZRA_REACH.hairTop, EZRA_REACH.capTop);
 
+/** `walkedOff`: he left the ground by walking (off a prop or a ledge), not by a jump; the edge guard holds while he drops. */
 export interface CharacterState {
   pos: Vec3; vel: Vec3; onGround: boolean; sinceGround: number; jumpTimer: number;
-  lastSafe: Vec3; locked: boolean;
+  lastSafe: Vec3; locked: boolean; walkedOff: boolean;
 }
 export interface CharacterInput { moveX: number; moveZ: number; run: boolean; jump: boolean }
-export interface StepResult { landed: boolean; jumped: boolean; fellOut: boolean; stepped: boolean }
+/** `teetered`: the edge guard held back a step at a rim this frame. */
+export interface StepResult { landed: boolean; jumped: boolean; fellOut: boolean; stepped: boolean; teetered: boolean }
 
 const SUBSTEP = 1 / 120;
 const MAX_DT = 0.1;
@@ -38,7 +41,7 @@ const AIR_CONTROL = 0.6;
 export function createCharacter(pos: Vec3): CharacterState {
   return {
     pos: { ...pos }, vel: { x: 0, y: 0, z: 0 }, onGround: false, sinceGround: 0, jumpTimer: 0,
-    lastSafe: { ...pos }, locked: false,
+    lastSafe: { ...pos }, locked: false, walkedOff: false,
   };
 }
 
@@ -136,9 +139,9 @@ function moveAxis(s: CharacterState, axis: "x" | "z", delta: number, isSolid: Is
 
 export function stepCharacter(
   s: CharacterState, input: CharacterInput, dt: number,
-  world: { isSolid: IsSolid; killY: number; colliders?: ColliderSet; ramps?: RampSet }, p: CharacterParams = DEFAULT_PARAMS,
+  world: { isSolid: IsSolid; killY: number; colliders?: ColliderSet; ramps?: RampSet; edgeGuard?: boolean }, p: CharacterParams = DEFAULT_PARAMS,
 ): StepResult {
-  const res: StepResult = { landed: false, jumped: false, fellOut: false, stepped: false };
+  const res: StepResult = { landed: false, jumped: false, fellOut: false, stepped: false, teetered: false };
   if (s.locked) return res;
   if (input.jump) s.jumpTimer = p.jumpBuffer;
 
@@ -161,6 +164,7 @@ export function stepCharacter(
       s.onGround = false;
       s.sinceGround = p.coyoteTime + 1;
       s.jumpTimer = 0;
+      s.walkedOff = false;
       res.jumped = true;
     }
     s.jumpTimer = Math.max(0, s.jumpTimer - h);
@@ -168,8 +172,16 @@ export function stepCharacter(
 
     const canStep = s.onGround;
     const props = world.colliders;
-    if (moveAxis(s, "x", s.vel.x * h, world.isSolid, p, canStep, props)) res.stepped = true;
-    if (moveAxis(s, "z", s.vel.z * h, world.isSolid, p, canStep, props)) res.stepped = true;
+    // edge guard (edge.ts): on the ground, a step that leaves no footing is not taken, axis by axis so he slides along
+    // the rim. Only the step is held back, not the velocity, so a jump from the rim still carries him forward. It also
+    // holds while he drops after walking off a prop or a ledge, so that drop's drift can't carry him past the rim
+    const guard = world.edgeGuard === true && (s.onGround || s.walkedOff) && s.vel.y <= 0;
+    let dx = s.vel.x * h;
+    if (guard && dx !== 0 && !hasFooting(world.isSolid, s.pos.x + dx, s.pos.y, s.pos.z, props, world.ramps)) { dx = 0; res.teetered = true; }
+    if (moveAxis(s, "x", dx, world.isSolid, p, canStep, props)) res.stepped = true;
+    let dz = s.vel.z * h;
+    if (guard && dz !== 0 && !hasFooting(world.isSolid, s.pos.x, s.pos.y, s.pos.z + dz, props, world.ramps)) { dz = 0; res.teetered = true; }
+    if (moveAxis(s, "z", dz, world.isSolid, p, canStep, props)) res.stepped = true;
 
     const wasGround = s.onGround;
     const ny = s.pos.y + s.vel.y * h;
@@ -212,8 +224,10 @@ export function stepCharacter(
 
     if (s.onGround) {
       s.sinceGround = 0;
+      s.walkedOff = false;
       s.lastSafe.x = s.pos.x; s.lastSafe.y = s.pos.y; s.lastSafe.z = s.pos.z;
     } else {
+      if (wasGround && !res.jumped) s.walkedOff = true;
       s.sinceGround += h;
     }
   }
@@ -228,4 +242,5 @@ export function respawn(s: CharacterState): void {
   s.onGround = false;
   s.sinceGround = 0;
   s.jumpTimer = 0;
+  s.walkedOff = false;
 }

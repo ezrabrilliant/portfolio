@@ -165,7 +165,7 @@ describe("falling and safety", () => {
     const s = createCharacter({ x: 0, y: 5, z: 0 });
     s.locked = true;
     const r = stepCharacter(s, { moveX: 1, moveZ: 1, run: true, jump: true }, FRAME, { isSolid: g.isSolid, killY: -20 });
-    expect(r).toEqual({ landed: false, jumped: false, fellOut: false, stepped: false });
+    expect(r).toEqual({ landed: false, jumped: false, fellOut: false, stepped: false, teetered: false });
     expect(s.pos).toEqual({ x: 0, y: 5, z: 0 });
     expect(s.vel).toEqual({ x: 0, y: 0, z: 0 });
   });

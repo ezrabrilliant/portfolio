@@ -104,6 +104,19 @@ export class ColliderSet {
     return top;
   }
 
+  /**
+   * The highest top, at most `feetY` (+ a hair), among colliders the box overlaps (−Infinity for none): what feet at
+   * `feetY` could stand on. Unlike topOf, a post or panel that rises past the feet is skipped, not taken as a floor.
+   */
+  floorUnder(b: Aabb, feetY: number): number {
+    let top = -Infinity;
+    this.visit(b, (c) => {
+      const t = c.y + c.hy;
+      if (t <= feetY + 0.01 && overlaps(b, c)) top = Math.max(top, t);
+    });
+    return top;
+  }
+
   /** Does any collider reach into the world cell (x, y, z)? Landing, seats and rails treat such a cell as taken. */
   touchesCell(x: number, y: number, z: number): boolean {
     return this.hits({ x0: x, y0: y, z0: z, x1: x + 1, y1: y + 1, z1: z + 1 });

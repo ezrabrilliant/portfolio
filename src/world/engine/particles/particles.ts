@@ -2,7 +2,7 @@ import { hexToRgb } from "@/world/engine/color";
 import { mulberry32, type Rng } from "@/world/engine/gen/rng";
 import type { Vec3 } from "@/world/engine/types";
 
-export type ParticlePreset = "debris" | "dust" | "confetti" | "leaves" | "sparkle" | "grass" | "chips" | "grit" | "glint" | "hearts" | "seeds" | "feathers";
+export type ParticlePreset = "debris" | "dust" | "confetti" | "leaves" | "sparkle" | "grass" | "chips" | "grit" | "glint" | "hearts" | "seeds" | "feathers" | "cloud";
 
 export interface ParticlePool {
   readonly capacity: number;
@@ -35,6 +35,8 @@ const PRESETS: Record<ParticlePreset, Preset> = {
   seeds: { count: 10, speed: [0.3, 0.9], up: [0.8, 1.6], life: [0.6, 0.9], size: [0.03, 0.05], gravity: 9, drag: 1.5, colors: ["#e8c25a", "#d4a63c", "#f2d98a"] },
   feathers: { count: 5, speed: [0.4, 1.0], up: [0.6, 1.2], life: [1.0, 1.6], size: [0.05, 0.08], gravity: 1.2, drag: 2.5, colors: ["#f6f3ea", "#ece6d8"] },
   sparkle: { count: 5, speed: [0.2, 0.6], up: [0.2, 0.6], life: [0.5, 0.9], size: [0.05, 0.09], gravity: -0.3, drag: 1.0, colors: ["#bfe3ff", "#ffffff"] },
+  // the cloud sea catching a missed jump: big soft cubes in the clouds' own tints, bursting out and drifting up
+  cloud: { count: 22, speed: [1.5, 3.5], up: [0.4, 1.4], life: [0.7, 1.1], size: [0.3, 0.55], gravity: -0.6, drag: 2.2, colors: ["#f7f8f6", "#f1f4f4", "#eaf0f2"] },
 };
 
 export function createParticlePool(capacity = 800, rng: Rng = mulberry32(7)): ParticlePool {

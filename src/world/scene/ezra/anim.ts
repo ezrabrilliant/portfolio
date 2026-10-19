@@ -1,4 +1,4 @@
-export type AnimState = "idle" | "walk" | "run" | "jump" | "fall" | "land" | "sit" | "standUp" | "ride";
+export type AnimState = "idle" | "walk" | "run" | "jump" | "fall" | "land" | "sit" | "standUp" | "ride" | "teeter";
 
 export interface AnimInput {
   onGround: boolean;
@@ -8,6 +8,8 @@ export interface AnimInput {
   seated: boolean;
   standUp: number;
   riding: boolean;
+  /** seconds left of the teeter after the edge guard held him at a rim (engine/physics/edge.ts) */
+  teeter?: number;
 }
 
 /** Joint angles in radians (rotation about X: negative swings a limb forward) and body offsets in blocks. */
@@ -43,6 +45,7 @@ export function pickAnim(i: AnimInput): AnimState {
   if (i.standUp > 0) return "standUp";
   if (!i.onGround) return i.vy > 0 ? "jump" : "fall";
   if (i.landTimer > 0) return "land";
+  if ((i.teeter ?? 0) > 0) return "teeter";
   if (i.speed > 5.5) return "run";
   if (i.speed > 0.3) return "walk";
   return "idle";
@@ -125,6 +128,15 @@ export function poseFor(
     case "land":
       // touch-down: knees give, body squashed low, arms dropping (the pose blend springs him back up)
       return { ...NEUTRAL, legL: -0.35, legR: -0.35, kneeL: 0.7, kneeR: 0.7, squash: 0.84, bodyY: -0.08, armSpread: 0.35, lean: 0.12 };
+    case "teeter": {
+      // held at a rim: leaning out over it, looking down, arms up and circling against each other, one heel lifted
+      const w = k.reduced ? 0 : Math.sin(t * 17);
+      const sway = k.reduced ? 0 : Math.sin(t * 8.5);
+      return {
+        ...NEUTRAL, lean: 0.24 + 0.06 * sway, headPitch: 0.3, armSpread: 0.55,
+        armL: -1.5 + 0.9 * w, armR: -1.5 - 0.9 * w, legR: 0.3, kneeR: 0.35, bodyY: -0.02,
+      };
+    }
     case "sit":
       return sitPose(t, k.reduced, look);
     case "ride":

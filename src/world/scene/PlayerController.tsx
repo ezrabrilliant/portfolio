@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { respawn, stepCharacter } from "@/world/engine/physics/character";
+import { cloudCatchRide, shouldCloudCatch } from "@/world/engine/physics/edge";
 import type { CharacterInput } from "@/world/engine/physics/character";
 import { playSfx } from "@/world/engine/audio/sfx";
 import { runtime } from "@/world/state/runtime";
@@ -70,6 +71,7 @@ export function PlayerController() {
     if (!built) return;
     const p = runtime.player;
     if (runtime.landTimer > 0) runtime.landTimer = Math.max(0, runtime.landTimer - dt);
+    if (runtime.teeter > 0) runtime.teeter = Math.max(0, runtime.teeter - dt);
     if (runtime.standUp > 0) {
       runtime.standUp = Math.max(0, runtime.standUp - dt);
       if (runtime.standUp === 0) p.locked = false;
@@ -202,8 +204,33 @@ export function PlayerController() {
       colliders: built.props,
       ramps: built.ramps,
       killY: runtime.killY,
+      // walking never leaves an island (engine/physics/edge.ts); a drop into Play is already in the air
+      edgeGuard: true,
     });
     if (runtime.dropping && p.onGround) runtime.dropping = false;
+
+    // a missed jump: the cloud sea catches him and throws him back onto his last footing (an arc ride, landed like a
+    // bounce pad's), instead of the respawn fade, which stays only as the net under it (killY)
+    if (shouldCloudCatch(p) && !tmp.fading) {
+      runtime.particles.burst({ x: p.pos.x, y: p.pos.y + 0.4, z: p.pos.z }, "cloud");
+      playSfx("bounce");
+      runtime.ride = cloudCatchRide(p);
+      p.locked = true;
+      p.vel.x = p.vel.y = p.vel.z = 0;
+      runtime.teeter = 0;
+      return;
+    }
+
+    // held at a rim: he teeters (anim.ts) while the push lasts; the first hold drops a few grains over the rim and
+    // makes a wobbly "whoa"
+    if (r.teetered && !r.jumped && Math.hypot(input.moveX, input.moveZ) > 0.05) {
+      if (runtime.teeter === 0) {
+        const out = { x: p.pos.x + input.moveX * 0.35, y: p.pos.y - 0.05, z: p.pos.z + input.moveZ * 0.35 };
+        runtime.particles.burst(out, "grit", { count: 4 });
+        playSfx("teeter");
+      }
+      runtime.teeter = 0.3;
+    }
     if (p.onGround) {
       // the island he stands on is the active one in Play too (the tour camera only sets it while touring)
       const island = islandUnder(runtime.layout.islands, p.pos.x, p.pos.z);
@@ -211,7 +238,8 @@ export function PlayerController() {
     }
 
     if (!p.locked && Math.hypot(input.moveX, input.moveZ) > 0.05) runtime.heading = dampAngle(runtime.heading, Math.atan2(input.moveX, input.moveZ), 12, dt);
-    runtime.speed = Math.hypot(p.vel.x, p.vel.z);
+    // at a rim the guard holds his step but keeps his velocity (so a jump still carries him): he is not walking
+    runtime.speed = runtime.teeter > 0 && p.onGround ? 0 : Math.hypot(p.vel.x, p.vel.z);
     runtime.moving = runtime.speed > 0.3;
     const prevPhase = runtime.animPhase;
     runtime.animPhase += runtime.speed * dt * 1.7;

@@ -78,6 +78,8 @@ export const runtime = {
   speed: 0,
   animPhase: 0,
   landTimer: 0,
+  /** Seconds left of Ezra's teeter: the edge guard held him at a rim (PlayerController sets it, Ezra.tsx poses it). */
+  teeter: 0,
   /**
    * How far Ezra's model is drawn below his body after a step up (≤ 0): the physics climbs a block at once, the model
    * catches up over a moment (anim.ts stepEase), knees tucked like a hop. PlayerController adds each step, Ezra.tsx eases it.

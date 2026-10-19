@@ -1,5 +1,5 @@
 export type SfxName =
-  | "click" | "hover" | "punch" | "burst" | "jump" | "land" | "step" | "stepWood" | "coin" | "purr" | "cluck" | "chirp" | "print" | "chat" | "link" | "bounce" | "cart" | "pop" | "poof";
+  | "click" | "hover" | "punch" | "burst" | "jump" | "land" | "step" | "stepWood" | "coin" | "purr" | "cluck" | "chirp" | "print" | "chat" | "link" | "bounce" | "cart" | "pop" | "poof" | "teeter";
 
 // ZzFX parameter order: volume, randomness, frequency, attack, sustain, release, shape, shapeCurve,
 // slide, deltaSlide, pitchJump, pitchJumpTime, repeatTime, noise, modulation, bitCrush, delay, sustainVolume, decay, tremolo
@@ -30,6 +30,8 @@ export const SFX_PRESETS: Record<SfxName, (number | undefined)[]> = {
   pop: [0.4, 0.02, 520, 0, 0.02, 0.08, 0, 1.6, 18],
   // a fast-travel dust puff: a quiet noise burst falling away
   poof: [0.3, 0.1, 150, 0.01, 0.04, 0.2, 4, 1, -3, 0, 0, 0, 0, 0.6],
+  // held at a rim: a short wobbly "whoa", a tone with a fast vibrato that sags
+  teeter: [0.3, 0, 460, 0.01, 0.1, 0.12, 0, 1, -4, 0, 0, 0, 0, 0, 14],
 };
 
 type ZzfxModule = typeof import("zzfx");

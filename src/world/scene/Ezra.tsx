@@ -78,6 +78,7 @@ export function Ezra() {
       seated,
       standUp: runtime.standUp,
       riding: runtime.ride?.kind === "rail",
+      teeter: runtime.teeter,
     });
     const seat = runtime.seat;
     // seated, he turns his head half way toward the hero's tour camera (World aims the seat at it)

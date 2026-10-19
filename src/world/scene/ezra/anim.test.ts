@@ -22,6 +22,22 @@ describe("pickAnim", () => {
   it("lands briefly after touching down", () => {
     expect(pickAnim({ ...base, landTimer: 0.1 })).toBe("land");
   });
+  it("teeters at a rim while the guard holds him, over walking, never in the air", () => {
+    expect(pickAnim({ ...base, speed: 4.5, teeter: 0.2 })).toBe("teeter");
+    expect(pickAnim({ ...base, onGround: false, vy: -3, teeter: 0.2 })).toBe("fall");
+    expect(pickAnim({ ...base, landTimer: 0.1, teeter: 0.2 })).toBe("land");
+  });
+  it("teeter pose leans out over the rim with the arms up and circling (still when motion is reduced)", () => {
+    const a = poseFor("teeter", 0, 0, { standUp: 0, reduced: false });
+    const b = poseFor("teeter", 0.09, 0, { standUp: 0, reduced: false });
+    expect(a.lean).toBeGreaterThan(0.1);
+    expect(a.armL).toBeLessThan(-0.5);
+    expect(a.armSpread).toBeGreaterThan(0.3);
+    expect(Math.abs(a.armL - b.armL)).toBeGreaterThan(0.2);
+    const r1 = poseFor("teeter", 0, 0, { standUp: 0, reduced: true });
+    const r2 = poseFor("teeter", 0.09, 0, { standUp: 0, reduced: true });
+    expect(r1).toEqual(r2);
+  });
   it("picks idle, walk, run by speed", () => {
     expect(pickAnim({ ...base, speed: 0.1 })).toBe("idle");
     expect(pickAnim({ ...base, speed: 4.5 })).toBe("walk");
