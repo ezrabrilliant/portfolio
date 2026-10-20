@@ -1,5 +1,4 @@
-# Header untuk Cloudflare Pages, menyalin deploy/Caddyfile.portfolio.
-# Hanya berlaku untuk file statis, bukan respons Pages Function (/api/*).
+# Headers for the static files the Worker serves (wrangler.jsonc assets); /api/* answers come from worker/index.js.
 
 /*
   X-Frame-Options: SAMEORIGIN

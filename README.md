@@ -1,70 +1,39 @@
-# React + TypeScript + Vite
+# ezrabrilliant.com
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Ezra Brilliant's portfolio: a playable voxel archipelago. Each island holds one project with its real program UI
+(GTID, Petak Umpet, Orbit Store, Ezra Bot and more). Walk around in Play mode or let the Tour carry you from island to
+island.
 
-Currently, two official plugins are available:
+Live at [ezrabrilliant.com](https://ezrabrilliant.com).
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Stack
 
-## Expanding the ESLint configuration
+React + TypeScript, React Three Fiber / three.js, zustand, Vite, Vitest. The site runs as a Cloudflare Worker
+(`wrangler.jsonc`): `dist/` as static assets, and `worker/index.js` answering `/api/gtid/*` (a cached proxy to
+gtid.pro).
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## Develop
 
-```js
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      ...tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      ...tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      ...tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```sh
+npm install
+npm run dev          # the site, on Vite
+npm run start:dev    # the local /api server (server.js) the dev site proxies to
+npm test             # Vitest
+npm run lint
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+`.env.example` lists the EmailJS keys the contact form in Ezra Bot's chat needs (copy it to `.env.local`).
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## Deploy
 
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```sh
+npm run deploy       # build + wrangler deploy: beta.ezrabrilliant.com, ezrabrilliant.com and www
 ```
-Test change
+
+## Layout
+
+- `src/world/engine` – voxel grid, physics, camera math, audio, particles
+- `src/world/scene` – the 3D world: islands, Ezra, critters, cameras, tour
+- `src/world/ui` – HUD, phone controls, map, Ezra Bot chat
+- `src/config/portfolio.ts` – projects, milestones and copy
+- `worker/`, `server/` – the `/api` proxy for the Worker and for local dev
